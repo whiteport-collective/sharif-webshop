@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/astrowhi/sharif.whiteport.com/
+    - /bin/cp -R dist/* $DEPLOYPATH
