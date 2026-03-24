@@ -1,0 +1,17 @@
+project_name: Sharif Webshop
+project_type: digital_product
+starting_point: brief
+communication_language: sv
+document_output_language: sv
+output_folder: _bmad-output
+wds_folder: _bmad/wds
+methodology_version: wds-v6
+product_languages: ["sv"]
+design_system_mode: building
+tech_stack:
+  framework: astro
+  islands: hydra
+  database: sqlite
+  admin: agent-space
+  hosting: cpanel-hostup
+  domain: sharif.whiteport.com
