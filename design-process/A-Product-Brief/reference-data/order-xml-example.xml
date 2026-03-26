@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Order>
+	<WholeSaler>
+		<WholeSalerAccountId>12345</WholeSalerAccountId>
+	</WholeSaler>
+	<Info>
+		<Currency>EUR</Currency>
+		<OrderTime>2020-08-29 08:23:00 EEST</OrderTime>
+		<CustomerNotes>Asiakkaan viite</CustomerNotes>
+	</Info>
+	<Customer>
+		<Company>Oy Asiakas Ab</Company>
+		<BusinessId>12345678</BusinessId>
+		<Vatcode>FI-12345678</Vatcode>
+		<CustomersId type="">12345</CustomersId>
+		<FirstName>Etunimi</FirstName>
+		<LastName>Sukunimi</LastName>
+		<Phone>04412345678</Phone>
+		<Email>email@asiakas.com</Email>
+		<Address>
+			<StreetAddress>Volttikatu 10 </StreetAddress>
+			<City>KUOPIO</City>
+			<State/>
+			<Area/>
+			<Zip>70820</Zip>
+			<CountryCode>FI</CountryCode>
+		</Address>
+	</Customer>
+	<Billing>
+		<Company>Oy Asiakas Ab</Company>
+		<BusinessId>12345678</BusinessId>
+		<Vatcode>FI-12345678</Vatcode>
+		<CustomersId type="">12345</CustomersId>
+		<FirstName>Etunimi</FirstName>
+		<LastName>Sukunimi</LastName>
+		<Phone>04412345678</Phone>
+		<Email>email@asiakas.com</Email>
+		<Address>
+			<StreetAddress>Volttikatu 10 </StreetAddress>
+			<City>KUOPIO</City>
+			<State/>
+			<Area/>
+			<Zip>70820</Zip>
+			<CountryCode>FI</CountryCode>
+		</Address>
+	</Billing>
+	<Delivery>
+		<Company>Oy Asiakas Ab</Company>
+		<BusinessId>12345678</BusinessId>
+		<Vatcode>FI-12345678</Vatcode>
+		<CustomersId type="">12345</CustomersId>
+		<FirstName>Etunimi</FirstName>
+		<LastName>Sukunimi</LastName>
+		<Phone>04412345678</Phone>
+		<Email>email@asiakas.com</Email>
+		<Address>
+			<StreetAddress>Volttikatu 10 </StreetAddress>
+			<City>KUOPIO</City>
+			<State/>
+			<Area/>
+			<Zip>70820</Zip>
+			<CountryCode>FI</CountryCode>
+		</Address>
+	</Delivery>
+	<Products>
+		<Row num="1">
+			<ProductsId>52074</ProductsId>
+			<Code>K2256517LINGLONGGRMHP</Code>
+			<Qty>4</Qty>
+		</Row>
+		<Row num="2">
+			<ProductsId>44080</ProductsId>
+			<Code>BARB674</Code>s
+			<Qty>4</Qty>
+		</Row>
+	</Products>
+</Order>
