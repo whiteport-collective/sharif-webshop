@@ -61,6 +61,8 @@ Online order captured that would have been a phone call or lost to a local shop.
 5. **Payment** — Klarna checkout loads. She pays with Vipps/card.
 6. **Book Mounting** — "Takk! Finn din tid!" She picks Saturday 10:00 at Fjellhamar. Confirmation shown. ✓
 
+> Note: The "Velg tid senere" option in 01.6 is an on-page escape hatch (triggers email reminder), not a branch. The sunshine path is: she books immediately.
+
 ---
 
 ## Trigger Map Connections
