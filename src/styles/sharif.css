@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+@plugin "daisyui/theme" {
+  name: "sharif";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-primary: #e03131;
+  --color-primary-content: #ffffff;
+  --color-secondary: #1e1e1e;
+  --color-secondary-content: #ffffff;
+  --color-neutral: #1e1e1e;
+  --color-neutral-content: #ffffff;
+  --color-base-100: #ffffff;
+  --color-base-200: #f8f9fa;
+  --color-base-300: #ece8e1;
+  --color-base-content: #1e1e1e;
+  --color-success: #51cf66;
+  --color-success-content: #0f3817;
+  --color-warning: #fcc419;
+  --color-warning-content: #5c4702;
+  --color-info: #74c0fc;
+  --color-info-content: #0d3151;
+  --radius-box: 1.25rem;
+  --radius-field: 1rem;
+  --radius-selector: 9999px;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@theme {
+  --font-display: "Arial Narrow", "Roboto Condensed", Impact, sans-serif;
+  --font-body: "Aptos", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background:
+      linear-gradient(135deg, transparent 0, transparent 74%, rgba(224, 49, 49, 0.06) 74%, rgba(224, 49, 49, 0.06) 80%, transparent 80%),
+      linear-gradient(135deg, transparent 0, transparent 82%, rgba(30, 30, 30, 0.03) 82%, rgba(30, 30, 30, 0.03) 86%, transparent 86%),
+      #f6f1e8;
+    color: var(--color-base-content);
+    font-family: var(--font-body);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+}
+
+@layer components {
+  .page-shell {
+    width: min(calc(100vw - 24px), 1200px);
+    margin-inline: auto;
+  }
+
+  .surface-panel {
+    @apply card border border-base-300 bg-base-100 shadow-xl;
+  }
+
+  .eyebrow {
+    @apply mb-3 text-[0.78rem] font-extrabold uppercase tracking-[0.14em] text-primary;
+  }
+
+  .section-heading {
+    @apply font-display text-4xl leading-[0.9] md:text-5xl;
+  }
+
+  .compact-note {
+    @apply text-sm leading-7 text-base-content/65;
+  }
+
+  .hero-grid {
+    @apply grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(340px,0.95fr)];
+  }
+
+  .metric-pill {
+    @apply rounded-full border border-base-300 bg-base-100 px-4 py-2 text-sm font-bold text-base-content/70;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-shell {
+    width: min(calc(100vw - 16px), 1200px);
+  }
+}
