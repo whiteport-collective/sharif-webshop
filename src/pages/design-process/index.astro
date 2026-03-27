@@ -1,0 +1,74 @@
+---
+import DesignProcessLayout from "../../layouts/DesignProcessLayout.astro";
+import { getDesignProcessDocs, getDesignProcessNavSections } from "../../lib/design-process";
+
+const docs = getDesignProcessDocs();
+const sections = getDesignProcessNavSections();
+const spotlightDocs = docs.slice(0, 6);
+---
+
+<DesignProcessLayout
+  pageTitle="Sharif Design Process"
+  summary="Kundvänlig läsvy för brief, trigger map, UX-scenarier, design system och övriga designspecar."
+  currentUrl="/design-process"
+  sections={sections}
+>
+  <section>
+    <p>
+      Den här Astro-vyn läser samma filer som ligger i <code>design-process/</code>, men presenterar dem
+      i en navigerbar läsvy i stället för via GitHub.
+    </p>
+    <p>
+      Välj ett dokument i sidomenyn, eller hoppa in via någon av de vanligaste ingångarna nedan.
+    </p>
+  </section>
+
+  <section>
+    <h2>Snabbstart</h2>
+    <div class="cards">
+      {spotlightDocs.map((doc) => (
+        <a class="card" href={doc.url}>
+          <span class="card-section">{doc.section.replace(/-/g, " ")}</span>
+          <strong>{doc.title}</strong>
+          <span class="card-meta">{doc.relativePath}</span>
+        </a>
+      ))}
+    </div>
+  </section>
+</DesignProcessLayout>
+
+<style>
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    display: grid;
+    gap: 10px;
+    text-decoration: none;
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid rgba(35, 24, 17, 0.12);
+    background: rgba(180, 44, 34, 0.04);
+  }
+
+  .card:hover {
+    border-color: rgba(180, 44, 34, 0.24);
+    background: rgba(180, 44, 34, 0.08);
+  }
+
+  .card-section {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #7a5f54;
+  }
+
+  .card-meta {
+    color: #6b5b52;
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+</style>
