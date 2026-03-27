@@ -1,11 +1,16 @@
 """
-Excalidraw to PNG renderer.
+Design artifact to PNG renderer.
+Supports: Excalidraw (.excalidraw) and Mermaid (.mmd / extracted from .md)
+
 Usage:
   python scripts/excalidraw-to-image.py <input.excalidraw> [output.png]
+  python scripts/excalidraw-to-image.py <input.mmd> [output.png]
+  python scripts/excalidraw-to-image.py --mermaid-from <input.md> [output.png]
   python scripts/excalidraw-to-image.py --batch <directory>
-  python scripts/excalidraw-to-image.py <input.excalidraw> --update-spec <spec.md>
+  python scripts/excalidraw-to-image.py <input> --update-spec <spec.md>
 
-Renders Excalidraw JSON to PNG using Pillow.
+Excalidraw: Rendered via Pillow (Python).
+Mermaid: Rendered via mmdc CLI (@mermaid-js/mermaid-cli).
 """
 
 import json
@@ -13,6 +18,8 @@ import sys
 import os
 import glob
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 
 try:
@@ -210,6 +217,102 @@ def batch_convert(directory, scale=1.0, padding=40, fmt="png"):
             print(f"  FAILED {f}: {e}")
     return results
 
+# ============================================================
+# MERMAID RENDERING
+# ============================================================
+
+def extract_mermaid_from_markdown(md_path):
+    """Extract the first mermaid code block from a markdown file."""
+    with open(md_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    pattern = r"```mermaid\s*\n(.*?)```"
+    match = re.search(pattern, content, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+    return None
+
+def render_mermaid(mermaid_code, output_path, scale=2, fmt="png"):
+    """Render Mermaid code to image using mmdc CLI."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".mmd", delete=False, encoding="utf-8") as tmp:
+        tmp.write(mermaid_code)
+        tmp_path = tmp.name
+
+    try:
+        cmd = [
+            "npx", "-y", "@mermaid-js/mermaid-cli",
+            "-i", tmp_path,
+            "-o", output_path,
+            "-s", str(scale),
+            "-b", "white",
+        ]
+        if fmt == "png":
+            cmd.extend(["-e", "png"])
+        elif fmt == "svg":
+            cmd.extend(["-e", "svg"])
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, shell=True)
+
+        if result.returncode != 0:
+            print(f"  mmdc stderr: {result.stderr[:500]}")
+            return None
+
+        return output_path
+    finally:
+        os.unlink(tmp_path)
+
+def convert_mermaid_file(input_path, output_path=None, scale=2, fmt="png"):
+    """Convert a .mmd file to image."""
+    with open(input_path, "r", encoding="utf-8") as f:
+        mermaid_code = f.read()
+
+    if output_path is None:
+        output_path = str(Path(input_path).with_suffix(f".{fmt}"))
+
+    return render_mermaid(mermaid_code, output_path, scale=scale, fmt=fmt)
+
+def convert_mermaid_from_markdown(md_path, output_path=None, scale=2, fmt="png"):
+    """Extract mermaid from markdown and render to image."""
+    mermaid_code = extract_mermaid_from_markdown(md_path)
+    if not mermaid_code:
+        print(f"  No mermaid block found in {md_path}")
+        return None
+
+    if output_path is None:
+        output_path = str(Path(md_path).with_suffix(f".{fmt}"))
+
+    return render_mermaid(mermaid_code, output_path, scale=scale, fmt=fmt)
+
+# ============================================================
+# BATCH (both Excalidraw + Mermaid)
+# ============================================================
+
+def batch_convert_all(directory, scale=1.0, mermaid_scale=2, padding=40, fmt="png"):
+    """Recursively convert all .excalidraw and .mmd files in a directory."""
+    results = []
+
+    # Excalidraw files
+    for f in glob.glob(os.path.join(directory, "**", "*.excalidraw"), recursive=True):
+        try:
+            out = convert_file(f, scale=scale, padding=padding, fmt=fmt)
+            print(f"  Excalidraw: {out}")
+            results.append(out)
+        except Exception as e:
+            print(f"  FAILED {f}: {e}")
+
+    # Mermaid files
+    for f in glob.glob(os.path.join(directory, "**", "*.mmd"), recursive=True):
+        try:
+            out = convert_mermaid_file(f, scale=mermaid_scale, fmt=fmt)
+            if out:
+                print(f"  Mermaid: {out}")
+                results.append(out)
+        except Exception as e:
+            print(f"  FAILED {f}: {e}")
+
+    return results
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
 
@@ -224,6 +327,7 @@ if __name__ == "__main__":
     batch_dir = None
     input_file = None
     output_file = None
+    mermaid_from_md = None
 
     i = 0
     while i < len(args):
@@ -242,6 +346,9 @@ if __name__ == "__main__":
         elif args[i] == "--batch" and i + 1 < len(args):
             batch_dir = args[i + 1]
             i += 2
+        elif args[i] == "--mermaid-from" and i + 1 < len(args):
+            mermaid_from_md = args[i + 1]
+            i += 2
         elif input_file is None:
             input_file = args[i]
             i += 1
@@ -251,17 +358,43 @@ if __name__ == "__main__":
 
     if batch_dir:
         print(f"Batch converting: {batch_dir}")
-        results = batch_convert(batch_dir, scale=scale, padding=padding, fmt=fmt)
+        results = batch_convert_all(batch_dir, scale=scale, padding=padding, fmt=fmt)
         print(f"\n{len(results)} files exported.")
+    elif mermaid_from_md:
+        out = convert_mermaid_from_markdown(mermaid_from_md, output_file, scale=int(scale) if scale > 1 else 2, fmt=fmt)
+        if out:
+            print(f"Exported: {out}")
+            if update_spec_file:
+                png_name = Path(out).name
+                # Insert image ref before the mermaid block
+                with open(update_spec_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                img_ref = f"![Trigger Map Poster]({png_name})\n\n"
+                if img_ref not in content:
+                    content = content.replace("```mermaid", f"{img_ref}```mermaid", 1)
+                    with open(update_spec_file, "w", encoding="utf-8") as f:
+                        f.write(content)
+                    print(f"Updated spec: {update_spec_file}")
+        else:
+            print("Failed to export mermaid diagram.")
+            sys.exit(1)
     elif input_file:
-        out = convert_file(input_file, output_file, scale=scale, padding=padding, fmt=fmt)
-        print(f"Exported: {out}")
+        ext = Path(input_file).suffix.lower()
+        if ext == ".mmd":
+            out = convert_mermaid_file(input_file, output_file, scale=int(scale) if scale > 1 else 2, fmt=fmt)
+        elif ext == ".excalidraw":
+            out = convert_file(input_file, output_file, scale=scale, padding=padding, fmt=fmt)
+        else:
+            print(f"Unknown file type: {ext}. Supported: .excalidraw, .mmd")
+            sys.exit(1)
 
-        if update_spec_file:
-            excalidraw_name = Path(input_file).name
-            png_name = Path(out).name
-            update_spec(update_spec_file, excalidraw_name, png_name)
-            print(f"Updated spec: {update_spec_file}")
+        if out:
+            print(f"Exported: {out}")
+            if update_spec_file:
+                old_name = Path(input_file).name
+                new_name = Path(out).name
+                update_spec(update_spec_file, old_name, new_name)
+                print(f"Updated spec: {update_spec_file}")
     else:
-        print("No input file or --batch directory specified.")
+        print("No input file, --mermaid-from, or --batch directory specified.")
         sys.exit(1)
