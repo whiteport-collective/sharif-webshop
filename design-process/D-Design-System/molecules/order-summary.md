@@ -3,7 +3,7 @@
 **COMPONENT ID:** `mol-order-summary`
 **Atomic Level:** Molecule (product name + quantity + price lines + mounting location)
 **Framework:** Svelte (custom component)
-**Base Styling:** daisyUI `card card-compact bg-base-200` + Tailwind utilities
+**Base Styling:** daisyUI `card card-sm bg-base-200` + Tailwind utilities
 
 ---
 
@@ -64,7 +64,7 @@ All fields populated. Ready for payment.
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `card card-compact bg-base-200` |
+| daisyUI | `card card-sm bg-base-200` |
 | Border | None (relies on background contrast) |
 | Padding | `p-4` via `card-body` |
 
@@ -144,7 +144,7 @@ Translation keys:
 | Property | Value |
 |----------|-------|
 | Element | `<section>` wrapping card |
-| daisyUI | `card card-compact bg-base-200 rounded-box` |
+| daisyUI | `card card-sm bg-base-200 rounded-box` |
 | Padding | `card-body p-4` |
 | Layout | Vertical stack — product info, pricing, location |
 | Max width | Fills parent container |
@@ -192,7 +192,7 @@ Referenced as:
 ```
 
 Used in:
-- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-shop/01.4-quantity-shop.md) — live preview of order
+- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-and-shop/01.4-quantity-and-shop.md) — live preview of order
 - [01.5-Payment](../../C-UX-Scenarios/01-harriets-tire-purchase/01.5-payment/01.5-payment.md) — final order confirmation
 - Future: order confirmation / receipt page
 

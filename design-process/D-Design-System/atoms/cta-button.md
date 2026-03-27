@@ -1,9 +1,9 @@
 # CTA Button
 
-**COMPONENT ID:** `atom-cta`
+**COMPONENT ID:** `atom-cta-button`
 **Atomic Level:** Atom (single interactive element)
 **Framework:** Svelte (custom component)
-**Base Styling:** daisyUI `btn btn-primary btn-lg w-full` + Tailwind utilities
+**Base Styling:** daisyUI `btn btn-primary btn-lg btn-block` + Tailwind utilities
 
 ---
 
@@ -37,7 +37,7 @@ The button is ready to be tapped. Bold red background, white text.
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `btn btn-primary btn-lg w-full` |
+| daisyUI | `btn btn-primary btn-lg btn-block` |
 | Background | `bg-primary` (brand red) |
 | Text | `text-primary-content` (white), `font-bold text-lg` |
 | Height | Min 48px (3rem) |
@@ -73,8 +73,8 @@ Shown while an async action is processing (e.g., submitting payment).
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `btn btn-primary btn-lg w-full loading` |
-| Spinner | daisyUI built-in loading spinner (replaces or precedes label) |
+| daisyUI | `btn btn-primary btn-lg btn-block` + child `loading loading-spinner loading-sm` |
+| Spinner | daisyUI loading component rendered as a child `<span>` before the label |
 | Text | Changes to loading-specific label |
 | Interaction | `pointer-events-none` — not tappable during loading |
 
@@ -84,7 +84,7 @@ The button is not yet actionable (e.g., required fields incomplete).
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `btn btn-primary btn-lg w-full btn-disabled` |
+| daisyUI | `btn btn-primary btn-lg btn-block btn-disabled` |
 | Opacity | `opacity-50` |
 | Cursor | `cursor-not-allowed` |
 | Interaction | Click events suppressed |
@@ -136,7 +136,7 @@ Translation keys:
 |----------|-------|
 | Element | `<button>` |
 | Type | `button` (or `submit` when inside a form) |
-| daisyUI | `btn btn-primary btn-lg w-full` |
+| daisyUI | `btn btn-primary btn-lg btn-block` |
 | Padding | daisyUI default for `btn-lg` |
 | Behavior | Tap → dispatches click event or submits parent form |
 
@@ -189,9 +189,9 @@ Referenced as:
 Used in:
 - [01.1-Dimension Input](../../C-UX-Scenarios/01-harriets-tire-purchase/01.1-dimension-input/01.1-dimension-input.md) — "Finn dekk" / "Find tires"
 - [01.3-Product Detail](../../C-UX-Scenarios/01-harriets-tire-purchase/01.3-product-detail/01.3-product-detail.md) — "Disse vil jeg ha!" / "I'll take these!"
-- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-shop/01.4-quantity-shop.md) — "Gå videre" / "Continue"
+- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-and-shop/01.4-quantity-and-shop.md) — "Gå videre" / "Continue"
 - [01.5-Payment](../../C-UX-Scenarios/01-harriets-tire-purchase/01.5-payment/01.5-payment.md) — "Betal nå — {price} kr" / "Pay now — {price} kr"
-- [01.6-Booking](../../C-UX-Scenarios/01-harriets-tire-purchase/01.6-booking/01.6-booking.md) — "Bekreft tid" / "Confirm time"
+- [01.6-Book Mounting](../../C-UX-Scenarios/01-harriets-tire-purchase/01.6-book-mounting/01.6-book-mounting.md) — "Bekreft tid" / "Confirm time"
 
 ---
 

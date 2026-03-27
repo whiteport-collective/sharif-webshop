@@ -3,7 +3,7 @@
 **COMPONENT ID:** `mol-shop-card`
 **Atomic Level:** Molecule (shop name heading + address text + availability hint + selection border)
 **Framework:** Svelte (custom component)
-**Base Styling:** daisyUI `card card-bordered` + Tailwind utilities
+**Base Styling:** daisyUI `card card-border` + Tailwind utilities
 
 ---
 
@@ -43,7 +43,7 @@ The card is visible but not chosen. Neutral border signals it is tappable.
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `card card-bordered bg-base-100` |
+| daisyUI | `card card-border bg-base-100` |
 | Border | `border-base-300` (gray, 1px) |
 | Cursor | `cursor-pointer` |
 | Shadow | None |
@@ -63,7 +63,7 @@ The card is the active choice. Red border and subtle background shift confirm se
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `card card-bordered border-primary border-2 bg-base-100` |
+| daisyUI | `card card-border border-primary border-2 bg-base-100` |
 | Border | `border-primary` (brand red, 2px) |
 | Checkmark | Small check icon in top-right corner, `text-primary` |
 | Shadow | `shadow-sm` |
@@ -81,7 +81,7 @@ The card is the active choice. Red border and subtle background shift confirm se
 
 | Property | Value |
 |----------|-------|
-| daisyUI | `card card-bordered opacity-50` |
+| daisyUI | `card card-border opacity-50` |
 | Cursor | `cursor-not-allowed` |
 | Hint text | Changes to "Fully booked" / "Fullt booket" |
 | Interaction | Not selectable |
@@ -143,7 +143,7 @@ Translation keys:
 | Property | Value |
 |----------|-------|
 | Element | `<button>` wrapping card content (for full-card tap target) |
-| daisyUI | `card card-bordered card-compact` |
+| daisyUI | `card card-border card-sm` |
 | Padding | `p-4` via `card-body` |
 | Layout | Vertical stack — name, address, availability hint |
 | Behavior | Tap → dispatches `shop-selected` event with `{ shopId }` |
@@ -193,7 +193,7 @@ Referenced as:
 ```
 
 Used in:
-- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-shop/01.4-quantity-shop.md) — shop selection step
+- [01.4-Quantity & Shop](../../C-UX-Scenarios/01-harriets-tire-purchase/01.4-quantity-and-shop/01.4-quantity-and-shop.md) — shop selection step
 - Future: any view requiring mounting location choice
 
 ---

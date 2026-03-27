@@ -1,6 +1,6 @@
 # EU Label Display
 
-**COMPONENT ID:** `mol-eu-label`
+**COMPONENT ID:** `mol-eu-label-display`
 **Atomic Level:** Molecule (3 progress bar atoms + label texts + expandable detail panel)
 **Framework:** Svelte (custom component)
 **Base Styling:** daisyUI `progress` + Tailwind utilities

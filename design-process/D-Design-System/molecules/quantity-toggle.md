@@ -1,6 +1,6 @@
 # Quantity Toggle
 
-**COMPONENT ID:** `mol-qty-toggle`
+**COMPONENT ID:** `mol-quantity-toggle`
 **Atomic Level:** Molecule (2 button atoms joined)
 **Framework:** Svelte (custom component)
 **Base Styling:** daisyUI `join` + `btn` + Tailwind utilities

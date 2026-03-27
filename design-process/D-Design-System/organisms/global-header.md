@@ -1,6 +1,6 @@
 # Global Header
 
-**COMPONENT ID:** `org-header`
+**COMPONENT ID:** `org-global-header`
 **Atomic Level:** Organism (logo atom + language toggle molecule + support button atom + cart indicator molecule + hamburger menu atom)
 **Framework:** Svelte (custom component)
 **Base Styling:** daisyUI `navbar` + `swap` + `indicator` + `drawer` + Tailwind utilities
@@ -221,7 +221,7 @@ Translation keys for menu items:
 - Header is rendered in the root layout — present on all pages
 - Cart badge count is reactive, bound to cart store
 - Language toggle updates a global `locale` store and triggers re-render of all translated strings
-- Drawer uses daisyUI's checkbox-based toggle pattern (pure CSS, no JS required for open/close)
+- Drawer shell can use daisyUI's checkbox-based toggle pattern, but JS enhancement is required for focus trap and Escape-to-close behavior
 - Z-index 50 ensures header stays above all page content and modals use z-60+
 - Shadow increases on scroll (`shadow-md`) for visual depth — triggered via Intersection Observer
 

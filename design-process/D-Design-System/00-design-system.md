@@ -69,7 +69,7 @@ D-Design-System/
 4. **templates/** — Page-level layouts (page shell, section container, grid layouts)
 5. **pages/** — Concrete instances with real content and data (homepage, contact page)
 
-Each component gets its own `.md` file with a readable ID (e.g., `btn-primary-cta`, `crd-trust`, `hdr-mobile`). The folder IS the classification — no separate grouping needed.
+Each component gets its own `.md` file with a readable ID (e.g., `atom-cta-button`, `mol-product-card`, `org-global-header`). The folder IS the classification — no separate grouping needed.
 
 ---
 
@@ -86,7 +86,7 @@ Each component gets its own `.md` file with a readable ID (e.g., `btn-primary-ct
 2. Look at actual usage in `C-UX-Scenarios/` page specs — extract, don't invent
 3. Load the component template from the workflow templates folder
 
-**File naming:** Number all documents with a two-digit prefix: `01-design-tokens.md`, `02-button.md`, etc. Update the sections below as each file is created.
+**File naming:** Hub docs can keep numbered prefixes (for example `00-design-system.md`). Individual component files should use descriptive kebab-case names such as `cta-button.md` or `product-card.md`. Update the sections below as each file is created.
 
 **Harm:** Designing an abstract component library before any pages exist. Components without real usage are decoration. They waste time and create maintenance burden for patterns nobody needs.
 
@@ -298,6 +298,7 @@ Sharif wordmark used in headers and confirmation surfaces. Keeps brand continuit
 ### Language Toggle
 
 Compact NO/EN switch. Must preserve current page context while swapping copy.
+Detailed spec: [Global Header](organisms/global-header.md) (header-level composition includes the language toggle behavior)
 
 ### Icon Button
 
@@ -326,10 +327,12 @@ Standard discrete option selector. Use for constrained value sets such as tire w
 ### Text Link
 
 Low-weight inline or centered link used for edit, help, and defer actions.
+Detailed spec: [CTA Button](atoms/cta-button.md) (primary action counterpart), [Booking Calendar](molecules/booking-calendar.md) for defer-link usage
 
 ### Primary Button
 
 Main conversion action. Full-width on mobile purchase steps, always touch-first.
+Detailed spec: [CTA Button](atoms/cta-button.md)
 
 ### Secondary Button
 
@@ -338,14 +341,17 @@ Lower-emphasis action used for filters and utility choices where the page has a 
 ### Toggle Button Group
 
 Mutually exclusive binary or small-set choice group. Handles shared layout and equal-width options.
+Detailed spec: [Quantity Toggle](molecules/quantity-toggle.md)
 
 ### Toggle Button
 
 Single selectable pill or tile within a toggle group or slot selector.
+Detailed spec: [Quantity Toggle](molecules/quantity-toggle.md), [Booking Calendar](molecules/booking-calendar.md)
 
 ### Badge
 
 Small status indicator for stock or success states. Color always comes from status tokens.
+Detailed specs: [Stock Badge](atoms/stock-badge.md), [Product Card](molecules/product-card.md)
 
 ### Card
 
@@ -354,10 +360,12 @@ Elevated rounded content surface for product previews and grouped commercial inf
 ### Selectable Card
 
 Card pattern that acts as a tap target. Selected state is expressed through border and background tokens rather than extra iconography.
+Detailed spec: [Shop Card](molecules/shop-card.md)
 
 ### Horizontal Scroll Container
 
 Snap-based mobile carousel that hints additional content with peeked cards.
+Detailed spec: [Product Card](molecules/product-card.md) for the card item inside the carousel
 
 ### Bottom Sheet Drawer
 
@@ -370,18 +378,22 @@ Short pill-shaped handle signaling draggable dismissal on drawers.
 ### Calendar
 
 Month-view booking surface for date selection. Highlights availability and selected state clearly at a glance.
+Detailed spec: [Booking Calendar](molecules/booking-calendar.md)
 
 ### Slot Grid
 
 Dense but touch-safe layout for time-slot choices below the calendar.
+Detailed spec: [Booking Calendar](molecules/booking-calendar.md)
 
 ### Image
 
 General image treatment for product photography, thumbnails, and simple placeholders.
+Detailed specs: [Product Card](molecules/product-card.md), [Order Summary](molecules/order-summary.md)
 
 ### Text
 
 Base textual component family for body copy, secondary labels, helper text, and compact summaries.
+Detailed specs: [Trust Bar](atoms/trust-bar.md), [Order Summary](molecules/order-summary.md)
 
 ### H1 Heading
 
@@ -398,18 +410,22 @@ Compact card-level heading used for product names and other tertiary structure.
 ### Price Display
 
 Prominent numeric treatment for price-first commerce presentation.
+Detailed specs: [Product Card](molecules/product-card.md), [Order Summary](molecules/order-summary.md)
 
 ### EU Label Compact
 
 Three-column summary of fuel, grip, and noise data for skim-level comparison.
+Detailed specs: [EU Label Display](molecules/eu-label-display.md), [Product Card](molecules/product-card.md)
 
 ### Mini Slider
 
 Small non-interactive meter used inside card-level EU label summaries.
+Detailed specs: [EU Label Display](molecules/eu-label-display.md), [Product Card](molecules/product-card.md)
 
 ### EU Label Slider
 
 Expandable meter with explanation copy for product-detail interpretation.
+Detailed spec: [EU Label Display](molecules/eu-label-display.md)
 
 ### External Checkout Handoff
 
@@ -430,6 +446,28 @@ Named redirect value that carries order and state context back into Sharif-owned
 ### Flex Row
 
 Horizontal utility container for tightly coupled summary values such as price plus stock.
+
+## Detailed Component Files
+
+### Atoms
+
+- [CTA Button](atoms/cta-button.md)
+- [Stock Badge](atoms/stock-badge.md)
+- [Trust Bar](atoms/trust-bar.md)
+
+### Molecules
+
+- [Dimension Input](molecules/dimension-input.md)
+- [Product Card](molecules/product-card.md)
+- [EU Label Display](molecules/eu-label-display.md)
+- [Shop Card](molecules/shop-card.md)
+- [Order Summary](molecules/order-summary.md)
+- [Quantity Toggle](molecules/quantity-toggle.md)
+- [Booking Calendar](molecules/booking-calendar.md)
+
+### Organisms
+
+- [Global Header](organisms/global-header.md)
 
 ---
 

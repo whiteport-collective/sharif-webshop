@@ -1,6 +1,6 @@
 # Trust Bar
 
-**COMPONENT ID:** `atom-trust`
+**COMPONENT ID:** `atom-trust-bar`
 **Atomic Level:** Atom (single text element)
 **Framework:** Svelte (or plain HTML)
 **Base Styling:** Tailwind utilities (no daisyUI component needed)
