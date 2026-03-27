@@ -1,0 +1,40 @@
+---
+import fs from "node:fs/promises";
+import { pathToFileURL } from "node:url";
+import { createMarkdownProcessor } from "@astrojs/markdown-remark";
+import DesignProcessLayout from "../../layouts/DesignProcessLayout.astro";
+import type { DesignDoc } from "../../lib/design-process";
+import {
+  getDesignProcessDocs,
+  getDesignProcessNavSections,
+  rewriteDesignProcessMarkdown,
+} from "../../lib/design-process";
+
+export function getStaticPaths() {
+  return getDesignProcessDocs().map((doc) => ({
+    params: { slug: doc.slug },
+    props: { doc },
+  }));
+}
+
+const { doc } = Astro.props as { doc: DesignDoc };
+const sections = getDesignProcessNavSections();
+const processor = await createMarkdownProcessor();
+const markdown = await fs.readFile(doc.filePath, "utf8");
+const rewrittenMarkdown = rewriteDesignProcessMarkdown(markdown, doc.relativePath);
+const rendered = await processor.render(rewrittenMarkdown, {
+  fileURL: pathToFileURL(doc.filePath),
+});
+
+const headings = rendered.metadata.headings ?? [];
+---
+
+<DesignProcessLayout
+  pageTitle={doc.title}
+  summary={doc.relativePath}
+  currentUrl={doc.url}
+  sections={sections}
+  headings={headings}
+>
+  <Fragment set:html={rendered.code} />
+</DesignProcessLayout>
