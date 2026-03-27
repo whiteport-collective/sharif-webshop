@@ -208,6 +208,42 @@ Headings can have different typefaces, weights, and styles on different pages. A
 | text-placeholder | #ced4da | Input placeholders |
 | text-inverse | #ffffff | Text on dark/brand backgrounds |
 
+### Borders and radius
+
+| Token | Value | Use |
+|-------|-------|-----|
+| border-width-default | 1px | Standard strokes and dividers |
+| border-width-strong | 2px | Selected states and stronger emphasis |
+| radius-sm | 4px | Small thumbnails, compact handles |
+| radius-md | 8px | Inputs, summary cards, inset panels |
+| radius-lg | 12px | Primary cards, CTAs, highlighted surfaces |
+| radius-xl | 16px | Large embeds or provider containers |
+| radius-pill | 999px | Pills, slot chips, drag handles |
+
+### Elevation and effects
+
+| Token | Value | Use |
+|-------|-------|-----|
+| elevation-card | 0 8px 24px rgba(30, 30, 30, 0.08) | Product cards and lifted surfaces |
+| elevation-overlay | 0 24px 64px rgba(30, 30, 30, 0.16) | Drawers, modals, major overlays |
+| blur-sm | 4px | Background blur behind overlay scrims |
+| scrim-soft | rgba(30, 30, 30, 0.4) | Dims content behind overlay without killing context |
+
+### Sizing and layout constraints
+
+| Token | Value | Use |
+|-------|-------|-----|
+| touch-target-md | 56px | Minimum tap target for primary controls |
+| touch-target-lg | 80px | Minimum tap target for selectable location cards |
+| thumb-size-md | 56px | Product thumbnail in compact summaries |
+| drag-handle-width-sm | 40px | Drawer handle width |
+| drag-handle-height-xs | 4px | Drawer handle height |
+| card-min-width-sm | 260px | Mobile card width in swipe surfaces |
+| content-max-sm | 500px | Narrow desktop-centered single column |
+| content-max-md | 520px | Desktop drawer / focused flow width |
+| content-max-lg | 600px | Tablet drawer / centered content width |
+| sheet-height-tall | 90vh | Product drawer height on mobile |
+
 ### Responsive breakpoints
 
 | Breakpoint | Value | Role |
@@ -229,13 +265,171 @@ Headings can have different typefaces, weights, and styles on different pages. A
 
 Spacing objects are first-class — they have IDs in page specs (e.g., `hem-v-space-xl`) and live here organized by value. Each spacing value accumulates the situations where it's used. The list grows from real design decisions.
 
-_Patterns will be documented here as spacing objects recur across pages._
+### Continuous parallax surface
+
+The Harriet flow treats `01.1` through `01.6` as one continuous shopping journey. Each step can change layout dramatically, but the user should still feel that she is moving down a single guided surface rather than jumping between unrelated pages.
+
+### Sticky CTA bar
+
+Used when the main decision is made in scrollable content but the commit action must stay visible. The CTA bar uses `surface-default`, `border-subtle`, `space-lg` horizontal padding, and safe-area bottom spacing.
+
+### Selection card group
+
+Used for shops and booking slots where one option should read as obviously selected. Selected state uses `border-width-strong`, `brand-primary`, and a muted branded background instead of introducing a second component family.
+
+### External checkout handoff
+
+Sharif-owned UI ends before payment provider UI begins. The Sharif spec still documents payload, return URLs, and state transitions, but does not restyle provider-owned modules.
+
+### Confirmation-to-booking transition
+
+Post-payment confirmation should keep momentum by confirming success, preserving order context, and presenting the booking action immediately. This pattern is optimistic, celebratory, and screenshot-friendly.
 
 ---
 
 ## Components
 
-_Components will be documented here as patterns emerge across scenarios._
+Page specs should link to these component anchors. Variants in page specs inherit from the closest matching foundation here unless a dedicated component file is later extracted.
+
+### Brand Logo
+
+Sharif wordmark used in headers and confirmation surfaces. Keeps brand continuity on owned surfaces.
+
+### Language Toggle
+
+Compact NO/EN switch. Must preserve current page context while swapping copy.
+
+### Icon Button
+
+Small touch-first icon action for support, close, and secondary utilities.
+
+### Cart Icon with Badge
+
+Cart shortcut with optional item count badge. Should never overpower the primary CTA on transactional steps.
+
+### Hamburger Menu
+
+Compact overflow navigation used only when the owned header needs broader site access.
+
+### Text Input
+
+Primary text-entry field for dimension entry and other direct user input.
+
+### Dropdown Group
+
+Container that aligns related select inputs as a single decision block.
+
+### Select Dropdown
+
+Standard discrete option selector. Use for constrained value sets such as tire width/profile/rim.
+
+### Text Link
+
+Low-weight inline or centered link used for edit, help, and defer actions.
+
+### Primary Button
+
+Main conversion action. Full-width on mobile purchase steps, always touch-first.
+
+### Secondary Button
+
+Lower-emphasis action used for filters and utility choices where the page has a stronger primary action elsewhere.
+
+### Toggle Button Group
+
+Mutually exclusive binary or small-set choice group. Handles shared layout and equal-width options.
+
+### Toggle Button
+
+Single selectable pill or tile within a toggle group or slot selector.
+
+### Badge
+
+Small status indicator for stock or success states. Color always comes from status tokens.
+
+### Card
+
+Elevated rounded content surface for product previews and grouped commercial information.
+
+### Selectable Card
+
+Card pattern that acts as a tap target. Selected state is expressed through border and background tokens rather than extra iconography.
+
+### Horizontal Scroll Container
+
+Snap-based mobile carousel that hints additional content with peeked cards.
+
+### Bottom Sheet Drawer
+
+Mobile-native overlay surface for focused product detail or step-specific decisions.
+
+### Drag Handle Bar
+
+Short pill-shaped handle signaling draggable dismissal on drawers.
+
+### Calendar
+
+Month-view booking surface for date selection. Highlights availability and selected state clearly at a glance.
+
+### Slot Grid
+
+Dense but touch-safe layout for time-slot choices below the calendar.
+
+### Image
+
+General image treatment for product photography, thumbnails, and simple placeholders.
+
+### Text
+
+Base textual component family for body copy, secondary labels, helper text, and compact summaries.
+
+### H1 Heading
+
+Primary page or section title. In this flow it typically uses the bold condensed display treatment.
+
+### H2 Heading
+
+Section heading used inside transactional flows and post-purchase confirmation.
+
+### H3 Heading
+
+Compact card-level heading used for product names and other tertiary structure.
+
+### Price Display
+
+Prominent numeric treatment for price-first commerce presentation.
+
+### EU Label Compact
+
+Three-column summary of fuel, grip, and noise data for skim-level comparison.
+
+### Mini Slider
+
+Small non-interactive meter used inside card-level EU label summaries.
+
+### EU Label Slider
+
+Expandable meter with explanation copy for product-detail interpretation.
+
+### External Checkout Handoff
+
+Sharif-owned container or redirect frame that initiates provider checkout without redefining provider UI.
+
+### Provider Module
+
+Provider-owned checkout section such as customer ID, payment method, or address entry.
+
+### Data Contract
+
+Structured payload passed from Sharif to external systems. Treated as a first-class spec object even when not rendered.
+
+### Return URL Parameter
+
+Named redirect value that carries order and state context back into Sharif-owned flows.
+
+### Flex Row
+
+Horizontal utility container for tightly coupled summary values such as price plus stock.
 
 ---
 
