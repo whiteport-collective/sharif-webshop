@@ -87,9 +87,14 @@ let cachedDocs: DesignDoc[] | null = null;
 let cachedAssets: DesignAsset[] | null = null;
 let cachedDocsByNormalizedPath: Map<string, DesignDoc> | null = null;
 let cachedAssetsByNormalizedPath: Map<string, DesignAsset> | null = null;
+let cachedAssetsByNormalizedStem: Map<string, DesignAsset> | null = null;
 
 function normalizePathForLookup(value: string) {
   return toPosixPath(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function stripExtension(value: string) {
+  return value.replace(/\.[^.]+$/i, "");
 }
 
 export function getDesignProcessDocs() {
@@ -150,6 +155,9 @@ export function getDesignProcessAssets() {
   cachedAssets = assets;
   cachedAssetsByNormalizedPath = new Map(
     assets.map((asset) => [normalizePathForLookup(asset.relativePath), asset]),
+  );
+  cachedAssetsByNormalizedStem = new Map(
+    assets.map((asset) => [normalizePathForLookup(stripExtension(asset.relativePath)), asset]),
   );
   return assets;
 }
@@ -214,7 +222,8 @@ export function rewriteDesignProcessMarkdown(markdown: string, currentRelativePa
 
     const asset =
       getDesignProcessAssets().find((item) => item.relativePath === relativeTargetPath) ??
-      cachedAssetsByNormalizedPath?.get(normalizePathForLookup(relativeTargetPath));
+      cachedAssetsByNormalizedPath?.get(normalizePathForLookup(relativeTargetPath)) ??
+      cachedAssetsByNormalizedStem?.get(normalizePathForLookup(stripExtension(relativeTargetPath)));
     if (asset) {
       return `${label}(${asset.url}${hashSuffix})`;
     }
