@@ -21,6 +21,7 @@ export type DesignAsset = {
 export type DesignNavSection = {
   id: string;
   label: string;
+  url: string;
   docs: DesignDoc[];
 };
 
@@ -76,6 +77,10 @@ function getAssetUrl(relativePath: string) {
 
 function getSectionLabel(segment: string) {
   return cleanLabel(segment);
+}
+
+function getSectionUrl(section: string) {
+  return `/design-process/${encodeSegments(section)}`;
 }
 
 let cachedDocs: DesignDoc[] | null = null;
@@ -165,8 +170,13 @@ export function getDesignProcessNavSections() {
   return Array.from(grouped.entries()).map(([section, docs]) => ({
     id: section,
     label: getSectionLabel(section),
+    url: getSectionUrl(section),
     docs,
   })) satisfies DesignNavSection[];
+}
+
+export function getDesignProcessNavSection(sectionId: string) {
+  return getDesignProcessNavSections().find((section) => section.id === sectionId);
 }
 
 export function rewriteDesignProcessMarkdown(markdown: string, currentRelativePath: string) {

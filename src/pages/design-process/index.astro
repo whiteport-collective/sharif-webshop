@@ -24,6 +24,19 @@ const spotlightDocs = docs.slice(0, 6);
   </section>
 
   <section>
+    <h2>Sektioner</h2>
+    <div class="cards">
+      {sections.map((section) => (
+        <a class="card" href={section.url}>
+          <span class="card-section">{section.label}</span>
+          <strong>{section.docs[0]?.title ?? section.label}</strong>
+          <span class="card-meta">{section.docs.length} dokument</span>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <section>
     <h2>Snabbstart</h2>
     <div class="cards">
       {spotlightDocs.map((doc) => (
