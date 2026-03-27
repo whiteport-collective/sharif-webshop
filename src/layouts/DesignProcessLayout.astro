@@ -43,7 +43,14 @@ const {
         <nav class="nav" aria-label="Design process documents">
           {sections.map((section) => (
             <section class="nav-section">
-              <h2>{section.label}</h2>
+              <h2>
+                <a
+                  href={section.url}
+                  aria-current={section.url === currentUrl ? "page" : undefined}
+                >
+                  {section.label}
+                </a>
+              </h2>
               <ul>
                 {section.docs.map((doc) => (
                   <li class={doc.url === currentUrl ? "active" : ""}>
@@ -198,10 +205,20 @@ const {
 
   .nav-section h2 {
     margin: 0 0 10px;
+  }
+
+  .nav-section h2 a {
+    display: inline-flex;
+    text-decoration: none;
     font-size: 0.82rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--muted);
+  }
+
+  .nav-section h2 a:hover,
+  .nav-section h2 a[aria-current="page"] {
+    color: var(--accent);
   }
 
   .nav-section ul {
