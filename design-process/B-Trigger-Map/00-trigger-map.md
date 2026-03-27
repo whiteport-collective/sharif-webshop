@@ -108,6 +108,8 @@ This is the visual overview. For detailed documentation, see:
 
 ## Trigger Map Visualization
 
+![Trigger Map Poster](00-trigger-map.png)
+
 ```mermaid
 %%{init: {'theme':'base', 'themeVariables': { 'fontFamily':'Inter, system-ui, sans-serif', 'fontSize':'14px'}}}%%
 flowchart LR
