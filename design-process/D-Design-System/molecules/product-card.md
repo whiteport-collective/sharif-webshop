@@ -58,7 +58,7 @@ Card at rest inside carousel. All data visible. Subtle shadow.
 └───────────────────────────┘
 ```
 
-- daisyUI: `card card-compact bg-base-100 shadow-sm`
+- daisyUI: `card card-sm bg-base-100 shadow-sm`
 - Cursor: `cursor-pointer`
 
 ### Hover / Active
@@ -80,7 +80,7 @@ Product unavailable. Card de-emphasized.
 |----------|-------|
 | Image | `opacity-50 grayscale` |
 | Price | Struck through, `line-through text-base-content/50` |
-| Badge | Grey `badge badge-ghost` — "Utsolgt" / "Out of stock" |
+| Badge | Grey `badge badge-ghost` — "Ikke på lager" / "Out of stock" |
 | Interaction | Card still tappable (detail drawer shows alternatives) |
 
 ### Loading / Skeleton
@@ -103,19 +103,19 @@ Placeholder while product data loads.
 
 ### Card Container
 
-**OBJECT ID:** `cards-card-container`
+**OBJECT ID:** `mol-product-card-container`
 
 | Property | Value |
 |----------|-------|
 | Element | `<button>` (entire card is tappable) |
-| daisyUI | `card card-compact bg-base-100 shadow-sm` |
+| daisyUI | `card card-sm bg-base-100 shadow-sm` |
 | Width | `w-44` (mobile) / `w-52` (tablet+) — fixed width for carousel |
 | Layout | Vertical flex, `flex-shrink-0` (prevents collapse in carousel) |
 | Behavior | on:click → dispatch `product-select` event with product ID → opens detail drawer (01.3) |
 
 ### Tire Image
 
-**OBJECT ID:** `cards-card-image`
+**OBJECT ID:** `mol-product-card-image`
 
 | Property | Value |
 |----------|-------|
@@ -130,7 +130,7 @@ Placeholder while product data loads.
 
 ### Brand + Model Name
 
-**OBJECT ID:** `cards-card-title`
+**OBJECT ID:** `mol-product-card-title`
 
 | Property | Value |
 |----------|-------|
@@ -142,7 +142,7 @@ Placeholder while product data loads.
 
 ### Dimension String
 
-**OBJECT ID:** `cards-card-dimension`
+**OBJECT ID:** `mol-product-card-dimension`
 
 | Property | Value |
 |----------|-------|
@@ -152,7 +152,7 @@ Placeholder while product data loads.
 
 ### EU Label Group
 
-**OBJECT ID:** `cards-card-eu-labels`
+**OBJECT ID:** `mol-product-card-eu-labels`
 
 | Property | Value |
 |----------|-------|
@@ -162,7 +162,7 @@ Placeholder while product data loads.
 
 #### Fuel Efficiency Bar
 
-**OBJECT ID:** `cards-card-eu-fuel`
+**OBJECT ID:** `mol-product-card-eu-fuel`
 
 | Property | Value |
 |----------|-------|
@@ -176,7 +176,7 @@ Placeholder while product data loads.
 
 #### Wet Grip Bar
 
-**OBJECT ID:** `cards-card-eu-grip`
+**OBJECT ID:** `mol-product-card-eu-grip`
 
 | Property | Value |
 |----------|-------|
@@ -190,7 +190,7 @@ Placeholder while product data loads.
 
 #### Noise Bar
 
-**OBJECT ID:** `cards-card-eu-noise`
+**OBJECT ID:** `mol-product-card-eu-noise`
 
 | Property | Value |
 |----------|-------|
@@ -204,7 +204,7 @@ Placeholder while product data loads.
 
 ### Price
 
-**OBJECT ID:** `cards-card-price`
+**OBJECT ID:** `mol-product-card-price`
 
 | Property | Value |
 |----------|-------|
@@ -215,7 +215,7 @@ Placeholder while product data loads.
 
 ### Price Unit
 
-**OBJECT ID:** `cards-card-price-unit`
+**OBJECT ID:** `mol-product-card-price-unit`
 
 | Property | Value |
 |----------|-------|
@@ -225,7 +225,7 @@ Placeholder while product data loads.
 
 ### Stock Badge
 
-**OBJECT ID:** `cards-card-stock`
+**OBJECT ID:** `mol-product-card-stock`
 
 | Property | Value |
 |----------|-------|
@@ -239,7 +239,7 @@ Stock badge variants:
 |--------|----------------|---------|---------|
 | In stock | `badge badge-sm badge-success` | "På lager" | "In stock" |
 | Low stock | `badge badge-sm badge-warning` | "Få igjen" | "Low stock" |
-| Out of stock | `badge badge-sm badge-ghost` | "Utsolgt" | "Out of stock" |
+| Out of stock | `badge badge-sm badge-ghost` | "Ikke på lager" | "Out of stock" |
 
 ---
 
@@ -250,10 +250,10 @@ Stock badge variants:
 | `product.price.unit` | "per dekk" | "per tire" |
 | `product.stock.in` | "På lager" | "In stock" |
 | `product.stock.low` | "Få igjen" | "Low stock" |
-| `product.stock.out` | "Utsolgt" | "Out of stock" |
+| `product.stock.out` | "Ikke på lager" | "Out of stock" |
 | `product.image.fallback.alt` | "Dekkbilde ikke tilgjengelig" | "Tire image not available" |
 | `product.eu.fuel` | "Drivstoff" | "Fuel" |
-| `product.eu.grip` | "Våtgrep" | "Wet grip" |
+| `product.eu.grip` | "Veigrep" | "Wet grip" |
 | `product.eu.noise` | "Støy" | "Noise" |
 
 ---
@@ -314,7 +314,7 @@ Referenced as:
 ```
 
 Used in:
-- [01.2-Product Results](../../C-UX-Scenarios/01-harriets-tire-purchase/01.2-product-results/01.2-product-results.md) — carousel of matching tires
+- [01.2-Product Cards](../../C-UX-Scenarios/01-harriets-tire-purchase/01.2-product-cards/01.2-product-cards.md) — carousel of matching tires
 - Future: category pages, "recommended tires" sections, recently viewed
 
 ---

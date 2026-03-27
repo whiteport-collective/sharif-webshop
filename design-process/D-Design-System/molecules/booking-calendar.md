@@ -1,6 +1,6 @@
 # Booking Calendar
 
-**COMPONENT ID:** `mol-booking`
+**COMPONENT ID:** `mol-booking-calendar`
 **Atomic Level:** Molecule (date picker + time slot list + confirmation view)
 **Framework:** Svelte (custom component)
 **Base Styling:** daisyUI `btn` + `join` + Tailwind utilities

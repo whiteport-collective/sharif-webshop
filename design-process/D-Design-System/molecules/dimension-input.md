@@ -54,7 +54,7 @@ The component sits within the page flow showing placeholder text.
 └─────────────────────────────────────┘
 ```
 
-- daisyUI: `input input-bordered input-lg w-full`
+- daisyUI: `input input-lg w-full`
 - Placeholder: `205 / 55 / R16`
 - Tap anywhere → activates
 
@@ -91,7 +91,7 @@ Invalid combination (no products exist). Field border turns `error` color. Inlin
 
 ### Width Field
 
-**OBJECT ID:** `dimension-input-width`
+**OBJECT ID:** `mol-dimension-input-width`
 
 | Property | Value |
 |----------|-------|
@@ -106,7 +106,7 @@ Invalid combination (no products exist). Field border turns `error` color. Inlin
 
 ### Profile Field
 
-**OBJECT ID:** `dimension-input-profile`
+**OBJECT ID:** `mol-dimension-input-profile`
 
 | Property | Value |
 |----------|-------|
@@ -122,7 +122,7 @@ Invalid combination (no products exist). Field border turns `error` color. Inlin
 
 ### Rim Field
 
-**OBJECT ID:** `dimension-input-rim`
+**OBJECT ID:** `mol-dimension-input-rim`
 
 | Property | Value |
 |----------|-------|
@@ -146,7 +146,7 @@ Invalid combination (no products exist). Field border turns `error` color. Inlin
 
 ### Suggestion List
 
-**OBJECT ID:** `dimension-input-suggestions`
+**OBJECT ID:** `mol-dimension-input-suggestions`
 
 | Property | Value |
 |----------|-------|
@@ -160,7 +160,7 @@ Invalid combination (no products exist). Field border turns `error` color. Inlin
 
 ### Letter Row (Rim field only)
 
-**OBJECT ID:** `dimension-input-letters`
+**OBJECT ID:** `mol-dimension-input-letters`
 
 | Property | Value |
 |----------|-------|
@@ -183,12 +183,12 @@ Translation keys for letters:
 
 ## Container
 
-**OBJECT ID:** `dimension-input-container`
+**OBJECT ID:** `mol-dimension-input-container`
 
 | Property | Value |
 |----------|-------|
 | Element | `<div>` wrapping all three fields + separators |
-| daisyUI | `input input-bordered input-lg flex items-center gap-0` |
+| daisyUI | `input input-lg flex items-center gap-0` |
 | Layout | Horizontal, fields flush with separators between |
 | Behavior | on:paste → `handlePaste()` — intercepts paste on any field, parses full dimension string, distributes to all three fields |
 
