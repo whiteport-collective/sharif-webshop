@@ -9,312 +9,233 @@
   export let rim = "";
   export let valid = false;
   export let feedback = "";
-  export let source: "shopify" | "spreadsheet" = "spreadsheet";
-
   const dispatch = createEventDispatcher<{
     update: { width: string; profile: string; rim: string };
     submit: void;
     help: void;
   }>();
 
-  let activeField: "width" | "profile" | "rim" = "width";
-  let overlayOpen = false;
-  let rimLetter = "R";
+  let pasteInput = "";
+  let season = "summer";
+  let quantity = "4";
 
-  $: profiles = dimensions.profilesByWidth[width] ?? [];
-  $: rims = dimensions.rimsByWidthProfile[`${width}/${profile}`] ?? [];
+  $: availableWidths = dimensions?.widths ?? [];
+  $: availableProfiles = width ? (dimensions?.profilesByWidth?.[width] ?? []) : [];
+  $: availableRims = width && profile ? (dimensions?.rimsByWidthProfile?.[`${width}/${profile}`] ?? []) : [];
 
-  function openOverlay(field: "width" | "profile" | "rim") {
-    activeField = field;
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      overlayOpen = true;
-    }
+  function setWidth(value: string) {
+    width = value;
+    profile = "";
+    rim = "";
+    dispatch("update", { width, profile, rim });
   }
 
-  function closeOverlay() {
-    overlayOpen = false;
+  function setProfile(value: string) {
+    profile = value;
+    rim = "";
+    dispatch("update", { width, profile, rim });
   }
 
-  function selectSuggestion(value: string) {
-    if (activeField === "width") {
-      dispatch("update", { width: value, profile: "", rim: "" });
-      activeField = "profile";
-      return;
-    }
-
-    if (activeField === "profile") {
-      dispatch("update", { width, profile: value, rim: "" });
-      activeField = "rim";
-      return;
-    }
-
-    dispatch("update", { width, profile, rim: value });
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
-      closeOverlay();
-    }
+  function setRim(value: string) {
+    rim = value;
+    dispatch("update", { width, profile, rim });
   }
 
-  function handleFieldInput(field: "width" | "profile" | "rim", event: Event) {
-    const nextValue = (event.currentTarget as HTMLInputElement).value.replace(/\D/g, "");
-
-    if (field === "width") {
-      dispatch("update", { width: nextValue.slice(0, 3), profile: "", rim: "" });
-      if (dimensions.widths.includes(nextValue.slice(0, 3))) {
-        activeField = "profile";
+  function parseDimension(input: string) {
+    const cleaned = input.replace(/[^\d\/rR\s]/g, "").trim();
+    const match = cleaned.match(/(\d{2,3})\s*[\/\s]\s*(\d{2})\s*[\/\s]?\s*[rR]?\s*(\d{2})/);
+    if (match) {
+      const [, w, p, r] = match;
+      if (availableWidths.includes(w)) {
+        width = w;
+        const profiles = dimensions?.profilesByWidth?.[w] ?? [];
+        if (profiles.includes(p)) {
+          profile = p;
+          const rims = dimensions?.rimsByWidthProfile?.[`${w}/${p}`] ?? [];
+          if (rims.includes(r)) {
+            rim = r;
+          }
+        }
       }
-      return;
+      dispatch("update", { width, profile, rim });
     }
+  }
 
-    if (field === "profile") {
-      dispatch("update", { width, profile: nextValue.slice(0, 2), rim: "" });
-      if (profiles.includes(nextValue.slice(0, 2))) {
-        activeField = "rim";
-      }
-      return;
-    }
-
-    dispatch("update", { width, profile, rim: nextValue.slice(0, 2) });
-    if (rims.includes(nextValue.slice(0, 2)) && valid) {
-      closeOverlay();
-    }
+  function handlePasteInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    pasteInput = value;
+    if (value.length >= 5) parseDimension(value);
   }
 
   function handlePaste(event: ClipboardEvent) {
-    const raw = event.clipboardData?.getData("text") ?? "";
-    const match = raw.toUpperCase().replace(/\s+/g, "").match(/^(\d{3})[\/]?(\d{2})(?:ZR|R|C)?(\d{2})/);
-    if (!match) {
-      return;
-    }
-
-    event.preventDefault();
-    dispatch("update", {
-      width: match[1],
-      profile: match[2],
-      rim: match[3],
-    });
-    rimLetter = raw.toUpperCase().includes("ZR") ? "ZR" : raw.toUpperCase().includes("C") ? "C" : "R";
-    closeOverlay();
+    const pasted = event.clipboardData?.getData("text") ?? "";
+    if (pasted.length >= 5) setTimeout(() => parseDimension(pasted), 0);
   }
 
-  function suggestions() {
-    if (activeField === "width") {
-      return dimensions.widths.filter((value) => value.startsWith(width)).slice(0, 16);
-    }
-    if (activeField === "profile") {
-      return profiles.filter((value) => value.startsWith(profile)).slice(0, 16);
-    }
-    return rims.filter((value) => value.startsWith(rim)).slice(0, 16);
+  function handleSubmit() {
+    if (valid) dispatch("submit");
   }
 </script>
 
-<section class="hero-grid">
-  <div class="space-y-5">
-    <div class="space-y-4">
-      <p class="eyebrow">{locale === "no" ? "Harriets flow" : "Harriet's flow"}</p>
-      <h1 class="section-heading text-balance">
-        {locale === "no" ? "Hva er størrelsen på dekkene dine?" : "What size are your tires?"}
-      </h1>
-      <p class="max-w-[56ch] text-base leading-8 text-base-content/70">
-        {locale === "no"
-          ? "Tre sammenkoblede felt, kontekstuelle forslag og én stor knapp. Ingen klassisk butikklogikk før Harriet har gjort det ene valget hun faktisk må gjøre."
-          : "Three connected fields, contextual suggestions, and one big button. No classic store logic until Harriet has made the one decision she actually has to make."}
-      </p>
-    </div>
+<!-- 01.1 Dimension Input — hero image + glass card -->
+<section class="relative min-h-[100vh] w-full flex flex-col justify-center px-5 md:px-12 lg:px-24 overflow-hidden">
 
-    <div class="flex flex-wrap gap-3">
-      <span class="metric-pill">1. {locale === "no" ? "Finn størrelse" : "Find size"}</span>
-      <span class="metric-pill">2. {locale === "no" ? "Sveip produkter" : "Swipe products"}</span>
-      <span class="metric-pill">3. {locale === "no" ? "Betal og book" : "Pay and book"}</span>
-    </div>
-
-    <article class="surface-panel card overflow-hidden bg-base-100">
-      <div class="card-body gap-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-xs font-extrabold uppercase tracking-[0.12em] text-base-content/55">
-            {locale === "no" ? "Tre felt + smart paste" : "Three fields + smart paste"}
-          </p>
-          <button type="button" class="link link-primary font-bold no-underline hover:underline" on:click={() => dispatch("help")}>
-            {locale === "no" ? "Hvor finner jeg dette?" : "Where do I find this?"}
-          </button>
-        </div>
-
-        <div class="rounded-box border border-base-300 bg-base-200 p-2" on:paste={handlePaste}>
-          <div class="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
-            <label class="form-control">
-              <span class="label pb-1"><span class="label-text text-xs font-bold uppercase tracking-[0.1em]">{locale === "no" ? "Bredde" : "Width"}</span></span>
-              <input
-                class="input input-bordered input-lg w-full bg-base-100 text-xl font-black"
-                inputmode="numeric"
-                maxlength="3"
-                value={width}
-                on:focus={() => openOverlay("width")}
-                on:input={(event) => handleFieldInput("width", event)}
-              />
-            </label>
-            <div class="hidden items-end justify-center pb-5 text-3xl font-black md:flex">/</div>
-
-            <label class="form-control">
-              <span class="label pb-1"><span class="label-text text-xs font-bold uppercase tracking-[0.1em]">{locale === "no" ? "Profil" : "Profile"}</span></span>
-              <input
-                class="input input-bordered input-lg w-full bg-base-100 text-xl font-black"
-                inputmode="numeric"
-                maxlength="2"
-                value={profile}
-                disabled={!width}
-                on:focus={() => openOverlay("profile")}
-                on:input={(event) => handleFieldInput("profile", event)}
-              />
-            </label>
-            <div class="hidden items-end justify-center gap-2 pb-5 md:flex">
-              <span class="text-xl font-black">{rimLetter}</span>
-            </div>
-
-            <label class="form-control">
-              <span class="label pb-1"><span class="label-text text-xs font-bold uppercase tracking-[0.1em]">{locale === "no" ? "Felg" : "Rim"}</span></span>
-              <input
-                class="input input-bordered input-lg w-full bg-base-100 text-xl font-black"
-                inputmode="numeric"
-                maxlength="2"
-                value={rim}
-                disabled={!profile}
-                on:focus={() => openOverlay("rim")}
-                on:input={(event) => handleFieldInput("rim", event)}
-              />
-            </label>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <p class={`min-h-[1.25rem] text-sm font-bold ${feedback ? "text-primary" : "text-base-content/55"}`}>
-            {feedback || (locale === "no" ? "Tips: lim inn 205/55R16 rett i feltet over." : "Tip: paste 205/55R16 directly into the fields above.")}
-          </p>
-          <button type="button" class="btn btn-primary btn-lg btn-block" disabled={!valid} on:click={() => dispatch("submit")}>
-            {locale === "no" ? "Finn dekk" : "Find tires"}
-          </button>
-        </div>
-      </div>
-    </article>
-
-    <div class="flex flex-wrap gap-2">
-      <span class="badge badge-outline rounded-full p-4 font-bold">60+ {locale === "no" ? "år med dekk" : "years of tires"}</span>
-      <span class="badge badge-outline rounded-full p-4 font-bold">{locale === "no" ? "Montering inkludert" : "Mounting included"}</span>
-      <span class="badge badge-outline rounded-full p-4 font-bold">{locale === "no" ? "Fra 499 kr" : "From 499 kr"}</span>
-      <span class="badge badge-ghost rounded-full p-4 font-bold uppercase tracking-[0.08em]">
-        {source === "shopify" ? "Shopify" : "Fallback data"}
-      </span>
-    </div>
+  <!-- Background image + overlay -->
+  <div class="absolute inset-0 z-0">
+    <img
+      alt="Tire close-up"
+      class="w-full h-full object-cover"
+      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPCnslL9kHvC2XfACPv2BR3Pi6yWxAlLzqA05GyJceBQb6fXDjjG6tul4NRCjuCdk6-ooWHTZ_wYqpVAE8No37BzBnJgdSiigPRfofGeEcyb20M2-WV4G8Q8YjbJd1sY31gSXDXuaYcdwhIadcsc4tnGrXntzlKSPkxnYN5-7E2aNsJL4hL0P0qohEx5Ecmk1xe5ChF8h6gEEDs0Kl-OjwFmEMwhnDm56wXMWf0BsTMMPHKjXE2G9vacUFI96lodmm7qRL_FCiwKA_"
+    />
+    <div class="absolute inset-0 bg-gradient-to-b from-[#291714]/70 via-[#291714]/50 to-[#291714]/80"></div>
   </div>
 
-  <aside class="surface-panel card overflow-hidden bg-base-100">
-    <figure class="bg-base-200 p-6">
-      <img src="/illustration-tire-size.svg" alt="Tire sidewall guide" class="w-full rounded-box" />
-    </figure>
-    <div class="card-body gap-3">
-      <p class="eyebrow">{locale === "no" ? "Visuell guide" : "Visual guide"}</p>
-      <h2 class="font-display text-4xl leading-none">
-        {locale === "no" ? "Det første og eneste spørsmålet" : "The first and only question"}
-      </h2>
-      <p class="compact-note">
+  <!-- Content over hero -->
+  <div class="relative z-10 w-full max-w-xl mx-auto lg:mx-0 pt-24 pb-8">
+
+    <!-- Headline -->
+    <div class="mb-6">
+      <h1 class="font-display text-4xl md:text-5xl font-bold leading-tight text-white" style="letter-spacing: -0.02em;">
+        {locale === "no" ? "Hva er størrelsen på dekkene dine?" : "What size are your tires?"}
+      </h1>
+      <p class="mt-3 text-sm text-white/70">
         {locale === "no"
-          ? "Freya beskrev heroen som et fullskjermsgrep på mobil. Når et felt får fokus, tar vi over flaten og lar forslagene gjøre resten."
-          : "Freya described the hero as a fullscreen mobile takeover. When a field gets focus, the surface takes over and lets the suggestions do the rest."}
+          ? "Se på siden av dekket — tallene ser slik ut:"
+          : "Look at the side of your tire — the numbers look like this:"}
       </p>
     </div>
-  </aside>
-</section>
 
-{#if overlayOpen}
-  <div class="fixed inset-0 z-40 bg-neutral/55 backdrop-blur-sm md:hidden" on:click={closeOverlay}></div>
-  <section class="fixed inset-x-0 bottom-0 z-50 rounded-t-[2rem] border border-base-300 bg-base-100 md:hidden">
-    <div class="mx-auto mt-3 h-1.5 w-12 rounded-full bg-base-300"></div>
-    <div class="flex min-h-[65vh] flex-col gap-4 p-5 safe-bottom">
-      <div class="flex items-start justify-between gap-4">
+    <!-- Smart paste input -->
+    <div class="mb-4">
+      <input
+        type="text"
+        class="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg px-4 py-3 text-lg text-white placeholder-white/40 font-medium focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/30 transition-all"
+        placeholder={locale === "no" ? "Skriv eller lim inn: 205/55R16" : "Type or paste: 205/55R16"}
+        value={pasteInput}
+        on:input={handlePasteInput}
+        on:paste={handlePaste}
+      />
+    </div>
+
+    <!-- Floating glass card -->
+    <div class="glass-card rounded-xl p-6" style="border: 1px solid rgba(255,255,255,0.15);">
+
+      <!-- Row 1: Quantity + Season -->
+      <div class="grid grid-cols-2 gap-4 mb-5">
         <div>
-          <p class="eyebrow mb-2">{locale === "no" ? "Velg størrelse" : "Choose size"}</p>
-          <h2 class="font-display text-4xl leading-none">
-            {activeField === "width"
-              ? locale === "no"
-                ? "Bredde"
-                : "Width"
-              : activeField === "profile"
-                ? locale === "no"
-                  ? "Profil"
-                  : "Profile"
-                : locale === "no"
-                  ? "Felg"
-                  : "Rim"}
-          </h2>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-base-content/50 mb-1.5">
+            {locale === "no" ? "Antall" : "Quantity"}
+          </label>
+          <select
+            bind:value={quantity}
+            class="w-full bg-base-200/60 border-0 border-b border-base-content/10 focus:border-primary focus:ring-0 text-base-content font-medium py-3 rounded-t-lg transition-all text-sm"
+          >
+            <option value="4">4 st</option>
+            <option value="2">2 st</option>
+            <option value="1">1 st</option>
+          </select>
         </div>
-        <button type="button" class="btn btn-circle btn-ghost" on:click={closeOverlay}>✕</button>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-base-content/50 mb-1.5">
+            {locale === "no" ? "Type" : "Type"}
+          </label>
+          <select
+            bind:value={season}
+            class="w-full bg-base-200/60 border-0 border-b border-base-content/10 focus:border-primary focus:ring-0 text-base-content font-medium py-3 rounded-t-lg transition-all text-sm"
+          >
+            <option value="summer">{locale === "no" ? "Sommerdekk" : "Summer tires"}</option>
+            <option value="winter-studless">{locale === "no" ? "Vinterdekk (piggfritt)" : "Winter (studless)"}</option>
+            <option value="winter-studded">{locale === "no" ? "Vinterdekk (piggdekk)" : "Winter (studded)"}</option>
+          </select>
+        </div>
       </div>
 
-      <div class="rounded-box border border-base-300 bg-base-200 p-3">
-        <div class="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-2">
-          <input
-            class={`input input-bordered input-lg w-full bg-base-100 text-xl font-black ${activeField === "width" ? "input-primary" : ""}`}
-            inputmode="numeric"
-            maxlength="3"
+      <!-- Row 2: Width / Profile / Rim dropdowns -->
+      <div class="grid grid-cols-3 gap-4 mb-5">
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-base-content/50 mb-1.5">
+            {locale === "no" ? "Bredde" : "Width"}
+          </label>
+          <select
             value={width}
-            on:focus={() => (activeField = "width")}
-            on:input={(event) => handleFieldInput("width", event)}
-          />
-          <span class="text-2xl font-black">/</span>
-          <input
-            class={`input input-bordered input-lg w-full bg-base-100 text-xl font-black ${activeField === "profile" ? "input-primary" : ""}`}
-            inputmode="numeric"
-            maxlength="2"
+            on:change={(e) => setWidth(e.currentTarget.value)}
+            class="w-full bg-base-200/60 border-0 border-b border-base-content/10 focus:border-primary focus:ring-0 text-base-content font-display font-bold py-3 rounded-t-lg transition-all text-2xl"
+          >
+            <option value="" disabled selected>—</option>
+            {#each availableWidths as w}
+              <option value={w}>{w}</option>
+            {/each}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-base-content/50 mb-1.5">
+            {locale === "no" ? "Profil" : "Profile"}
+          </label>
+          <select
             value={profile}
+            on:change={(e) => setProfile(e.currentTarget.value)}
+            class="w-full bg-base-200/60 border-0 border-b border-base-content/10 focus:border-primary focus:ring-0 text-base-content font-display font-bold py-3 rounded-t-lg transition-all text-2xl"
             disabled={!width}
-            on:focus={() => (activeField = "profile")}
-            on:input={(event) => handleFieldInput("profile", event)}
-          />
-          <span class="text-xl font-black">{rimLetter}</span>
-          <input
-            class={`input input-bordered input-lg w-full bg-base-100 text-xl font-black ${activeField === "rim" ? "input-primary" : ""}`}
-            inputmode="numeric"
-            maxlength="2"
+          >
+            <option value="" disabled selected>—</option>
+            {#each availableProfiles as p}
+              <option value={p}>{p}</option>
+            {/each}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] font-bold uppercase tracking-[0.15em] text-base-content/50 mb-1.5">
+            {locale === "no" ? "Felg" : "Rim"}
+          </label>
+          <select
             value={rim}
+            on:change={(e) => setRim(e.currentTarget.value)}
+            class="w-full bg-base-200/60 border-0 border-b border-base-content/10 focus:border-primary focus:ring-0 text-base-content font-display font-bold py-3 rounded-t-lg transition-all text-2xl"
             disabled={!profile}
-            on:focus={() => (activeField = "rim")}
-            on:input={(event) => handleFieldInput("rim", event)}
-          />
+          >
+            <option value="" disabled selected>—</option>
+            {#each availableRims as r}
+              <option value={r}>R{r}</option>
+            {/each}
+          </select>
         </div>
       </div>
 
-      <div class="flex-1 overflow-y-auto rounded-box border border-base-300 bg-base-100">
-        <ul class="menu w-full gap-1 p-3">
-          {#each suggestions() as suggestion}
-            <li>
-              <button type="button" class="btn btn-ghost justify-start text-lg font-bold" on:click={() => selectSuggestion(suggestion)}>
-                {activeField === "rim" ? `${rimLetter}${suggestion}` : suggestion}
-              </button>
-            </li>
-          {/each}
-          {#if suggestions().length === 0}
-            <li class="px-3 py-4 text-sm text-base-content/60">
-              {locale === "no" ? "Ingen forslag for det du skrev ennå." : "No suggestions for that input yet."}
-            </li>
-          {/if}
-        </ul>
+      <!-- Help link -->
+      <div class="mb-5 text-center">
+        <button
+          type="button"
+          class="text-sm font-medium text-primary hover:underline"
+          on:click={() => dispatch("help")}
+        >
+          {locale === "no" ? "Hvor finner jeg dette?" : "Where do I find this?"}
+        </button>
       </div>
 
-      {#if activeField === "rim"}
-        <div class="join join-horizontal w-full">
-          {#each ["R", "ZR", "C"] as letter}
-            <button
-              type="button"
-              class={`btn join-item flex-1 ${rimLetter === letter ? "btn-primary" : "btn-outline"}`}
-              on:click={() => (rimLetter = letter)}
-            >
-              {letter}
-            </button>
-          {/each}
-        </div>
+      <!-- Feedback -->
+      {#if feedback}
+        <p class="mb-4 text-sm text-center text-base-content/60">{feedback}</p>
       {/if}
 
-      <button type="button" class="btn btn-primary btn-lg btn-block" disabled={!valid} on:click={() => dispatch("submit")}>
-        {locale === "no" ? "Finn dekk" : "Find tires"}
+      <!-- CTA Button -->
+      <button
+        type="button"
+        class="w-full py-4 rounded-lg font-bold text-lg tracking-wider uppercase flex items-center justify-center gap-2 transition-all active:scale-[0.98] duration-150 {valid ? 'btn-ignition' : 'bg-base-300 text-base-content/40 cursor-not-allowed'}"
+        disabled={!valid}
+        on:click={handleSubmit}
+      >
+        <span>{locale === "no" ? "Finn dine nye dekk" : "Find your new tires"}</span>
+        <span>→</span>
       </button>
     </div>
-  </section>
-{/if}
+
+    <!-- Trust bar -->
+    <div class="mt-6 text-center">
+      <p class="text-xs text-white/50">
+        {locale === "no"
+          ? "60+ år med dekk · Montering inkludert · Fra 499 kr"
+          : "60+ years of tires · Mounting included · From 499 kr"}
+      </p>
+    </div>
+  </div>
+</section>

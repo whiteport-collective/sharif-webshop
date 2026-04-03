@@ -19,13 +19,10 @@
   }
 </script>
 
-<header class="sticky top-0 z-30 border-b border-base-300/80 bg-base-100/85 backdrop-blur">
+<header class="fixed top-0 left-0 right-0 z-30 bg-[#fff8f6]/80 backdrop-blur-xl">
   <div class="page-shell flex min-h-[76px] items-center justify-between gap-4">
-    <a href="/" class="grid gap-0.5 no-underline">
-      <span class="font-display text-4xl leading-none text-primary">Sharif</span>
-      <span class="text-sm font-bold text-base-content/65">
-        {locale === "no" ? "Sommerdekk gjort enkelt" : "Summer tires made simple"}
-      </span>
+    <a href="/" class="flex items-center no-underline">
+      <img src="/sharif-logo.png" alt="Sharif" class="h-8" />
     </a>
 
     <div class="flex items-center gap-2">

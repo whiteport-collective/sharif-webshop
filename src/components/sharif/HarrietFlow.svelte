@@ -109,7 +109,6 @@
         shopId,
         total,
         product: selectedProduct,
-        source: bootstrap.source,
         createdAt: new Date().toISOString(),
       }),
     );
@@ -123,54 +122,6 @@
     loadingCheckout = true;
     const orderId = `SH-${Date.now()}`;
     saveOrderLocally(orderId);
-
-    const storeDomain = import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN;
-    const token = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
-
-    if (bootstrap.shopify.enabled && storeDomain && token && selectedProduct.variantId) {
-      try {
-        const response = await fetch(`https://${storeDomain}/api/2025-10/graphql.json`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Storefront-Access-Token": token,
-          },
-          body: JSON.stringify({
-            query: `
-              mutation CreateSharifCart($input: CartInput!) {
-                cartCreate(input: $input) {
-                  cart { id checkoutUrl }
-                  userErrors { field message }
-                }
-              }
-            `,
-            variables: {
-              input: {
-                lines: [{ merchandiseId: selectedProduct.variantId, quantity }],
-                attributes: [
-                  { key: "shop_id", value: shopId },
-                  { key: "shop_name", value: locale === "no" ? activeShop.nameNo : activeShop.nameEn },
-                  { key: "mounting_location", value: activeShop.address },
-                  { key: "return_url", value: `${window.location.origin}/booking?order=${orderId}` },
-                ],
-              },
-            },
-          }),
-        });
-
-        const payload = await response.json();
-        const checkoutUrl = payload?.data?.cartCreate?.cart?.checkoutUrl;
-        const errors = payload?.data?.cartCreate?.userErrors ?? [];
-
-        if (checkoutUrl && errors.length === 0) {
-          window.location.href = checkoutUrl;
-          return;
-        }
-      } catch {
-        // Fall back to local simulation below.
-      }
-    }
-
     window.location.href = `/checkout?order=${encodeURIComponent(orderId)}`;
   }
 
@@ -207,7 +158,6 @@
         {rim}
         valid={validDimension}
         {feedback}
-        source={bootstrap.source}
         on:update={updateDimension}
         on:submit={showResults}
         on:help={() => (helpOpen = true)}
