@@ -1,0 +1,45 @@
+# Design Log — Sharif Webshop
+
+Chronological record of what was delivered each session.
+Newest entries at top.
+
+---
+
+## 2026-04-03 Freya (session 2 — Hydra build)
+
+**Design system**
+- New molecule spec: `D-Design-System/molecules/buy-button/buy-button.md` — `mol-buy-button`, three states: idle (red), in-cart (green + trash), unavailable (muted)
+- Storyboard PNG added: `molecules/buy-button/Sketches/buy-button-states.png`
+
+**Hydra storefront built (sharif-server-storefront)**
+- `tire-card-cta/index.tsx` — buy button with all three states implemented
+- `tire-card/index.tsx` — `isInCart` + `onRemoveTire` props wired through
+- `quantity-shop/index.tsx` — full 01.4 implementation: shop selector (Fjellhamar / Drammen / Hjemlevering), postal code + shipping zone lookup, live cart summary with line items + remove, sticky "Betal nå — X kr" CTA, Stripe payment session initiation, product detail overlay (iframe)
+- `flow-shell/index.tsx` — `handleSelectTire` / `handleRemoveTire`, panel transitions, `pointer-events-none` on off-screen panels
+- `tire-results-header/index.tsx` — removed "Bäst performance" sort option
+- `search-tires.ts` + `page.tsx` — switched to `cache: "no-store"` so seeded products appear immediately
+
+**Demo data**
+- Seeded 6 × 205/55R16 products with varied EU ratings (499–1249 kr) + `tire_type` metadata. 50 units inventory each.
+
+**Known issue**
+- "Velg disse" button unresponsive — qty-shop panel never appears. Root cause not identified (browser tools unavailable). MCP fixed with `--isolated` flag for next session.
+
+---
+
+## 2026-04-03 Freya (session 1 — specs)
+
+- Completed 01.6 Book Mounting — post-payment time slot booking confirmation page spec
+- Scenario 01 (Harriet's Tire Purchase) now fully complete: 01.1–01.6 all done, quality review passed (7/7 views, 4/4 practices, rated Excellent)
+
+---
+
+## Prior sessions (reconstructed)
+
+- 01.5 Payment — Stripe embedded checkout spec
+- 01.4 Quantity & Shop — pick count + mounting location spec
+- 01.3 Product Detail — AI story + EU labels in overlay spec
+- 01.2 Product Cards — swipeable card browse spec
+- 01.1 Dimension Input — tire dimension entry with visual guide spec
+- 01 Harriet's Tire Purchase scenario overview — persona, flow, 6 views mapped
+- UX Scenarios overview (00-ux-scenarios.md) — scenario set defined: 01 Harriet primary, 02 Ole EV, 03 Harriet Discovery, 04 Moohsen Inventory
