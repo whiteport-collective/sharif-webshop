@@ -75,11 +75,8 @@ Each component gets its own `.md` file with a readable ID (e.g., `atom-cta-butto
 
 ## For Agents
 
-**Workflow:** `_bmad/wds/workflows/7-design-system/workflow.md`
-**Agent trigger:** `DS` (Freya)
-**Router:** `_bmad/wds/workflows/7-design-system/design-system-router.md`
-**Templates:** `_bmad/wds/workflows/7-design-system/templates/`
-**Guide:** `_bmad/wds/data/agent-guides/freya/design-system.md`
+**Agent:** Freya (UX Design phase)
+**Skills:** Loaded from Agent Space at boot — no local skill files needed.
 
 **Before creating any component:**
 1. Check if it already exists in the chosen component library
