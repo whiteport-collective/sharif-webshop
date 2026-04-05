@@ -1,7 +1,25 @@
 # Design Log — Sharif Webshop
 
+## 2026-04-05 freya
+
+- Test the full checkout flow in browser: search 205/55R16, select a tire, verify checkout panel opens immediately with skeleton (no delay), confirm scroll-up back gesture works from checkout to results, verify scroll-down on results works after coming back from checkout.
+
 Chronological record of what was delivered each session.
 Newest entries at top.
+
+---
+
+## 2026-04-05 sharif-dev
+
+- Checkout refactored as a real FlowShell panel — no page navigation, slides up over results
+- `CheckoutPanelContent` client component: fetches cart data on mount, manages step state, inline confirmation
+- All checkout step components (Shipping, Addresses, Payment, Booking) updated with optional step/onStepChange props
+- Server actions added: `setAddressesInPanel`, `placeOrderInPanel`, `saveBookingToCart` (return values, no redirect)
+- Booking persisted to cart.metadata → shown on order confirmed page + inline confirmation
+- Skeleton loading state for checkout panel
+- Scroll-up back gesture lockout (backLocked ref, 600ms, deltaY < -40) applied to all panels
+- Cart idempotency check: skips addToCart if variant already in cart
+- Spec updated: 01-harriets-tire-purchase.md, 01.4-delivery-and-mounting.md rewritten; 01.5 + 01.6 marked superseded
 
 ---
 
