@@ -56,12 +56,15 @@ Online order captured that would have been a phone call or lost to a local shop.
 
 1. **Dimension Input** — Harriet sees the tire guide, finds the numbers on her tire, enters her dimension
 2. **Product Cards** — She swipes through tire options sorted by price, taps the cheapest
-3. **Product Detail Overlay** — Sees the price, plain-language tire story, EU label sliders. Taps "Jeg tar disse"
-4. **Quantity & Shop** — Picks 4 tires, selects Fjellhamar. Sees total price. Taps "Betal nå"
-5. **Payment** — Klarna checkout loads. She pays with Vipps/card.
-6. **Book Mounting** — "Takk! Finn din tid!" She picks Saturday 10:00 at Fjellhamar. Confirmation shown. ✓
+3. **Product Detail Overlay** — Sees the price, plain-language tire story, EU label sliders. Taps "Velg disse"
+4. **Checkout Panel** — A full-screen panel slides up (no page navigation). Four inline steps, one scroll:
+   - **Leveringsmåte** — Picks Fjellhamar (shown first). Taps "Fortsett"
+   - **Kundeopplysninger** — Fills in name, email, phone, car reg. Taps "Fortsett til betaling"
+   - **Payment** — Stripe embedded form. Fills card. Taps "Place order"
+   - **Booking** — (workshop orders only) Date + time picker appears. She picks a slot. Taps "Place order"
+5. **Inline Confirmation** — Confirmation screen scrolls into view within the same panel. Shows order number + booking time. Back navigation locked. ✓
 
-> Note: The "Velg tid senere" option in 01.6 is an on-page escape hatch (triggers email reminder), not a branch. The sunshine path is: she books immediately.
+> Note: All four checkout steps live inside one sliding panel. No page navigation occurs between steps — only scroll and state transitions. The booking step only appears for workshop (montering) orders.
 
 ---
 
@@ -86,11 +89,21 @@ Online order captured that would have been a phone call or lost to a local shop.
 | Step | Folder | Purpose | Exit Action |
 |------|--------|---------|-------------|
 | 01.1 | `01.1-dimension-input/` | Enter tire dimensions with visual guide | Submits dimension |
-| 01.2 | `01.2-product-cards/` | Browse and select a tire | Taps a product card |
-| 01.3 | `01.3-product-detail/` | Review tire details and confirm | Taps "Jeg tar disse" |
-| 01.4 | `01.4-quantity-and-shop/` | Pick quantity and mounting location | Taps "Betal nå" |
-| 01.5 | `01.5-payment/` | Complete payment via Klarna | Payment confirmed |
-| 01.6 | `01.6-book-mounting/` | Book mounting time slot | Confirms booking ✓ |
+| 01.2 | `01.2-product-cards/` | Browse and select a tire | Taps "Velg disse" on a card |
+| 01.3 | `01.3-product-detail/` | Review tire details and confirm | Taps "Velg disse" |
+| 01.4 | `01.4-delivery-and-mounting/` | Full checkout panel — Leveringsmåte → Address → Payment → Booking → Confirmation | Order confirmed ✓ |
+
+> **Architecture note:** Steps 01.4.1–01.4.5 are all sub-steps within a single full-screen FlowShell panel. They do not navigate to a new page — only scroll and React state transitions occur. The panel slides up over the results view; results remain rendered underneath.
+
+### Checkout Sub-steps (within 01.4)
+
+| Sub-step | ID | Purpose | Condition |
+|----------|----|---------|-----------|
+| Leveringsmåte | `01.4.1` | Select delivery method — workshops first, home delivery last | Always shown first |
+| Kundeopplysninger / Leveringsadresse | `01.4.2` | Contact info (workshop) or full address (home delivery) — heading adapts to chosen method | Always shown second |
+| Betaling | `01.4.3` | Stripe embedded payment form | Always shown third |
+| Booking | `01.4.4` | Date + time picker for mounting time slot | Workshop orders only |
+| Bekreftelse | `01.4.5` | Inline confirmation — scrolls into view, back nav locked | After order placed |
 
 ---
 
