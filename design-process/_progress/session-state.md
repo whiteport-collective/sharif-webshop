@@ -3,27 +3,24 @@
 **Wrapped:** 2026-04-06
 
 ## Context
-- **Feedback skill:** Created at `C:/dev/WDS/whiteport-design-studio/src/skills/feedback/SKILL.md`
-- **13-issue storefront fix:** Sub-agent completed all 13 fixes in `storefront/`. SVG logo + placeholder in `public/`, i18n extended, FlowShell menu/support/confirmation wired, checkout desktop layout, step headlines, scroll lock, Drammen auto-select, support sidebar scaffold
-- **Scenario 03 Admin Dashboard:** Full structure at `design-process/C-UX-Scenarios/03-admin-dashboard/`. All 7 step folders + spec files with: screen purpose, user actions, Medusa data connections, agent tools + example queries, user scenario narratives (named, specific), open questions. 03.2 has sales chart + 8 pattern types
-- **Anthropic API key:** Saved to Bitwarden as "Anthropic API Key — Sharif" + added to `backend/.env`
-- **Admin Codex WO:** Not sent — paused to do proper WDS spec first (correct)
-- **Old storefront WOs** (39697e4f, bbab3550): cancelled in DB, superseded by sub-agent
+- Wireframe SKILL.md created at v0.3.0: golden rule (no annotations), file location, canvas sizes, element rules, grouping rule, colour palette, body text/text-marker rule, approval loop
+- 03.1 Login wireframe: approved ✓
+- 03.2 Open Glass wireframe: approved ✓ (4 KPI cards, new orders, stock alerts, escalated messages, patterns, sales chart, agent sidebar)
+- 03.3 Orders wireframe: drawn but wrong concept — sub-agent added a side detail panel. User clarified: click = full page navigation. Needs rework.
+- All pushed to branch `harriet-flow-poc`
 
 ## Plan
-Draw Excalidraw wireframes for Scenario 03, one screen at a time, user approves each before writing WDS spec. Then one Codex WO for the full admin build.
+Draw Excalidraw wireframes for Scenario 03 admin dashboard one screen at a time, user approves each. Then WDS spec → Codex WO for full admin build.
 
-Order: 03.1 Login → 03.2 Open Glass → 03.3 Orders → 03.4 Products → 03.5 Customers → 03.6 Agent Sidebar → 03.7 Settings → full WDS spec → Codex WO
+Remaining: 03.3 Orders (list only, redraw), 03.3b Order Detail (new full-page wireframe), 03.4 Products, 03.5 Customers, 03.6 Agent Sidebar, 03.7 Settings → full WDS spec → Codex WO
 
 ## Next:
-Draw wireframe 03.1 Login in Excalidraw at `design-process/C-UX-Scenarios/03-admin-dashboard/Sketches/03.1-login.excalidraw` — desktop canvas (1440×900), Sharif logo top-left, email+password form centered, minimal. Present to user for approval before 03.2.
+Redraw 03.3 Orders as a list-only wireframe (no detail panel visible — clicking a row navigates to 03.3b). Read `c:/dev/WDS/whiteport-design-studio/src/skills/wireframe/SKILL.md` first. Also update `design-process/C-UX-Scenarios/03-admin-dashboard/03.3-orders/03.3-orders.md`: change "Opens order detail panel (right side)" → "Navigates to order detail page (03.3b)" in the user actions table.
 
 ## Learned
-- Feedback skill goes in WDS repo (`src/skills/feedback/SKILL.md`) not as a standalone command — travels with WDS distribution
-- Bitwarden CLI pattern: `bw get template item` → python to build JSON → `bw encode | bw create item`
-- agent_messages table requires `thread_id` (NOT NULL) — use `gen_random_uuid()` when inserting; body column is `content` not `body`
-- Sub-agent (Claude) is right for immediate local implementation; Codex for async PR-based work
-- 13-issue storefront fix batch was implemented by a sub-agent directly — all changes live in `storefront/src/`
-- Scenario 03 is Admin Dashboard (not 05/06 as previously in the index)
-- Purchase planning is a key feature of 03.4: agent compares current stock vs 3yr historical sales to generate buy recommendations
-- Do proper WDS spec + wireframes before sending Codex WO for complex admin builds — vibe coding doesn't work here
+- Wireframe SKILL.md lives at `c:/dev/WDS/whiteport-design-studio/src/skills/wireframe/SKILL.md` — sub-agents must read it first before drawing, not receive hardcoded rules in the prompt
+- 03.3 Orders: clicking a row navigates to a full ORDER DETAIL PAGE — not a slide-in panel or overlay. Two wireframes needed: 03.3 list view + 03.3b detail page
+- Text markers (grey rects h=8-10, fill #dee2e6) for body text; real text only when content is load-bearing for screen comprehension
+- Group buttons and their label text together (same groupIds)
+- Agent input area needs three grouped elements: upload button + text field + Send button
+- User modified the agent input box in 03.3 themselves — do not overwrite their edits in that file
