@@ -1,5 +1,13 @@
 # Design Log — Sharif Webshop
 
+## 2026-04-06 freya
+
+- Draw wireframe 03.1 Login in Excalidraw at `design-process/C-UX-Scenarios/03-admin-dashboard/Sketches/03.1-login.excalidraw` — desktop canvas (1440×900), Sharif logo top-left, email+password form centered, minimal. Present to user for approval before 03.2.
+
+## 2026-04-06 freya
+
+- Codex: implement the agent chat panel — start with `src/app/api/agent/chat/route.ts` per `design-process/C-UX-Scenarios/02-man-purchasing-flow/02-agent-architecture.md`, then tool schemas in `src/lib/agent/tools.ts`, then the streaming hook and browser bridge.
+
 ## 2026-04-05 freya
 
 - Test the full checkout flow in browser: search 205/55R16, select a tire, verify checkout panel opens immediately with skeleton (no delay), confirm scroll-up back gesture works from checkout to results, verify scroll-down on results works after coming back from checkout.

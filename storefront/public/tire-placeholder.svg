@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100" fill="none" stroke="#888" stroke-width="3">
+  <!-- Outer tire -->
+  <circle cx="0" cy="0" r="40" />
+  <!-- Inner rim -->
+  <circle cx="0" cy="0" r="28" />
+  <!-- Tread blocks at 0/45/90/135 degrees -->
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(0)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(45)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(90)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(135)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(180)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(225)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(270)" fill="#888" stroke="none"/>
+  <rect x="-4" y="-42" width="8" height="10" rx="1" transform="rotate(315)" fill="#888" stroke="none"/>
+</svg>
