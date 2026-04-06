@@ -1,40 +1,29 @@
 # freya — Session State
 **Repo:** sharif-webshop
-**Wrapped:** 2026-04-05
+**Wrapped:** 2026-04-06
 
 ## Context
-All work is in `c:/dev/Sharif/sharif-server-storefront` (Medusa v2 + Next.js Hydra storefront), not in this repo. Files changed:
-
-- `src/modules/checkout/components/checkout-panel-content/index.tsx`
-  - Wheel gesture: switched from `addEventListener` to React `onWheel` prop
-  - Touch gesture: kept as `addEventListener` with passive:true
-  - Added `cartLoading` prop — delays cart fetch while parent `addToCart` is in flight
-  - `goBackRef` pattern so handler always sees current step/orderId without re-registering
-
-- `src/modules/home/components/flow-shell/index.tsx`
-  - `cartLoading` state added
-  - `handleSelectTire`: panel opens immediately, `addToCart` runs in background
-  - `onBack` callback now sets `backLocked = true` for 600ms before `setView("results")`
-  - `router.refresh()` after cart op completes (not blocking)
-  - Service buttons bumped to `z-[60]`
-
-- `src/modules/checkout/components/booking/index.tsx`
-  - Full redesign: accordion days (multiple open), times inline per day, "Vis fler dager" button
-  - `expandedDays` Set for multi-open state, first day auto-expanded
-  - Selected time shown as `· HH:MM` in day header even when collapsed
-  - `visibleDays` state, loads 5 at a time, capped at 30
+- **Feedback skill:** Created at `C:/dev/WDS/whiteport-design-studio/src/skills/feedback/SKILL.md`
+- **13-issue storefront fix:** Sub-agent completed all 13 fixes in `storefront/`. SVG logo + placeholder in `public/`, i18n extended, FlowShell menu/support/confirmation wired, checkout desktop layout, step headlines, scroll lock, Drammen auto-select, support sidebar scaffold
+- **Scenario 03 Admin Dashboard:** Full structure at `design-process/C-UX-Scenarios/03-admin-dashboard/`. All 7 step folders + spec files with: screen purpose, user actions, Medusa data connections, agent tools + example queries, user scenario narratives (named, specific), open questions. 03.2 has sales chart + 8 pattern types
+- **Anthropic API key:** Saved to Bitwarden as "Anthropic API Key — Sharif" + added to `backend/.env`
+- **Admin Codex WO:** Not sent — paused to do proper WDS spec first (correct)
+- **Old storefront WOs** (39697e4f, bbab3550): cancelled in DB, superseded by sub-agent
 
 ## Plan
-Sharif demo prep: the checkout panel flow (search → results → checkout → booking → confirm) is now functional end-to-end. Open items are visual polish and demo-readiness. The wider plan is a two-scenario demo for Moohsen: Scenario 01 (Harriet tire purchase) + Scenario 04 (Moohsen inventory management).
+Draw Excalidraw wireframes for Scenario 03, one screen at a time, user approves each before writing WDS spec. Then one Codex WO for the full admin build.
+
+Order: 03.1 Login → 03.2 Open Glass → 03.3 Orders → 03.4 Products → 03.5 Customers → 03.6 Agent Sidebar → 03.7 Settings → full WDS spec → Codex WO
 
 ## Next:
-Test the full checkout flow in browser: search 205/55R16, select a tire, verify checkout panel opens immediately with skeleton (no delay), confirm scroll-up back gesture works from checkout to results, verify scroll-down on results works after coming back from checkout.
+Draw wireframe 03.1 Login in Excalidraw at `design-process/C-UX-Scenarios/03-admin-dashboard/Sketches/03.1-login.excalidraw` — desktop canvas (1440×900), Sharif logo top-left, email+password form centered, minimal. Present to user for approval before 03.2.
 
 ## Learned
-**React onWheel vs addEventListener in CSS-transformed elements**: When a scroll container (`overflow-y-auto`) is nested inside a CSS-transformed element (`transition-transform`), some browsers create a composited layer that delays or drops wheel events for `addEventListener` handlers. Using React's `onWheel` prop bypasses this — it uses React's event delegation off the root and is reliable. Touch events are unaffected; keep those with `addEventListener + passive: true`.
-
-**Trackpad momentum bleed between panels**: When a scroll gesture dismisses a panel (checkout → results), the remaining trackpad momentum immediately fires on the newly revealed panel and triggers its own back gesture. Fix: set `backLocked = true` in the `onBack` callback — same 600ms lockout used elsewhere — before switching view. This is a general pattern for any panel stack built with CSS transforms + scroll gestures.
-
-**Skeleton-first checkout opening**: Don't block panel opening on async cart operations. Open the panel immediately, show the existing skeleton, and use a `cartLoading` prop to hold the inner data fetch until the parent signals the cart op is complete. This avoids both the perceived delay AND the race condition (panel fetching cart before addToCart finishes).
-
-**Booking accordion UX**: Flat day list + separate time grid below is harder to compare. Accordion per day (multiple open simultaneously) lets users scan availability across days before committing. First day auto-opens. Selected time shown inline in the day header row even when collapsed.
+- Feedback skill goes in WDS repo (`src/skills/feedback/SKILL.md`) not as a standalone command — travels with WDS distribution
+- Bitwarden CLI pattern: `bw get template item` → python to build JSON → `bw encode | bw create item`
+- agent_messages table requires `thread_id` (NOT NULL) — use `gen_random_uuid()` when inserting; body column is `content` not `body`
+- Sub-agent (Claude) is right for immediate local implementation; Codex for async PR-based work
+- 13-issue storefront fix batch was implemented by a sub-agent directly — all changes live in `storefront/src/`
+- Scenario 03 is Admin Dashboard (not 05/06 as previously in the index)
+- Purchase planning is a key feature of 03.4: agent compares current stock vs 3yr historical sales to generate buy recommendations
+- Do proper WDS spec + wireframes before sending Codex WO for complex admin builds — vibe coding doesn't work here

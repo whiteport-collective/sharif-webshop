@@ -1,0 +1,353 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor",
+  "elements": [
+    {
+      "type": "rectangle",
+      "id": "phone-frame",
+      "fillStyle": "solid", "strokeWidth": 2, "strokeStyle": "solid", "roughness": 1, "opacity": 100,
+      "angle": 0, "x": 0, "y": 0, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 390, "height": 844,
+      "seed": 1, "groupIds": [], "frameId": null, "roundness": { "type": 3, "value": 32 },
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "version": 4, "versionNonce": 100, "isDeleted": false, "index": "a0"
+    },
+    {
+      "type": "text", "id": "header-title",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 24, "y": 52, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 320, "height": 32, "seed": 2, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 22, "fontFamily": 3, "text": "Takk for bestillingen! 🎉",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Takk for bestillingen! 🎉",
+      "version": 10, "versionNonce": 101, "isDeleted": false, "index": "a1"
+    },
+    {
+      "type": "text", "id": "header-subtitle",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 24, "y": 82, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 320, "height": 18, "seed": 3, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Ordrenr. #12483 · Bekreftelse sendt på e-post",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Ordrenr. #12483 · Bekreftelse sendt på e-post",
+      "version": 10, "versionNonce": 102, "isDeleted": false, "index": "a2"
+    },
+
+    {
+      "type": "rectangle", "id": "order-card",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 1, "opacity": 100,
+      "angle": 0, "x": 16, "y": 112, "strokeColor": "#ced4da", "backgroundColor": "#f8f9fa",
+      "width": 358, "height": 196, "seed": 10, "groupIds": ["order-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 12 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 200, "isDeleted": false, "index": "a3"
+    },
+    {
+      "type": "text", "id": "order-heading",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 128, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 160, "height": 18, "seed": 11, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 3, "text": "Din bestilling",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Din bestilling",
+      "version": 10, "versionNonce": 201, "isDeleted": false, "index": "a4"
+    },
+    {
+      "type": "line", "id": "order-divider-top",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 30,
+      "angle": 0, "x": 32, "y": 150, "strokeColor": "#ced4da", "backgroundColor": "transparent",
+      "width": 326, "height": 0, "seed": 12, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "startBinding": null, "endBinding": null, "lastCommittedPoint": null,
+      "startArrowhead": null, "endArrowhead": null, "points": [[0,0],[326,0]],
+      "version": 10, "versionNonce": 202, "isDeleted": false, "index": "a4b"
+    },
+    {
+      "type": "text", "id": "tire-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 160, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 80, "height": 16, "seed": 13, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Dekk",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Dekk",
+      "version": 10, "versionNonce": 203, "isDeleted": false, "index": "a5"
+    },
+    {
+      "type": "text", "id": "tire-value",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 180, "y": 160, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 178, "height": 16, "seed": 14, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Michelin Pilot Sport 5 × 4",
+      "textAlign": "right", "verticalAlign": "top", "containerId": null, "originalText": "Michelin Pilot Sport 5 × 4",
+      "version": 10, "versionNonce": 204, "isDeleted": false, "index": "a6"
+    },
+    {
+      "type": "text", "id": "season-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 182, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 80, "height": 16, "seed": 15, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Sesong",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Sesong",
+      "version": 10, "versionNonce": 205, "isDeleted": false, "index": "a7"
+    },
+    {
+      "type": "text", "id": "season-value",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 180, "y": 182, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 178, "height": 16, "seed": 16, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Sommerdekk",
+      "textAlign": "right", "verticalAlign": "top", "containerId": null, "originalText": "Sommerdekk",
+      "version": 10, "versionNonce": 206, "isDeleted": false, "index": "a8"
+    },
+    {
+      "type": "text", "id": "payment-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 204, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 80, "height": 16, "seed": 17, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Betaling",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Betaling",
+      "version": 10, "versionNonce": 207, "isDeleted": false, "index": "a9"
+    },
+    {
+      "type": "text", "id": "payment-value",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 180, "y": 204, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 178, "height": 16, "seed": 18, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Visa •••• 4242",
+      "textAlign": "right", "verticalAlign": "top", "containerId": null, "originalText": "Visa •••• 4242",
+      "version": 10, "versionNonce": 208, "isDeleted": false, "index": "a10"
+    },
+    {
+      "type": "line", "id": "total-divider",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 30,
+      "angle": 0, "x": 32, "y": 228, "strokeColor": "#ced4da", "backgroundColor": "transparent",
+      "width": 326, "height": 0, "seed": 19, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "startBinding": null, "endBinding": null, "lastCommittedPoint": null,
+      "startArrowhead": null, "endArrowhead": null, "points": [[0,0],[326,0]],
+      "version": 10, "versionNonce": 209, "isDeleted": false, "index": "a10b"
+    },
+    {
+      "type": "text", "id": "total-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 238, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 80, "height": 20, "seed": 20, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 14, "fontFamily": 3, "text": "Totalt",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Totalt",
+      "version": 10, "versionNonce": 210, "isDeleted": false, "index": "a11"
+    },
+    {
+      "type": "text", "id": "total-value",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 180, "y": 238, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 178, "height": 20, "seed": 21, "groupIds": ["order-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 14, "fontFamily": 3, "text": "4 396 kr",
+      "textAlign": "right", "verticalAlign": "top", "containerId": null, "originalText": "4 396 kr",
+      "version": 10, "versionNonce": 211, "isDeleted": false, "index": "a12"
+    },
+
+    {
+      "type": "rectangle", "id": "booking-card",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 1, "opacity": 100,
+      "angle": 0, "x": 16, "y": 324, "strokeColor": "#ced4da", "backgroundColor": "#ffffff",
+      "width": 358, "height": 108, "seed": 30, "groupIds": ["booking-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 12 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 300, "isDeleted": false, "index": "a13"
+    },
+    {
+      "type": "text", "id": "booking-heading",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 340, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 200, "height": 18, "seed": 31, "groupIds": ["booking-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 3, "text": "Booket monteringstid",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Booket monteringstid",
+      "version": 10, "versionNonce": 301, "isDeleted": false, "index": "a14"
+    },
+    {
+      "type": "text", "id": "booking-datetime",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 364,  "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 240, "height": 22, "seed": 32, "groupIds": ["booking-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 3, "text": "Fredag 11. april · kl. 10:00",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Fredag 11. april · kl. 10:00",
+      "version": 10, "versionNonce": 302, "isDeleted": false, "index": "a15"
+    },
+    {
+      "type": "text", "id": "booking-shop",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 388, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 220, "height": 16, "seed": 33, "groupIds": ["booking-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "Dekk & Hjul AS, Majorstua, Oslo",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Dekk & Hjul AS, Majorstua, Oslo",
+      "version": 10, "versionNonce": 303, "isDeleted": false, "index": "a16"
+    },
+    {
+      "type": "rectangle", "id": "change-time-btn",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 262, "y": 382, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 96, "height": 26, "seed": 34, "groupIds": ["booking-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 5 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 304, "isDeleted": false, "index": "a17"
+    },
+    {
+      "type": "text", "id": "change-time-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 266, "y": 388, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 88, "height": 14, "seed": 35, "groupIds": ["booking-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 11, "fontFamily": 3, "text": "Ändra din tid →",
+      "textAlign": "center", "verticalAlign": "top", "containerId": null, "originalText": "Ändra din tid →",
+      "version": 10, "versionNonce": 305, "isDeleted": false, "index": "a18"
+    },
+
+    {
+      "type": "rectangle", "id": "rating-card",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 1, "opacity": 100,
+      "angle": 0, "x": 16, "y": 448, "strokeColor": "#ced4da", "backgroundColor": "#ffffff",
+      "width": 358, "height": 96, "seed": 40, "groupIds": ["rating-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 12 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 400, "isDeleted": false, "index": "a19"
+    },
+    {
+      "type": "text", "id": "rating-heading",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 464, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 260, "height": 18, "seed": 41, "groupIds": ["rating-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 3, "text": "Hvordan var opplevelsen?",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Hvordan var opplevelsen?",
+      "version": 10, "versionNonce": 401, "isDeleted": false, "index": "a20"
+    },
+    {
+      "type": "text", "id": "stars",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 490, "strokeColor": "#ffd43b", "backgroundColor": "transparent",
+      "width": 200, "height": 36, "seed": 42, "groupIds": ["rating-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 28, "fontFamily": 3, "text": "☆ ☆ ☆ ☆ ☆",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "☆ ☆ ☆ ☆ ☆",
+      "version": 10, "versionNonce": 402, "isDeleted": false, "index": "a21"
+    },
+
+    {
+      "type": "text", "id": "message-label",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 16, "y": 562, "strokeColor": "#1e1e1e", "backgroundColor": "transparent",
+      "width": 340, "height": 36, "seed": 50, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 13, "fontFamily": 3, "text": "Har du frågor om din bestälning?\nSnacka med vår AI",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "Har du frågor om din bestälning?\nSnacka med vår AI",
+      "version": 10, "versionNonce": 500, "isDeleted": false, "index": "a22"
+    },
+    {
+      "type": "rectangle", "id": "message-input-bg",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 1, "opacity": 100,
+      "angle": 0, "x": 16, "y": 606, "strokeColor": "#ced4da", "backgroundColor": "#ffffff",
+      "width": 358, "height": 160, "seed": 51, "groupIds": ["message-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 12 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 501, "isDeleted": false, "index": "a23"
+    },
+    {
+      "type": "line", "id": "toolbar-divider",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 30,
+      "angle": 0, "x": 16, "y": 718, "strokeColor": "#ced4da", "backgroundColor": "transparent",
+      "width": 358, "height": 0, "seed": 52, "groupIds": ["message-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "startBinding": null, "endBinding": null, "lastCommittedPoint": null,
+      "startArrowhead": null, "endArrowhead": null, "points": [[0,0],[358,0]],
+      "version": 10, "versionNonce": 502, "isDeleted": false, "index": "a23b"
+    },
+    {
+      "type": "rectangle", "id": "upload-btn",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 32, "y": 730, "strokeColor": "#ced4da", "backgroundColor": "#f8f9fa",
+      "width": 32, "height": 28, "seed": 53, "groupIds": ["message-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 6 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 503, "isDeleted": false, "index": "a24"
+    },
+    {
+      "type": "text", "id": "upload-icon",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 38, "y": 734, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 20, "height": 20, "seed": 54, "groupIds": ["message-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 16, "fontFamily": 3, "text": "📎",
+      "textAlign": "center", "verticalAlign": "top", "containerId": null, "originalText": "📎",
+      "version": 10, "versionNonce": 504, "isDeleted": false, "index": "a25"
+    },
+    {
+      "type": "rectangle", "id": "send-btn",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 318, "y": 726, "strokeColor": "#1e1e1e", "backgroundColor": "#1e1e1e",
+      "width": 40, "height": 32, "seed": 55, "groupIds": ["message-group"], "frameId": null,
+      "roundness": { "type": 3, "value": 8 }, "boundElements": [], "updated": 1774599723047,
+      "link": null, "locked": false, "version": 10, "versionNonce": 505, "isDeleted": false, "index": "a26"
+    },
+    {
+      "type": "text", "id": "send-icon",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "solid", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 328, "y": 735, "strokeColor": "#ffffff", "backgroundColor": "transparent",
+      "width": 20, "height": 18, "seed": 56, "groupIds": ["message-group"], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 14, "fontFamily": 3, "text": "→",
+      "textAlign": "center", "verticalAlign": "top", "containerId": null, "originalText": "→",
+      "version": 10, "versionNonce": 506, "isDeleted": false, "index": "a27"
+    },
+
+    {
+      "type": "text", "id": "ann-order",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "dashed", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 420, "y": 120, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 200, "height": 60, "seed": 90, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "1. Kostnad & ordre\nDekk, sesong, betaling\n+ totalt",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "1. Kostnad & ordre\nDekk, sesong, betaling\n+ totalt",
+      "version": 10, "versionNonce": 900, "isDeleted": false, "index": "a28"
+    },
+    {
+      "type": "text", "id": "ann-booking",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "dashed", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 420, "y": 330, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 210, "height": 60, "seed": 91, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "2. Booket tid\nDato + sted.\n\"Ändra din tid\" → tilbake til steg 6",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "2. Booket tid\nDato + sted.\n\"Ändra din tid\" → tilbake til steg 6",
+      "version": 10, "versionNonce": 901, "isDeleted": false, "index": "a29"
+    },
+    {
+      "type": "text", "id": "ann-rating",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "dashed", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 420, "y": 455, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 180, "height": 44, "seed": 92, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "3. Betyg\n☆ → ★ vid tryck",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "3. Betyg\n☆ → ★ vid tryck",
+      "version": 10, "versionNonce": 902, "isDeleted": false, "index": "a30"
+    },
+    {
+      "type": "text", "id": "ann-chat",
+      "fillStyle": "solid", "strokeWidth": 1, "strokeStyle": "dashed", "roughness": 0, "opacity": 100,
+      "angle": 0, "x": 420, "y": 568, "strokeColor": "#868e96", "backgroundColor": "transparent",
+      "width": 210, "height": 80, "seed": 93, "groupIds": [], "frameId": null, "roundness": null,
+      "boundElements": [], "updated": 1774599723047, "link": null, "locked": false,
+      "fontSize": 12, "fontFamily": 3, "text": "4. AI-meldingsboks\nTom textarea. 📎 bild.\n→ send til Claude Haiku.\nSparast i order_conversations.",
+      "textAlign": "left", "verticalAlign": "top", "containerId": null, "originalText": "4. AI-meldingsboks\nTom textarea. 📎 bild.\n→ send til Claude Haiku.\nSparast i order_conversations.",
+      "version": 10, "versionNonce": 903, "isDeleted": false, "index": "a31"
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
