@@ -203,6 +203,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const widthRef = useRef<HTMLInputElement>(null)
   const profileRef = useRef<HTMLInputElement>(null)
   const rimRef = useRef<HTMLInputElement>(null)
 
@@ -367,6 +368,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
             placeholder="205"
             onPaste={handlePaste}
             popularValue={popularWidth}
+            inputRef={widthRef}
           />
           <span className={`text-lg font-medium select-none ${width ? "text-ui-fg-base" : "text-ui-fg-muted"}`}>/</span>
           <SegmentInput
@@ -414,9 +416,13 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
       </div>
 
       <button
-        type="submit"
-        disabled={!isComplete}
-        className="w-full bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        type={isComplete ? "submit" : "button"}
+        onClick={isComplete ? undefined : () => {
+          if (!width) widthRef.current?.focus()
+          else if (!profile) profileRef.current?.focus()
+          else if (!rim) rimRef.current?.focus()
+        }}
+        className="w-full bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors"
       >
         {t.findTires}
       </button>
