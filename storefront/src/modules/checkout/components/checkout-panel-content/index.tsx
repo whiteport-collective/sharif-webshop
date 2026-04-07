@@ -12,11 +12,13 @@ import PaymentWrapper from "@modules/checkout/components/payment-wrapper"
 import Shipping from "@modules/checkout/components/shipping"
 import CartTotals from "@modules/common/components/cart-totals"
 import ItemsPreviewTemplate from "@modules/cart/templates/preview"
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useLanguage } from "@lib/i18n"
 
 type Props = {
   countryCode: string
+  embedded?: boolean
+  isActive?: boolean
   onBack: () => void
   cartLoading?: boolean
   onStepTitle?: (title: string) => void
@@ -46,13 +48,23 @@ const STEP_BACK: Record<string, string | null> = {
   booking: "payment",
 }
 
-export default function CheckoutPanelContent({ countryCode, onBack, cartLoading = false, onStepTitle, onRegisterBack, onSuccess, onConfirmationReached, supportOpen }: Props) {
+export default function CheckoutPanelContent({
+  countryCode,
+  embedded = false,
+  isActive = true,
+  onBack,
+  cartLoading = false,
+  onStepTitle,
+  onRegisterBack,
+  onSuccess,
+  onConfirmationReached,
+  supportOpen,
+}: Props) {
   const [data, setData] = useState<CheckoutData | null>(null)
   const [loading, setLoading] = useState(true)
   const [step, setStep] = useState("delivery")
   const [orderId, setOrderId] = useState<string | null>(null)
   const [selectedShippingOptionId, setSelectedShippingOptionId] = useState<string | null>(null)
-  const [cartSummaryOpen, setCartSummaryOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const confirmationRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
@@ -81,7 +93,11 @@ export default function CheckoutPanelContent({ countryCode, onBack, cartLoading 
 
   const handleStepChange = (next: string) => {
     setStep(next)
-    containerRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+    if (embedded) {
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+    } else {
+      containerRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+    }
   }
 
   // Derive isWorkshop early — needed both for header sync and render
@@ -132,6 +148,7 @@ export default function CheckoutPanelContent({ countryCode, onBack, cartLoading 
   // Scroll-up at top → go back. Uses React onWheel prop (more reliable than addEventListener
   // on children of CSS-transformed elements, where some browsers delay or drop events).
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!isActive) return
     const el = containerRef.current
     if (!el || (el.scrollTop ?? 0) > 0) return
     if (e.deltaY < -40) goBackRef.current()
@@ -140,7 +157,7 @@ export default function CheckoutPanelContent({ countryCode, onBack, cartLoading 
   // Touch: keep as addEventListener so passive:true avoids scroll jank on mobile
   useEffect(() => {
     const el = containerRef.current
-    if (!el || orderId) return
+    if (!el || orderId || !isActive || embedded) return
 
     const atTop = () => (el.scrollTop ?? 0) <= 0
 
@@ -158,106 +175,78 @@ export default function CheckoutPanelContent({ countryCode, onBack, cartLoading 
       el.removeEventListener("touchstart", onTouchStart)
       el.removeEventListener("touchmove", onTouchMove)
     }
-  }, [orderId])
+  }, [embedded, isActive, orderId])
 
   return (
-    <div ref={containerRef} className="h-full overflow-y-auto" onWheel={handleWheel}>
+    <div
+      ref={containerRef}
+      className={embedded ? "bg-ui-bg-base" : "h-full overflow-y-auto bg-ui-bg-base"}
+      onWheel={!embedded && isActive ? handleWheel : undefined}
+    >
       {loading || !data ? (
         <CheckoutSkeleton />
       ) : (
         <>
-          {/* Cart summary — collapsible, shown above steps */}
-          {!orderId && (
-            <div className="border-b border-ui-border-base">
-              <button
-                type="button"
-                onClick={() => setCartSummaryOpen((o) => !o)}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-ui-fg-base hover:bg-ui-bg-subtle transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                    <line x1="3" y1="6" x2="21" y2="6" />
-                    <path d="M16 10a4 4 0 01-8 0" />
-                  </svg>
-                  Handlekurv
-                  {(data.cart.items?.length ?? 0) > 0 && (
-                    <span className="text-xs text-ui-fg-muted">
-                      ({data.cart.items?.reduce((s, i) => s + i.quantity, 0)} stk)
-                    </span>
-                  )}
-                </span>
-                <span className="flex items-center gap-2 text-ui-fg-muted">
-                  <span className="text-ui-fg-base font-semibold">
-                    {data.cart.total != null
-                      ? new Intl.NumberFormat("nb-NO", { style: "currency", currency: data.cart.currency_code }).format(data.cart.total / 100)
-                      : ""}
-                  </span>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className={`transition-transform duration-200 ${cartSummaryOpen ? "rotate-180" : ""}`}>
-                    <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </span>
-              </button>
-              {cartSummaryOpen && (
-                <div className="px-4 pb-4">
-                  <ItemsPreviewTemplate cart={data.cart} />
-                  <div className="mt-4">
-                    <CartTotals totals={data.cart} />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Checkout steps — hidden (but kept mounted) once order is placed */}
-          <div className={orderId ? "hidden" : undefined}>
-            <PaymentWrapper cart={data.cart}>
-              <div className="w-full max-w-2xl mx-auto px-4 py-8 grid grid-cols-1 gap-y-8">
-                <Shipping
+          {/* Two-column layout: steps/confirmation left, cart summary right (desktop) */}
+          <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-x-8 gap-y-8">
+            {/* Left column */}
+            {orderId ? (
+              <div ref={confirmationRef}>
+                <OrderConfirmedInline
+                  orderId={orderId}
+                  countryCode={countryCode}
                   cart={data.cart}
-                  availableShippingMethods={data.shippingMethods}
-                  step={step}
-                  onStepChange={handleStepChange}
-                  onShippingMethodChange={setSelectedShippingOptionId}
-                />
-                <Addresses
-                  cart={data.cart}
-                  customer={data.customer}
-                  step={step}
-                  onStepChange={handleStepChange}
-                  isWorkshop={isWorkshop}
-                />
-                {data.paymentMethods && (
-                  <Payment
-                    cart={data.cart}
-                    availablePaymentMethods={data.paymentMethods}
-                    step={step}
-                    onStepChange={handleStepChange}
-                    onSuccess={handleOrderSuccess}
-                    onCartUpdate={handleCartUpdate}
-                  />
-                )}
-                <Booking
-                  cart={data.cart}
-                  step={step}
-                  onStepChange={handleStepChange}
-                  onSuccess={handleOrderSuccess}
                   isWorkshop={isWorkshop}
                 />
               </div>
-            </PaymentWrapper>
-          </div>
-
-          {/* Confirmation panel — scrolled into view after order placed */}
-          <div ref={confirmationRef}>
-            {orderId && (
-              <OrderConfirmedInline
-                orderId={orderId}
-                countryCode={countryCode}
-                cart={data.cart}
-                isWorkshop={isWorkshop}
-              />
+            ) : (
+              <PaymentWrapper cart={data.cart}>
+                <div className="grid grid-cols-1 gap-y-8">
+                  <Shipping
+                    cart={data.cart}
+                    availableShippingMethods={data.shippingMethods}
+                    step={step}
+                    onStepChange={handleStepChange}
+                    onShippingMethodChange={setSelectedShippingOptionId}
+                  />
+                  <Addresses
+                    cart={data.cart}
+                    customer={data.customer}
+                    step={step}
+                    onStepChange={handleStepChange}
+                    isWorkshop={isWorkshop}
+                  />
+                  {data.paymentMethods && (
+                    <Payment
+                      cart={data.cart}
+                      availablePaymentMethods={data.paymentMethods}
+                      step={step}
+                      onStepChange={handleStepChange}
+                      onSuccess={handleOrderSuccess}
+                      onCartUpdate={handleCartUpdate}
+                    />
+                  )}
+                  <Booking
+                    cart={data.cart}
+                    step={step}
+                    onStepChange={handleStepChange}
+                    onSuccess={handleOrderSuccess}
+                    isWorkshop={isWorkshop}
+                  />
+                </div>
+              </PaymentWrapper>
             )}
+
+            {/* Right: cart summary — sticky sidebar on desktop */}
+            <div className="md:sticky md:top-8 h-fit">
+              <div className="bg-white rounded-lg border border-ui-border-base p-6">
+                <h3 className="text-lg font-semibold text-ui-fg-base mb-4">Handlekurv</h3>
+                <ItemsPreviewTemplate cart={data.cart} />
+                <div className="mt-4 pt-4 border-t border-ui-border-base">
+                  <CartTotals totals={data.cart} />
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
@@ -329,6 +318,63 @@ function CheckoutSkeleton() {
 
 // ─── Inline confirmation screen ───────────────────────────────────────────────
 
+function CompletedStep({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="py-3">
+      <div className="flex items-center gap-2 mb-1">
+        <svg className="w-5 h-5 text-green-600 flex-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span className="text-sm font-semibold text-ui-fg-base">{title}</span>
+      </div>
+      <div className="ml-7 text-sm text-ui-fg-subtle">{children}</div>
+    </div>
+  )
+}
+
+function RegistrationPlate({ regNr }: { regNr: string }) {
+  return (
+    <div className="inline-flex items-stretch border border-gray-400 rounded overflow-hidden mt-1">
+      <div className="w-[23px] bg-[#1864ab] flex items-center justify-center">
+        <span className="text-white text-[10px] font-bold">N</span>
+      </div>
+      <div className="px-3 py-1 bg-white">
+        <span className="font-mono text-base font-bold tracking-wider text-gray-900">{regNr}</span>
+      </div>
+    </div>
+  )
+}
+
+function StarRating({
+  rating,
+  onRate,
+}: {
+  rating: number
+  onRate: (n: number) => void
+}) {
+  const [hover, setHover] = useState(0)
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          className="text-2xl transition-colors focus:outline-none"
+          onMouseEnter={() => setHover(n)}
+          onMouseLeave={() => setHover(0)}
+          onClick={() => onRate(n)}
+        >
+          <span className={(hover || rating) >= n ? "text-yellow-400" : "text-gray-300"}>
+            ★
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
+type ChatMessage = { role: "user" | "assistant"; content: string }
+
 function OrderConfirmedInline({
   orderId,
   countryCode,
@@ -341,38 +387,215 @@ function OrderConfirmedInline({
   isWorkshop: boolean
 }) {
   const { t } = useLanguage()
+  const [rating, setRating] = useState(0)
+  const [ratingCollapsed, setRatingCollapsed] = useState(false)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [chatInput, setChatInput] = useState("")
+  const [chatSending, setChatSending] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
+
   const bookingDate = cart.metadata?.booking_date ? String(cart.metadata.booking_date) : undefined
   const bookingTime = cart.metadata?.booking_time ? String(cart.metadata.booking_time) : undefined
   const bookingWorkshop = cart.metadata?.booking_workshop ? String(cart.metadata.booking_workshop) : undefined
+  const regNr = (cart.metadata?.car_registration || cart.metadata?.registration_number)
+    ? String(cart.metadata.car_registration || cart.metadata.registration_number)
+    : undefined
+
+  // Shipping method name + price
+  const shippingMethod = cart.shipping_methods?.[0]
+  const shippingName = shippingMethod?.name ?? ""
+  const shippingPrice = shippingMethod?.total != null
+    ? `NOK ${(shippingMethod.total / 100).toFixed(2).replace(".", ",")}`
+    : "NOK 0,00"
+
+  // Customer info
+  const addr = cart.shipping_address
+  const customerName = addr ? `${addr.first_name ?? ""} ${addr.last_name ?? ""}`.trim() : ""
+  const customerEmail = cart.email ?? ""
+  const customerPhone = addr?.phone ?? ""
+
+  // Short order ID
+  const shortOrderId = orderId.slice(-4).toUpperCase()
+
+  // Rating collapse after tap
+  const handleRate = useCallback((n: number) => {
+    setRating(n)
+    setTimeout(() => setRatingCollapsed(true), 1000)
+  }, [])
+
+  // Scroll to bottom of chat when new messages arrive
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [chatMessages])
+
+  // Send chat message
+  const handleSendChat = useCallback(async () => {
+    const msg = chatInput.trim()
+    if (!msg || chatSending) return
+    setChatInput("")
+    setChatMessages((prev) => [...prev, { role: "user", content: msg }])
+    setChatSending(true)
+    try {
+      const res = await fetch(`/api/dialog/${orderId}/message`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: msg }),
+      })
+      const data = await res.json()
+      setChatMessages((prev) => [...prev, { role: "assistant", content: data.reply ?? "..." }])
+    } catch {
+      setChatMessages((prev) => [...prev, { role: "assistant", content: "Beklager, noe gikk galt. Prøv igjen." }])
+    } finally {
+      setChatSending(false)
+    }
+  }, [chatInput, chatSending, orderId])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-16 bg-white text-center">
-      {/* Big checkmark */}
-      <div className="mb-8 flex items-center justify-center w-20 h-20 rounded-full bg-green-50">
-        <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-        </svg>
+    <div>
+      {/* ── Collapsed completed steps ── */}
+      <div className="divide-y divide-ui-border-base">
+        {/* Step 1: Delivery */}
+        <CompletedStep title={t.deliveryMethod}>
+          {shippingName} {shippingPrice}
+        </CompletedStep>
+
+        {/* Step 2: Customer details */}
+        <CompletedStep title={t.customerDetails}>
+          <div>{customerName}</div>
+          <div>{customerEmail} {customerPhone}</div>
+          {regNr && <RegistrationPlate regNr={regNr} />}
+        </CompletedStep>
+
+        {/* Step 3: Payment */}
+        <CompletedStep title={t.payment}>
+          {t.paymentSuccessful}
+        </CompletedStep>
+
+        {/* Step 4: Mounting time (workshop only) */}
+        {isWorkshop && bookingDate && (
+          <CompletedStep title={t.mountingTimeStep}>
+            <div>{bookingDate}{bookingTime ? `, kl. ${bookingTime}` : ""}</div>
+            {bookingWorkshop && <div>{bookingWorkshop}</div>}
+          </CompletedStep>
+        )}
+
+        {/* Collapsed rating widget (appears after rating) */}
+        {ratingCollapsed && (
+          <div
+            className="py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setRatingCollapsed(false)}
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600 flex-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-sm font-semibold text-ui-fg-base">
+                {t.thankYou} {"★".repeat(rating)}{"☆".repeat(5 - rating)}
+              </span>
+            </div>
+            <div className="ml-7 text-xs text-ui-fg-muted">
+              {t.orderNumber} #{shortOrderId} — {t.confirmationEmail}
+            </div>
+          </div>
+        )}
       </div>
 
-      <h1 className="text-3xl font-bold text-ui-fg-base mb-2">{t.thankYou}</h1>
-      <p className="text-ui-fg-subtle mb-1">{t.orderNumber} <span className="font-medium text-ui-fg-base">{orderId.slice(-8).toUpperCase()}</span></p>
-      <p className="text-sm text-ui-fg-muted mb-8">{t.confirmationEmail}</p>
-
-      {/* Booking summary */}
-      {isWorkshop && bookingDate && bookingTime && (
-        <div className="w-full max-w-xs rounded-xl border border-ui-border-base bg-ui-bg-subtle p-5 mb-8 text-left">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ui-fg-muted mb-2">{t.mountingTime}</p>
-          <p className="text-base font-semibold text-ui-fg-base">{bookingWorkshop}</p>
-          <p className="text-sm text-ui-fg-subtle">{bookingDate}, kl. {bookingTime}</p>
+      {/* ── Celebration + Rating (visible until collapsed) ── */}
+      {!ratingCollapsed && (
+        <div className="mt-6 mb-6">
+          <div className="border-t-[3px] border-ui-fg-base pt-6" />
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-ui-fg-base mb-1">{t.thankYou}</h2>
+            <p className="text-sm text-ui-fg-muted mb-6">
+              {t.orderNumber} #{shortOrderId} — {t.confirmationEmail}
+            </p>
+            <p className="text-[15px] text-ui-fg-base mb-3">{t.howWasExperience}</p>
+            <div className="flex justify-center">
+              <StarRating rating={rating} onRate={handleRate} />
+            </div>
+          </div>
         </div>
       )}
 
-      <a
-        href={`/${countryCode}`}
-        className="inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
-      >
-        Tilbake til forsiden
-      </a>
+      {/* ── AI Chat ── */}
+      <div className="mt-6">
+        <p className="text-sm font-semibold text-ui-fg-base mb-3">{t.talkToAI}</p>
+
+        {/* Chat messages */}
+        {chatMessages.length > 0 && (
+          <div className="mb-3 space-y-3 max-h-80 overflow-y-auto">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    msg.role === "user"
+                      ? "bg-gray-800 text-white rounded-br-md"
+                      : "bg-gray-100 text-gray-900 rounded-bl-md"
+                  }`}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+            {chatSending && (
+              <div className="flex justify-start">
+                <div className="bg-gray-100 text-gray-500 px-4 py-2.5 rounded-2xl rounded-bl-md text-sm">
+                  ...
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        )}
+
+        {/* Input area */}
+        <div className="border border-[#ced4da] rounded-xl overflow-hidden">
+          <textarea
+            className="w-full px-4 py-3 text-sm resize-none focus:outline-none"
+            rows={3}
+            placeholder={t.chatPlaceholder}
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                handleSendChat()
+              }
+            }}
+          />
+          <div className="flex items-center justify-between px-3 py-2 border-t border-[#ced4da]">
+            <button
+              type="button"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              title="Attach file"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={handleSendChat}
+              disabled={chatSending || !chatInput.trim()}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+            >
+              <svg className="w-4 h-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M12 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Back to home */}
+      <div className="mt-8 text-center">
+        <a
+          href={`/${countryCode}`}
+          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+        >
+          {t.backToHome}
+        </a>
+      </div>
     </div>
   )
 }

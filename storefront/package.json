@@ -8,13 +8,14 @@
     "medusa-storefront"
   ],
   "scripts": {
-    "dev": "next dev --turbopack -p 8000",
+    "dev": "next dev --experimental-https -p 8000",
     "build": "next build",
     "start": "next start -p 8000",
     "lint": "next lint",
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@headlessui/react": "^2.2.0",
     "@medusajs/icons": "latest",
     "@medusajs/js-sdk": "latest",

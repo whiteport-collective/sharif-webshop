@@ -19,6 +19,7 @@ type Props = {
   onDimensionChange?: (dimension: string | null) => void
   onFormChange?: (params: TireSearchParams | null) => void
   previewCount?: number
+  onMount?: (setDimension: (width: string, profile: string, rim: string) => void) => void
 }
 
 type Segment = "width" | "profile" | "rim"
@@ -178,7 +179,7 @@ function SegmentInput({
   )
 }
 
-export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount }: Props) {
+export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount }: Props) {
   const { t } = useLanguage()
   const [width, setWidth] = useState("")
   const [profile, setProfile] = useState("")
@@ -186,7 +187,21 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
   const [rimLetterSeen, setRimLetterSeen] = useState(false)
   const [quantity, setQuantity] = useState("4")
   const [season, setSeason] = useState("sommer")
+  const [agentPulse, setAgentPulse] = useState(false)
   const router = useRouter()
+
+  // Expose setDimension to parent (used by agent fillDimensionField tool)
+  useEffect(() => {
+    if (!onMount) return
+    onMount((w: string, p: string, r: string) => {
+      setWidth(w)
+      setProfile(p)
+      setRim(r)
+      setRimLetterSeen(false)
+      setAgentPulse(true)
+      setTimeout(() => setAgentPulse(false), 1200)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const profileRef = useRef<HTMLInputElement>(null)
   const rimRef = useRef<HTMLInputElement>(null)
@@ -343,7 +358,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
         <label className="block text-xs font-bold uppercase tracking-widest text-ui-fg-muted mb-1.5">
           {t.tireSizeLabel}
         </label>
-        <div className="flex items-center border border-ui-border-base rounded-lg px-3 focus-within:border-ui-fg-base transition-colors bg-white">
+        <div className={`flex items-center border rounded-lg px-3 transition-all bg-white focus-within:border-ui-fg-base ${agentPulse ? "border-amber-400 ring-2 ring-amber-200 animate-pulse" : "border-ui-border-base"}`}>
           <SegmentInput
             value={width}
             onChange={(v) => { setWidth(v); setProfile(""); setRim("") }}
@@ -401,7 +416,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
       <button
         type="submit"
         disabled={!isComplete}
-        className="w-full bg-ui-fg-base text-ui-bg-base py-4 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-full bg-red-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {t.findTires}
       </button>

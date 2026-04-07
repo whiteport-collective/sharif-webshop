@@ -15,6 +15,7 @@ export type Strings = {
   callUs: string
   selectQty: string
   stepResults: string
+  proceedToCheckout: string
   // TireSearch
   tireSizeLabel: string
   findTires: string
@@ -66,6 +67,16 @@ export type Strings = {
   confirmationEmail: string
   mountingTime: string
   finalizeOrder: string
+  // Order Confirmation
+  deliveryMethod: string
+  customerDetails: string
+  payment: string
+  mountingTimeStep: string
+  howWasExperience: string
+  talkToAI: string
+  chatPlaceholder: string
+  backToHome: string
+  paymentSuccessful: string
 }
 
 export const UI: Record<Lang, Strings> = {
@@ -80,6 +91,7 @@ export const UI: Record<Lang, Strings> = {
     callUs: "Ring oss",
     selectQty: "Velg antall",
     stepResults: "2/3 Velg dekk",
+    proceedToCheckout: "Gå til kassen",
     // TireSearch
     tireSizeLabel: "Dekkstørrelse",
     findTires: "Finn dekk",
@@ -127,10 +139,20 @@ export const UI: Record<Lang, Strings> = {
     orPayNow: "Eller betal nå — frakt beregnes i kassen",
     // CheckoutPanelContent
     thankYou: "Takk for bestillingen!",
-    orderNumber: "Ordrenummer:",
-    confirmationEmail: "Du vil motta en e-postbekreftelse snart.",
+    orderNumber: "Ordrenr.",
+    confirmationEmail: "Bekreftelse sendt på e-post",
     mountingTime: "Monteringstidspunkt",
     finalizeOrder: "Fullfør bestilling",
+    // Order Confirmation
+    deliveryMethod: "Leveringsmåte",
+    customerDetails: "Kundeopplysninger",
+    payment: "Betaling",
+    mountingTimeStep: "Monteringstid",
+    howWasExperience: "Hvordan var opplevelsen?",
+    talkToAI: "Snakk med vår AI",
+    chatPlaceholder: "Har du tankar och frågor om din bestilling...",
+    backToHome: "Tilbake til forsiden",
+    paymentSuccessful: "Betaling gjennomført",
   },
   en: {
     // FlowShell
@@ -143,6 +165,7 @@ export const UI: Record<Lang, Strings> = {
     callUs: "Call us",
     selectQty: "Select quantity",
     stepResults: "2/3 Choose tires",
+    proceedToCheckout: "Proceed to checkout",
     // TireSearch
     tireSizeLabel: "Tire size",
     findTires: "Find tires",
@@ -189,11 +212,21 @@ export const UI: Record<Lang, Strings> = {
     fromPrice: "From 699 kr",
     orPayNow: "Or pay now — shipping calculated at checkout",
     // CheckoutPanelContent
-    thankYou: "Thank you for your order!",
-    orderNumber: "Order number:",
-    confirmationEmail: "You will receive a confirmation email shortly.",
+    thankYou: "Thanks for your order!",
+    orderNumber: "Order",
+    confirmationEmail: "Confirmation sent by email",
     mountingTime: "Fitting appointment",
     finalizeOrder: "Finalize order",
+    // Order Confirmation
+    deliveryMethod: "Delivery method",
+    customerDetails: "Customer details",
+    payment: "Payment",
+    mountingTimeStep: "Fitting time",
+    howWasExperience: "How was your experience?",
+    talkToAI: "Talk to our AI",
+    chatPlaceholder: "Questions about your order...",
+    backToHome: "Back to home",
+    paymentSuccessful: "Payment successful",
   },
 }
 
