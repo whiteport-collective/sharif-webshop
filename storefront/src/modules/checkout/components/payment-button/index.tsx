@@ -13,6 +13,7 @@ type PaymentButtonProps = {
   "data-testid"?: string
   onSuccess?: (orderId: string) => void
   disabled?: boolean
+  buttonLabel?: string
 }
 
 const PaymentButton: React.FC<PaymentButtonProps> = ({
@@ -20,6 +21,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
   "data-testid": dataTestId,
   onSuccess,
   disabled: disabledProp,
+  buttonLabel,
 }) => {
   const notReady =
     disabledProp ||
@@ -39,6 +41,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
           cart={cart}
           data-testid={dataTestId}
           onSuccess={onSuccess}
+          buttonLabel={buttonLabel}
         />
       )
     case isManual(paymentSession?.provider_id):
@@ -47,6 +50,7 @@ const PaymentButton: React.FC<PaymentButtonProps> = ({
           notReady={notReady}
           data-testid={dataTestId}
           onSuccess={onSuccess}
+          buttonLabel={buttonLabel}
         />
       )
     default:
@@ -59,11 +63,13 @@ const StripePaymentButton = ({
   notReady,
   "data-testid": dataTestId,
   onSuccess,
+  buttonLabel,
 }: {
   cart: HttpTypes.StoreCart
   notReady: boolean
   "data-testid"?: string
   onSuccess?: (orderId: string) => void
+  buttonLabel?: string
 }) => {
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -156,7 +162,7 @@ const StripePaymentButton = ({
         isLoading={submitting}
         data-testid={dataTestId}
       >
-        Place order
+        {buttonLabel ?? "Place order"}
       </Button>
       <ErrorMessage
         error={errorMessage}
@@ -170,10 +176,12 @@ const ManualTestPaymentButton = ({
   notReady,
   "data-testid": dataTestId,
   onSuccess,
+  buttonLabel,
 }: {
   notReady: boolean
   "data-testid"?: string
   onSuccess?: (orderId: string) => void
+  buttonLabel?: string
 }) => {
   const [submitting, setSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -205,7 +213,7 @@ const ManualTestPaymentButton = ({
         size="large"
         data-testid={dataTestId ?? "submit-order-button"}
       >
-        Place order
+        {buttonLabel ?? "Place order"}
       </Button>
       <ErrorMessage
         error={errorMessage}

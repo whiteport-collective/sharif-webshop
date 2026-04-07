@@ -67,6 +67,7 @@ export type Strings = {
   confirmationEmail: string
   mountingTime: string
   finalizeOrder: string
+  bookMounting: string
   // Order Confirmation
   deliveryMethod: string
   customerDetails: string
@@ -143,6 +144,7 @@ export const UI: Record<Lang, Strings> = {
     confirmationEmail: "Bekreftelse sendt på e-post",
     mountingTime: "Monteringstidspunkt",
     finalizeOrder: "Fullfør bestilling",
+    bookMounting: "Boka montering",
     // Order Confirmation
     deliveryMethod: "Leveringsmåte",
     customerDetails: "Kundeopplysninger",
@@ -217,6 +219,7 @@ export const UI: Record<Lang, Strings> = {
     confirmationEmail: "Confirmation sent by email",
     mountingTime: "Fitting appointment",
     finalizeOrder: "Finalize order",
+    bookMounting: "Book fitting",
     // Order Confirmation
     deliveryMethod: "Delivery method",
     customerDetails: "Customer details",

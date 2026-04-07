@@ -10,7 +10,7 @@ import { Button, clx, Heading, Text } from "@medusajs/ui"
 import ErrorMessage from "@modules/checkout/components/error-message"
 import Divider from "@modules/common/components/divider"
 import MedusaRadio from "@modules/common/components/radio"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
 type ShippingProps = {
@@ -45,8 +45,6 @@ const Shipping: React.FC<ShippingProps> = ({
   )
 
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
 
   const isOpen = stepProp ? stepProp === "delivery" : searchParams.get("step") === "delivery"
 
@@ -98,13 +96,11 @@ const Shipping: React.FC<ShippingProps> = ({
   }, [isOpen])
 
   const handleEdit = () => {
-    if (onStepChange) onStepChange("delivery")
-    else router.push(pathname + "?step=delivery", { scroll: false })
+    onStepChange?.("delivery")
   }
 
   const handleSubmit = () => {
-    if (onStepChange) onStepChange("address")
-    else router.push(pathname + "?step=address", { scroll: false })
+    onStepChange?.("address")
   }
 
   const handleSetShippingMethod = async (id: string) => {
@@ -125,6 +121,12 @@ const Shipping: React.FC<ShippingProps> = ({
   }
 
   const selectedMethod = cart.shipping_methods?.at(-1)
+
+  // Look up the display name from the available options (cart shipping_method may lack .name)
+  const selectedOptionName =
+    availableShippingMethods?.find(
+      (o) => o.id === selectedMethod?.shipping_option_id
+    )?.name ?? selectedMethod?.name
 
   return (
     <div className="bg-white">
@@ -228,10 +230,11 @@ const Shipping: React.FC<ShippingProps> = ({
       ) : (
         <div className="text-small-regular">
           {selectedMethod && (
-            <div className="flex flex-col w-1/3">
-              <Text className="txt-medium-plus text-ui-fg-base mb-1">Metode</Text>
+            <div className="flex flex-col gap-y-1">
+              <Text className="txt-medium-plus text-ui-fg-base">
+                {selectedOptionName || "Leveringsmåte valgt"}
+              </Text>
               <Text className="txt-medium text-ui-fg-subtle">
-                {selectedMethod.name}{" "}
                 {convertToLocale({
                   amount: selectedMethod.amount!,
                   currency_code: cart.currency_code,
