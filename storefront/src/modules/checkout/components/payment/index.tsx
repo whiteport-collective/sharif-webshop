@@ -11,8 +11,8 @@ import PaymentContainer, {
   StripeCardContainer,
 } from "@modules/checkout/components/payment-container"
 import Divider from "@modules/common/components/divider"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
 
 const Payment = ({
   cart,
@@ -37,13 +37,12 @@ const Payment = ({
   const [error, setError] = useState<string | null>(null)
   const [cardBrand, setCardBrand] = useState<string | null>(null)
   const [cardComplete, setCardComplete] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(
     activeSession?.provider_id ?? ""
   )
 
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
 
   const isOpen = stepProp ? stepProp === "payment" : searchParams.get("step") === "payment"
 
@@ -65,19 +64,8 @@ const Payment = ({
   const shippingMethodName = cart?.shipping_methods?.[0]?.name?.toLowerCase() ?? ""
   const isWorkshopOrder = shippingMethodName.includes("montering")
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      params.set(name, value)
-
-      return params.toString()
-    },
-    [searchParams]
-  )
-
   const handleEdit = () => {
-    if (onStepChange) onStepChange("payment")
-    else router.push(pathname + "?" + createQueryString("step", "payment"), { scroll: false })
+    onStepChange?.("payment")
   }
 
   const handleSubmit = async () => {
@@ -91,8 +79,7 @@ const Payment = ({
           provider_id: selectedPaymentMethod,
         })
       }
-      if (onStepChange) onStepChange("booking")
-      else router.push(pathname + "?" + createQueryString("step", "booking"), { scroll: false })
+      onStepChange?.("booking")
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -187,19 +174,37 @@ const Payment = ({
             data-testid="payment-method-error-message"
           />
 
+          <label className="flex items-start gap-3 mb-4 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-gray-300"
+            />
+            <span className="text-sm text-ui-fg-subtle">
+              Jeg har lest og godkjenner{" "}
+              <a
+                href="/vilkar"
+                className="underline font-medium text-ui-fg-base"
+              >
+                kjøpsvilkårene
+              </a>
+            </span>
+          </label>
+
           <div className="mt-6">
             {isWorkshopOrder ? (
               <Button
                 size="large"
                 isLoading={isLoading}
-                disabled={!selectedPaymentMethod}
+                disabled={!selectedPaymentMethod || !termsAccepted}
                 onClick={handleSubmit}
                 data-testid="continue-to-booking-button"
               >
-                Continue to booking
+                Velg monteringstid
               </Button>
             ) : (
-              <PaymentButton cart={cart} data-testid="submit-order-button" onSuccess={onSuccess} />
+              <PaymentButton cart={cart} data-testid="submit-order-button" onSuccess={onSuccess} disabled={!termsAccepted} />
             )}
           </div>
         </div>

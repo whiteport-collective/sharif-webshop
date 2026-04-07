@@ -214,6 +214,21 @@
 
 ---
 
+## FB-18: Lock scroll-up and hide dimension header on confirmation
+
+**Observed:** After order is placed and confirmation shows, the user can still scroll up and the tire dimension header ("205/55R16 · 4 stk · Sommerdekk") is still visible. Both should be disabled/hidden — the order is terminal, there's nothing to go back to.
+
+**File:** `storefront/src/modules/home/components/flow-shell/index.tsx`
+
+**Fix:** When `onConfirmationReached()` fires:
+1. Remove the dimension/search meta text from the header
+2. Disable the scroll-up back gesture (already partially handled via `backLocked` ref in CheckoutPanelContent, but FlowShell header needs to respond too)
+
+**Severity:** Medium — post-order UX  
+**Assigned to:** Freya
+
+---
+
 ## FB-16: Remove "Tilbake til forsiden" button from confirmation
 
 **Observed:** The big red "Tilbake til forsiden" button at the bottom of the order confirmation is too prominent. It draws attention away from the rating and AI chat — which are the actual engagement points. The user can navigate home via the logo or menu.
@@ -237,17 +252,18 @@
 | FB-04 | "Finn dekk" not red | Low | Fixed |
 | FB-05 | Scroll snapping broken | High | Open |
 | FB-06 | Too much space above tire list | Low | Open |
-| FB-07 | Leveringsmate heading + values | Medium | Open |
-| FB-08 | Kundeopplysninger no values | Medium | Open |
+| FB-07 | Leveringsmate heading + values | Medium | Fixed |
+| FB-08 | Kundeopplysninger no values | Medium | Fixed |
 | FB-09 | Stripe insecure connection warning | Medium | Fixed |
-| FB-10 | Button label "Continue to booking" | Medium | Open |
-| FB-11 | Missing terms checkbox | High | Open |
-| FB-12 | Booking button: "Boka montering" | Low | Open |
-| FB-13 | Checkout page reloads between steps | High | Open |
-| FB-14 | Reg plate alignment (right) | Low | Open |
-| FB-15 | Rating stars too small | Low | Open |
-| FB-16 | Remove "Tilbake til forsiden" button | Low | Open |
+| FB-10 | Button label "Continue to booking" | Medium | Fixed |
+| FB-11 | Missing terms checkbox | High | Fixed |
+| FB-12 | Booking button: "Boka montering" | Low | Fixed |
+| FB-13 | Checkout page reloads between steps | High | Fixed |
+| FB-14 | Reg plate alignment (right) | Low | Fixed |
+| FB-15 | Rating stars too small | Low | Fixed |
+| FB-16 | Remove "Tilbake til forsiden" button | Low | Fixed |
 | FB-17 | Attach file button not wired up | Low | Deferred — AI impl WO |
+| FB-18 | Lock scroll-up + hide dimension header on confirmation | Medium | Open |
 
 ---
 

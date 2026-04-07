@@ -354,12 +354,12 @@ function StarRating({
 }) {
   const [hover, setHover] = useState(0)
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-3">
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
-          className="text-2xl transition-colors focus:outline-none"
+          className="text-4xl transition-colors focus:outline-none"
           onMouseEnter={() => setHover(n)}
           onMouseLeave={() => setHover(0)}
           onClick={() => onRate(n)}
@@ -461,9 +461,13 @@ function OrderConfirmedInline({
 
         {/* Step 2: Customer details */}
         <CompletedStep title={t.customerDetails}>
-          <div>{customerName}</div>
-          <div>{customerEmail} {customerPhone}</div>
-          {regNr && <RegistrationPlate regNr={regNr} />}
+          <div className="flex justify-between items-start">
+            <div>
+              <div>{customerName}</div>
+              <div>{customerEmail} {customerPhone}</div>
+            </div>
+            {regNr && <RegistrationPlate regNr={regNr} />}
+          </div>
         </CompletedStep>
 
         {/* Step 3: Payment */}
@@ -587,15 +591,6 @@ function OrderConfirmedInline({
         </div>
       </div>
 
-      {/* Back to home */}
-      <div className="mt-8 text-center">
-        <a
-          href={`/${countryCode}`}
-          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
-        >
-          {t.backToHome}
-        </a>
-      </div>
     </div>
   )
 }

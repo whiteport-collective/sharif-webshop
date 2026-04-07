@@ -4,9 +4,9 @@ import { setAddresses, setAddressesInPanel } from "@lib/data/cart"
 import compareAddresses from "@lib/util/compare-addresses"
 import { CheckCircleSolid } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Heading, useToggleState } from "@medusajs/ui"
+import { Heading, Text, useToggleState } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useActionState } from "react"
 import BillingAddress from "../billing_address"
 import ErrorMessage from "../error-message"
@@ -27,8 +27,6 @@ const Addresses = ({
   isWorkshop?: boolean
 }) => {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
 
   const isOpen = stepProp ? stepProp === "address" : searchParams.get("step") === "address"
 
@@ -44,8 +42,7 @@ const Addresses = ({
   )
 
   const handleEdit = () => {
-    if (onStepChange) onStepChange("address")
-    else router.push(pathname + "?step=address")
+    onStepChange?.("address")
   }
 
   const panelAction = async (state: unknown, formData: FormData) => {
@@ -78,7 +75,7 @@ const Addresses = ({
           </button>
         )}
       </div>
-      {isOpen && (
+      {isOpen ? (
         <form action={formAction}>
           <div className="pb-8">
             <ShippingAddress
@@ -107,7 +104,27 @@ const Addresses = ({
             <ErrorMessage error={message} data-testid="address-error-message" />
           </div>
         </form>
-      )}
+      ) : cart?.email ? (
+        <div className="text-small-regular">
+          <div className="flex flex-col gap-y-1">
+            {(cart.shipping_address?.first_name || cart.shipping_address?.last_name) && (
+              <Text className="txt-medium-plus text-ui-fg-base">
+                {[cart.shipping_address.first_name, cart.shipping_address.last_name]
+                  .filter(Boolean)
+                  .join(" ")}
+              </Text>
+            )}
+            {cart.email && (
+              <Text className="txt-medium text-ui-fg-subtle">{cart.email}</Text>
+            )}
+            {cart.shipping_address?.phone && (
+              <Text className="txt-medium text-ui-fg-subtle">
+                {cart.shipping_address.phone}
+              </Text>
+            )}
+          </div>
+        </div>
+      ) : null}
       <Divider className="mt-8" />
     </div>
   )

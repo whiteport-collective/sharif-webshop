@@ -6,8 +6,9 @@ import { HttpTypes } from "@medusajs/types"
 import { Heading, Text, clx } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import PaymentButton from "@modules/checkout/components/payment-button"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { useCallback, useState, useTransition } from "react"
+import { useLanguage } from "@lib/i18n"
+import { useSearchParams } from "next/navigation"
+import { useState, useTransition } from "react"
 
 const WORKSHOPS: Record<string, { name: string; address: string }> = {
   "pickup-fjellhamar": {
@@ -84,8 +85,7 @@ const Booking = ({
   isWorkshop?: boolean
 }) => {
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const pathname = usePathname()
+  const { t } = useLanguage()
 
   const isOpen = stepProp ? stepProp === "booking" : searchParams.get("step") === "booking"
 
@@ -99,18 +99,8 @@ const Booking = ({
   const [visibleDays, setVisibleDays] = useState(DAYS_INITIAL)
   const [, startTransition] = useTransition()
 
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams)
-      params.set(name, value)
-      return params.toString()
-    },
-    [searchParams]
-  )
-
   const handleEdit = () => {
-    if (onStepChange) onStepChange("booking")
-    else router.push(pathname + "?" + createQueryString("step", "booking"), { scroll: false })
+    onStepChange?.("booking")
   }
 
   const toggleDay = (date: string) => {
@@ -256,6 +246,7 @@ const Booking = ({
             data-testid="submit-order-button"
             disabled={!bookingReady}
             onSuccess={onSuccess}
+            buttonLabel={t.bookMounting}
           />
         </div>
       </div>
