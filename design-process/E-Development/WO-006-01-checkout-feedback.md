@@ -264,6 +264,7 @@
 | FB-16 | Remove "Tilbake til forsiden" button | Low | Fixed |
 | FB-17 | Attach file button not wired up | Low | Deferred — AI impl WO |
 | FB-18 | Lock scroll-up + hide dimension header on confirmation | Medium | Open |
+| FB-19 | "Finn dekk" should never be disabled — focus first empty field | Medium | Fixed |
 
 ---
 
