@@ -6,7 +6,7 @@ import { Dialog, DialogPanel } from "@headlessui/react"
 
 export type SortKey = "price" | "best" | "grip" | "fuel" | "noise" | "performance"
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "price", label: "Laveste pris først" },
   { key: "best",  label: "Best vurdert" },
   { key: "grip",  label: "Beste veggrep" },

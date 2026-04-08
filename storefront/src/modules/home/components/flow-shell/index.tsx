@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { HttpTypes } from "@medusajs/types"
 import TireSearch, { type TireSearchParams } from "@modules/home/components/tire-search"
 import TireCard from "@modules/products/components/tire-card"
-import TireResultsHeader, { type SortKey } from "@modules/products/components/tire-results-header"
+import TireResultsHeader, { type SortKey, SORT_OPTIONS } from "@modules/products/components/tire-results-header"
 import { type SelectedTire } from "@modules/home/components/quantity-shop"
 import ProductDetailPanel from "@modules/products/components/product-detail-panel"
 import { sortProducts } from "@lib/util/sort-tires"
@@ -81,6 +81,8 @@ export default function FlowShell({
   const [activeSection, setActiveSection] = useState<FlowView>("home")
   const [lang, setLang] = useState<Lang>("no")
   const [langMenuOpen, setLangMenuOpen] = useState(false)
+  const [headerSortOpen, setHeaderSortOpen] = useState(false)
+  const headerSortRef = useRef<HTMLDivElement>(null)
   const langMenuRef = useRef<HTMLDivElement>(null)
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>([])
   const [activeSort, setActiveSort] = useState<SortKey>("price")
@@ -316,15 +318,23 @@ export default function FlowShell({
 
   useEffect(() => {
     if (!langMenuOpen) return
-
     const close = (e: MouseEvent) => {
       if (langMenuRef.current?.contains(e.target as Node)) return
       setLangMenuOpen(false)
     }
-
     document.addEventListener("mousedown", close)
     return () => document.removeEventListener("mousedown", close)
   }, [langMenuOpen])
+
+  useEffect(() => {
+    if (!headerSortOpen) return
+    const close = (e: MouseEvent) => {
+      if (headerSortRef.current?.contains(e.target as Node)) return
+      setHeaderSortOpen(false)
+    }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
+  }, [headerSortOpen])
 
   const showResultsSection = Boolean(searchMeta.dimension)
   const showCheckoutSection = Boolean(selectedTire) && checkoutKey > 0
@@ -354,18 +364,23 @@ export default function FlowShell({
       const checkoutTop = showCheckoutSection ? (checkoutSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
 
       const nextSection =
-        scrollMarker >= checkoutTop
-          ? "checkout"
-          : scrollMarker >= resultsTop
-            ? "results"
-            : "home"
+        scrollMarker >= checkoutTop ? "checkout"
+        : scrollMarker >= resultsTop ? "results"
+        : "home"
 
-      setActiveSection((current) => current === nextSection ? current : nextSection)
+      setActiveSection((current) => {
+        if (current === nextSection) return current
+        if (nextSection !== "home") setMenuOpen(false)
+        if (nextSection === "home") setView("home")
+        return nextSection
+      })
     }
 
     syncActiveSection()
     surface.addEventListener("scroll", syncActiveSection, { passive: true })
-    return () => surface.removeEventListener("scroll", syncActiveSection)
+    return () => {
+      surface.removeEventListener("scroll", syncActiveSection)
+    }
   }, [showCheckoutSection, showResultsSection])
 
   const handleDimensionChange = useCallback((dimension: string | null) => {
@@ -442,7 +457,8 @@ export default function FlowShell({
     step: activeSection === "checkout" ? checkoutStepTitle || null : null,
   }), [activeSection, searchMeta.dimension, products, selectedTire, checkoutStepTitle])
 
-  const hasSearch = Boolean(searchMeta.dimension && products.length > 0)
+  const chipDimension = searchMeta.dimension || previewDimension || ""
+  const hasSearch = Boolean(chipDimension)
   const inFlow = activeSection !== "home"
 
   const handleHeaderBack = () => {
@@ -465,56 +481,73 @@ export default function FlowShell({
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
       <AgentToolContextProvider handlers={agentHandlers}>
-        <div className="relative h-screen overflow-hidden bg-ui-bg-base" style={{ scrollbarGutter: "stable" as any }}>
-          {/* ── Header bar ── */}
-          <header className="absolute inset-x-0 top-0 z-[90] flex h-14 items-center border-b border-ui-border-base bg-white px-3">
+        <div className="relative flex h-screen overflow-hidden bg-ui-bg-base" style={{ scrollbarGutter: "stable" as any }}>
 
-            {/* Left: nav icon + logo */}
-            <div className="flex flex-none items-center gap-2">
-              {activeSection === "home" ? (
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${menuOpen ? "border-red-600 bg-red-600 text-white hover:bg-red-700" : "border-ui-border-base text-ui-fg-base hover:bg-ui-bg-subtle"}`}
-                  aria-label="Meny"
-                >
-                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-                    <rect y="0" width="16" height="2" rx="1" fill="currentColor" />
-                    <rect y="5" width="16" height="2" rx="1" fill="currentColor" />
-                    <rect y="10" width="16" height="2" rx="1" fill="currentColor" />
-                  </svg>
-                </button>
-              ) : hideBack ? (
-                <div className="w-9" />
+          {/* Full-height menu column — desktop only (lg+), animated */}
+          <aside
+            className="hidden lg:flex flex-none flex-col bg-white z-[91] overflow-hidden border-r"
+            style={{ width: menuOpen ? "15rem" : "0px", borderColor: menuOpen ? undefined : "transparent", transition: "width 300ms ease-in-out, border-color 300ms ease-in-out" }}
+          >
+            <div className="flex h-14 flex-none items-center border-b border-ui-border-base px-4">
+              <span className="text-sm font-semibold text-ui-fg-base">Meny</span>
+            </div>
+            <nav className="flex-1 overflow-y-auto p-4 whitespace-nowrap">
+              <ul className="flex flex-col gap-4">
+                <li><a href="/" className="text-sm font-medium text-ui-fg-base hover:text-ui-fg-subtle">Home</a></li>
+                <li><a href="/store" className="text-sm font-medium text-ui-fg-base hover:text-ui-fg-subtle">Store</a></li>
+                <li><a href="/brands" className="text-sm font-medium text-ui-fg-base hover:text-ui-fg-subtle">Brands</a></li>
+                <li><a href="/account" className="text-sm font-medium text-ui-fg-base hover:text-ui-fg-subtle">Account</a></li>
+                <li><a href="/cart" className="text-sm font-medium text-ui-fg-base hover:text-ui-fg-subtle">Cart</a></li>
+              </ul>
+            </nav>
+          </aside>
+
+          {/* Main area (header + body) */}
+          <div className="relative flex flex-1 flex-col overflow-hidden">
+          {/* ── Header bar ── */}
+          <header className="flex-none z-[90] flex h-14 items-center border-b border-ui-border-base bg-white px-3">
+
+            {/* Left: nav icon + logo + dimension chip */}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              {hideBack ? (
+                <div className="w-9 flex-none" />
               ) : (
                 <button
                   type="button"
-                  onClick={handleHeaderBack}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-ui-border-base text-ui-fg-base transition-colors hover:bg-ui-bg-subtle"
-                  aria-label="Tilbake"
+                  onClick={activeSection === "home" ? () => setMenuOpen((open) => !open) : handleHeaderBack}
+                  className="flex h-9 w-9 flex-none items-center justify-center rounded-full border"
+                  style={{
+                    borderColor: menuOpen && activeSection === "home" ? "#dc2626" : undefined,
+                    backgroundColor: menuOpen && activeSection === "home" ? "#dc2626" : undefined,
+                    color: menuOpen && activeSection === "home" ? "white" : undefined,
+                    transition: "background-color 300ms ease-in-out, border-color 300ms ease-in-out, color 300ms ease-in-out",
+                  }}
+                  aria-label={activeSection === "home" ? "Meny" : "Tilbake"}
                 >
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                    <path d="M8 12V4M4 8l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  {/* Hamburger + arrow stacked, crossfade on scroll */}
+                  <div className="relative flex h-4 w-4 items-center justify-center">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="absolute" style={{ opacity: activeSection === "home" ? 1 : 0, transition: "opacity 300ms ease-in-out" }}>
+                      <rect x="0" y="3" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                      <rect x="0" y="7.25" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                      <rect x="0" y="11.5" width="16" height="1.5" rx="0.75" fill="currentColor" />
+                    </svg>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="absolute" style={{ opacity: activeSection === "home" ? 0 : 1, transition: "opacity 300ms ease-in-out" }}>
+                      <path d="M8 12V4M4 8l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                 </button>
               )}
-              <img src="/sharif-logo.png" alt="Sharif" className={`w-auto ${hasSearch ? "h-5 sm:h-7" : "h-7"}`} />
-            </div>
-
-            {/* Center: dimension chip OR checkout step title */}
-            <div className="flex min-w-0 flex-1 items-center justify-center px-2">
-              {activeSection === "checkout" && checkoutStepTitle ? (
-                <span className="truncate text-sm font-semibold text-ui-fg-base">{checkoutStepTitle}</span>
-              ) : hasSearch ? (
+              <img src="/sharif-logo.png" alt="Sharif" className={`w-auto flex-none ${hasSearch ? "h-5 sm:h-7" : "h-7"}`} />
+              {hasSearch && (
                 <div className="flex min-w-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={() => scrollToSection("home")}
                     className="min-w-0 truncate text-xs font-medium text-ui-fg-subtle hover:text-ui-fg-base"
-                    title={`${searchMeta.dimension} · ${searchMeta.seasonLabel} — trykk for å endre`}
+                    title={`${chipDimension}${searchMeta.seasonLabel ? ` · ${searchMeta.seasonLabel}` : ""} — trykk for å endre`}
                   >
-                    <span>{searchMeta.dimension}</span>
-                    <span className="hidden sm:inline"> · {searchMeta.seasonLabel}</span>
+                    <span>{chipDimension}</span>
+                    <span className="hidden sm:inline">{searchMeta.seasonLabel ? ` · ${searchMeta.seasonLabel}` : ""}</span>
                   </button>
                   <button
                     type="button"
@@ -527,11 +560,51 @@ export default function FlowShell({
                     </svg>
                   </button>
                 </div>
-              ) : null}
+              )}
             </div>
 
-            {/* Right: chat + lang + cart */}
+            {/* Center: checkout step title only */}
+            {checkoutStepTitle && (
+              <div className="absolute left-1/2 flex -translate-x-1/2 items-center">
+                <span className="text-sm font-semibold text-ui-fg-base">{checkoutStepTitle}</span>
+              </div>
+            )}
+
+            {/* Right: context-aware controls */}
             <div className="flex flex-none items-center gap-1">
+
+              {/* Results view: count + sort */}
+              {activeSection === "results" && (
+                <div className="relative flex items-center gap-2 mr-1" ref={headerSortRef}>
+                  <span className="hidden sm:block text-xs text-ui-fg-subtle whitespace-nowrap">{displayCount} dekk</span>
+                  <button
+                    type="button"
+                    onClick={() => setHeaderSortOpen((o) => !o)}
+                    className="flex items-center gap-1 rounded-full bg-[#212529] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#343a40] transition-colors"
+                  >
+                    {SORT_OPTIONS.find((o) => o.key === activeSort)?.label ?? "Sorter"}
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  {headerSortOpen && (
+                    <div className="absolute right-0 top-full mt-1 z-[70] w-52 rounded-xl border border-ui-border-base bg-white shadow-lg overflow-hidden">
+                      {SORT_OPTIONS.map((option) => (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => { setActiveSort(option.key); setHeaderSortOpen(false) }}
+                          className={`flex w-full items-center justify-between px-4 py-3 text-sm transition-colors ${option.key === activeSort ? "bg-ui-bg-subtle font-semibold" : "hover:bg-ui-bg-subtle"}`}
+                        >
+                          {option.label}
+                          {option.key === activeSort && <span className="text-ui-fg-interactive">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => setChatOpen((open) => !open)}
@@ -590,31 +663,20 @@ export default function FlowShell({
             </div>
           )}
 
-          {/* Body: optional left column + content + optional right column */}
-          <div className="absolute inset-x-0 top-14 bottom-0 flex">
-
-            {/* Menu column — persistent on lg+, hidden below */}
-            {menuOpen && (
-              <aside className="hidden lg:flex w-60 flex-none flex-col border-r border-ui-border-base bg-white">
-                <nav className="flex-1 overflow-y-auto p-4">
-                  <a href="tel:+4793485790" className="block text-sm font-medium text-ui-fg-base hover:underline">
-                    Ring oss: +47 934 85 790
-                  </a>
-                </nav>
-              </aside>
-            )}
+          {/* Body: content + optional right column */}
+          <div className="flex flex-1 overflow-hidden">
 
             {/* Scroll surface */}
             <div
               ref={surfaceRef}
-              className="flex-1 overflow-y-auto scroll-smooth"
-              style={{ scrollPaddingTop: "0px", overscrollBehaviorY: "contain" }}
+              className="flex-1 overflow-y-auto"
+              style={{ overscrollBehaviorY: "contain", scrollBehavior: "smooth" }}
             >
             <section
               ref={homeSectionRef}
-              className="bg-ui-bg-base"
+              className="bg-ui-bg-base min-h-screen"
             >
-              <div className="flex justify-center px-4 pb-12 pt-[12vh]">
+              <div className="flex justify-center px-4 pb-16 pt-[18vh]">
                 <div className="w-full max-w-xl">
                   <h1 className="mb-3 text-center text-4xl font-bold md:text-5xl">
                     {t.homeTitle}
@@ -666,13 +728,7 @@ export default function FlowShell({
                   </div>
                 ) : (
                   <>
-                    <TireResultsHeader
-                      count={displayCount}
-                      activeSort={activeSort}
-                      onSortChange={handleSortChange}
-                    />
-
-                    <div className="px-3 pb-8 md:hidden">
+                    <div className="px-3 pt-4 pb-8 md:hidden">
                       <div className="grid grid-cols-2 gap-3">
                         {isLoading
                           ? Array.from({ length: skeletonCount }).map((_, i) => (
@@ -693,7 +749,7 @@ export default function FlowShell({
                       </div>
                     </div>
 
-                    <div className="hidden px-4 pb-8 md:block">
+                    <div className="hidden px-4 pt-4 pb-8 md:block">
                       <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
                         {isLoading
                           ? Array.from({ length: skeletonCount }).map((_, i) => (
@@ -785,7 +841,8 @@ export default function FlowShell({
             />
           )}
 
-        </div>
+          </div>{/* close main area wrapper */}
+        </div>{/* close outer shell */}
       </AgentToolContextProvider>
     </LanguageContext.Provider>
   )

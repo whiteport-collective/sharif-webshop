@@ -41,3 +41,22 @@
 - Center: existing scroll surface with home/results/checkout sections
 - Right column: AgentPanel (already built, just needs column mount point)
 - On lg+, columns are in-flow (push content). Below lg, they overlay.
+
+---
+
+## FB-02: Full-height menu with hamburger relocation
+
+**Status:** Done
+
+**Description:** The menu column should run from top to bottom of the viewport, not below the header. When the menu opens, the header shifts right and the hamburger button relocates into the menu column as the close control. When the user scrolls to the product results (`activeSection` becomes `"results"`), the menu auto-closes.
+
+**Before:** Menu column sits below the header. Hamburger stays in the header.
+**After:** Menu column spans full viewport height. Header pushes right. Hamburger moves inside the menu. Auto-closes on results scroll.
+
+---
+
+## FB-03: Dimension chip should be left-aligned, not centered
+
+**Status:** Done
+
+**Description:** The dimension label (205/55R16 etc.) is currently centered in the header. It should be left-aligned (after the logo) to leave the center free for checkout step titles like "Levering", "Betaling".
