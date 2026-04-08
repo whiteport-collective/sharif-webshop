@@ -60,3 +60,34 @@
 **Status:** Done
 
 **Description:** The dimension label (205/55R16 etc.) is currently centered in the header. It should be left-aligned (after the logo) to leave the center free for checkout step titles like "Levering", "Betaling".
+
+---
+
+## FB-04: Results section header removed — needs restoring
+
+**Status:** Open — next agent
+
+**Description:** `TireResultsHeader` (count + sort) was moved from the results section into the main header right zone during this session. However the sort button in the header is redundant with scrolling — the proper fix is to restore `TireResultsHeader` back at the top of the results section where it belongs, sticky so it stays visible while scrolling through products.
+
+**What was done:** `TireResultsHeader` render removed from `flow-shell/index.tsx` around line 731. The component still exists at `storefront/src/modules/products/components/tire-results-header/index.tsx` and `SORT_OPTIONS` is now exported from it.
+
+**What to do:**
+- Restore `<TireResultsHeader>` at the top of the results section in `flow-shell/index.tsx`
+- Make it `position: sticky; top: 0` so it stays pinned while the user scrolls through products
+- Remove or hide the sort button currently injected into the header right zone when `activeSection === "results"`
+
+---
+
+## FB-05: Scroll-to section overshoots — products cut off
+
+**Status:** Open — next agent
+
+**Description:** When programmatic scroll fires (e.g. clicking "Finn dekk"), the scroll target is `section.offsetTop` which lands exactly at the section boundary. But the header is 56px tall and not accounted for — the top of the results grid is hidden behind the header, or the sticky `TireResultsHeader` is hidden.
+
+**Root cause:** `scrollToSection` uses `target.offsetTop` directly. Should offset by header height (56px) or use `scrollIntoView` with `scroll-margin-top`.
+
+**Fix options:**
+1. Add `scroll-margin-top: 56px` (Tailwind: `scroll-mt-14`) to each section element
+2. Or subtract 56 from `offsetTop` in `scrollToSection`: `surface.scrollTo({ top: target.offsetTop - 56 })`
+
+Option 1 is cleaner — just add `scroll-mt-14` to the results and checkout `<section>` elements in `flow-shell/index.tsx`.
