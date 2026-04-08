@@ -1,5 +1,5 @@
 import { HttpTypes } from "@medusajs/types"
-import { SortKey } from "@modules/products/components/tire-results-header"
+import { SortKey } from "@modules/products/lib/tire-sorting"
 
 function gradeScore(grade: string | undefined): number {
   return { A: 6, B: 5, C: 4, D: 3, E: 2, F: 1, G: 0 }[grade?.toUpperCase() ?? ""] ?? 0
