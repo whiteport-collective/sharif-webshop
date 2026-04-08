@@ -2,6 +2,10 @@
 
 ## 2026-04-08 freya
 
+- Fix FB-05 first: add `scroll-mt-14` to results and checkout `<section>` elements in `storefront/src/modules/home/components/flow-shell/index.tsx`. Then FB-04: restore `<TireResultsHeader>` as sticky at top of results section and remove the inline sort from the header right zone. Branch: `codex/admin-ai-platform-phase1`.
+
+## 2026-04-08 freya
+
 - Rewrite the FlowShell header dimension area in `storefront/src/modules/home/components/flow-shell/index.tsx:457-515`. Remove all `activeSection`-based conditionals from the dimension chip and action buttons. The header should be one stable bar: logo + dimension chip (when search active) + "Endre" link (always scrolls to search form) + small x icon to clear search. The left icon (hamburger/back) should also not blink — use the back arrow whenever results exist, hamburger only on clean home state (no `searchMeta.dimension`).
 
 ## 2026-04-08 freya

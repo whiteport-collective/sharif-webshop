@@ -1,24 +1,27 @@
 ## Learned
-- Next.js middleware rewrites (not redirects) keep clean URLs in the browser while internally routing to `[countryCode]` paths. Sharif is Norway-only so `/no/` should never be visible.
-- `usePathname()` returns the original browser URL with rewrites, not the rewritten path. NavController segment checks must handle both `/dekk/...` and `/no/dekk/...`.
-- The FlowShell header dimension chip was repeatedly gated on `activeSection` scroll state, causing it to vanish when scrolling up. The rule: dimension chip visibility must ONLY depend on search state (`searchMeta.dimension` + `products.length > 0`), never on scroll position.
-- Puppeteer `setNativeValue` hack bypasses React state — unreliable for testing controlled inputs. Use direct URL navigation for proper React state testing.
+- Scroll snap (CSS mandatory/proximity) feels violent on a page with variable-height sections — don't use it here.
+- Wheel intercept for fullpage-style nav is complex to get right: accumulator + `e.preventDefault()` + programmatic scroll all interact badly. The custom RAF easing approach overshoots because `offsetTop` inside a flex container shifts as content loads.
+- `TireResultsHeader` should be sticky inside the section, not moved to the global header — moving it caused sort state drift and lost the count display.
+- Dimension chip: use `previewDimension || searchMeta.dimension` so chip appears when form is complete (before submit), not just after products load.
 
 ## Context
-Implemented virtual URL routing for the Sharif storefront:
-- **Middleware** (`storefront/src/middleware.ts`): Rewrites all clean URLs to `/no/...` internally. No more 307 redirects. `/dekk/*`, `/`, and all other paths work without `/no/` visible.
-- **Dekk route** (`storefront/src/app/[countryCode]/(main)/dekk/[[...slug]]/page.tsx`): Optional catch-all that parses `/dekk/205-55R16/sommer/4` into search params and renders FlowShell with `initialSearch` prop.
-- **FlowShell** (`storefront/src/modules/home/components/flow-shell/index.tsx`): Uses `/dekk/` URLs in history.pushState. Added `initialSearch`, `landingFooter`, `resetSearchRef` props. Split landing content into always-visible (value props) and pre-search-only (brands/workshops).
-- **NavController**: Hides Medusa nav on `/dekk/` pages.
-- **Header dimension chip**: Shows after products load, persists across all sections. "Ta bort" on home clears search + inputs. "Endre" on results/checkout scrolls back.
+Header refactor session (WO-007-01). Shipped:
+- Dimension chip in header left zone — shows when form complete or search active, uses `chipDimension = searchMeta.dimension || previewDimension`
+- Sort button in header right zone when `activeSection === "results"` (black pill)
+- `SORT_OPTIONS` exported from `TireResultsHeader`
+- Full-height desktop menu column (lg+) with width animation, hamburger/arrow crossfade, auto-close on results
+- AgentPanel as persistent right column on desktop
+- Free scroll restored (all snap logic reverted)
 
-**Known issue**: The header has sloppy conditional logic — left icon (hamburger vs back) and action button (Ta bort vs Endre) both swap based on `activeSection` scroll state, causing blinks at section boundaries. Needs a clean rewrite.
+Open (documented in `design-process/E-Development/WO-007-01-header-feedback.md`):
+- **FB-04**: `TireResultsHeader` removed from results section — restore it as sticky bar, remove header sort button
+- **FB-05**: Scroll overshoot — `scrollToSection` uses raw `offsetTop`, header height (56px) not accounted for. Fix: add `scroll-mt-14` to results + checkout `<section>` elements
 
 ## Plan
-Complete storefront order flow for Moohsen demo. URL routing done. Next: fix the header to be stable (no scroll-dependent swaps), then remaining feedback items: FB-22 (language change scroll), FB-23 (order confirmation), FB-24 (home delivery button label).
+Complete storefront header (WO-007) then remaining order flow feedback for Moohsen demo.
 
 ## Next
-Rewrite the FlowShell header dimension area in `storefront/src/modules/home/components/flow-shell/index.tsx:457-515`. Remove all `activeSection`-based conditionals from the dimension chip and action buttons. The header should be one stable bar: logo + dimension chip (when search active) + "Endre" link (always scrolls to search form) + small x icon to clear search. The left icon (hamburger/back) should also not blink — use the back arrow whenever results exist, hamburger only on clean home state (no `searchMeta.dimension`).
+Fix FB-05 first: add `scroll-mt-14` to results and checkout `<section>` elements in `storefront/src/modules/home/components/flow-shell/index.tsx`. Then FB-04: restore `<TireResultsHeader>` as sticky at top of results section and remove the inline sort from the header right zone. Branch: `codex/admin-ai-platform-phase1`.
 
 ## Spec Sync
-None
+`design-process/E-Development/WO-007-01-header-feedback.md` updated with FB-04 and FB-05.
