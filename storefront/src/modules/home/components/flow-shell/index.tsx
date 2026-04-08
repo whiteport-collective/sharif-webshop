@@ -140,7 +140,7 @@ export default function FlowShell({
     if (!target) return
 
     surface.scrollTo({
-      top: Math.max(0, target.offsetTop - 56),
+      top: target.offsetTop,
       behavior,
     })
   }, [])
@@ -349,7 +349,7 @@ export default function FlowShell({
     if (!surface) return
 
     const syncActiveSection = () => {
-      const scrollMarker = surface.scrollTop + 120
+      const scrollMarker = surface.scrollTop + 64
       const resultsTop = showResultsSection ? (resultsSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
       const checkoutTop = showCheckoutSection ? (checkoutSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
 
@@ -475,7 +475,7 @@ export default function FlowShell({
                 <button
                   type="button"
                   onClick={() => setMenuOpen((open) => !open)}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border border-ui-border-base text-ui-fg-base transition-colors hover:bg-ui-bg-subtle"
+                  className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${menuOpen ? "border-red-600 bg-red-600 text-white hover:bg-red-700" : "border-ui-border-base text-ui-fg-base hover:bg-ui-bg-subtle"}`}
                   aria-label="Meny"
                 >
                   <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
@@ -574,8 +574,9 @@ export default function FlowShell({
             </div>
           </header>
 
+          {/* Mobile menu bar (<lg only) */}
           {menuOpen && (
-            <div className="absolute inset-x-0 top-14 z-50 flex items-center justify-between border-b border-ui-border-base bg-white p-4 shadow-md">
+            <div className="absolute inset-x-0 top-14 z-50 flex items-center justify-between border-b border-ui-border-base bg-white p-4 shadow-md lg:hidden">
               <a href="tel:+4793485790" className="text-sm font-medium text-ui-fg-base hover:underline">
                 Ring oss
               </a>
@@ -589,14 +590,29 @@ export default function FlowShell({
             </div>
           )}
 
-          <div
-            ref={surfaceRef}
-            className="absolute inset-0 overflow-y-auto scroll-smooth"
-            style={{ scrollPaddingTop: "56px", overscrollBehaviorY: "contain" }}
-          >
+          {/* Body: optional left column + content + optional right column */}
+          <div className="absolute inset-x-0 top-14 bottom-0 flex">
+
+            {/* Menu column — persistent on lg+, hidden below */}
+            {menuOpen && (
+              <aside className="hidden lg:flex w-60 flex-none flex-col border-r border-ui-border-base bg-white">
+                <nav className="flex-1 overflow-y-auto p-4">
+                  <a href="tel:+4793485790" className="block text-sm font-medium text-ui-fg-base hover:underline">
+                    Ring oss: +47 934 85 790
+                  </a>
+                </nav>
+              </aside>
+            )}
+
+            {/* Scroll surface */}
+            <div
+              ref={surfaceRef}
+              className="flex-1 overflow-y-auto scroll-smooth"
+              style={{ scrollPaddingTop: "0px", overscrollBehaviorY: "contain" }}
+            >
             <section
               ref={homeSectionRef}
-              className="bg-ui-bg-base pt-14"
+              className="bg-ui-bg-base"
             >
               <div className="flex justify-center px-4 pb-12 pt-[12vh]">
                 <div className="w-full max-w-xl">
@@ -626,7 +642,7 @@ export default function FlowShell({
             {showResultsSection && (
               <section
                 ref={resultsSectionRef}
-                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base pt-14"
+                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base"
               >
                 {!isLoading && products.length === 0 ? (
                   <div className="px-4 py-16 text-center">
@@ -730,7 +746,7 @@ export default function FlowShell({
             {showCheckoutSection && (
               <section
                 ref={checkoutSectionRef}
-                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base pt-14"
+                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base"
               >
                 <CheckoutPanelContent
                   key={checkoutKey}
@@ -749,6 +765,11 @@ export default function FlowShell({
                 />
               </section>
             )}
+            </div>
+
+            {/* Chat column — persistent on lg+, overlay below */}
+            <AgentPanel open={chatOpen} onClose={() => setChatOpen(false)} getSessionContext={getSessionContext} />
+
           </div>
 
           {detailProduct && (
@@ -763,8 +784,6 @@ export default function FlowShell({
               }}
             />
           )}
-
-          <AgentPanel open={chatOpen} onClose={() => setChatOpen(false)} getSessionContext={getSessionContext} />
 
         </div>
       </AgentToolContextProvider>

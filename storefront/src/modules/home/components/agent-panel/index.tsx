@@ -49,7 +49,7 @@ export default function AgentPanel({ open, onClose, getSessionContext }: Props) 
 
   return (
         <div
-          className="fixed bottom-0 right-0 top-14 z-[80] flex w-full flex-col border-l border-[#dee2e6] bg-white shadow-2xl sm:w-[360px]"
+          className="fixed bottom-0 right-0 top-14 z-[80] flex w-full flex-col border-l border-[#dee2e6] bg-white shadow-2xl sm:w-[360px] lg:relative lg:inset-auto lg:z-auto lg:w-[360px] lg:flex-none lg:shadow-none"
         >
           {/* Header */}
           <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#dee2e6] px-4">
