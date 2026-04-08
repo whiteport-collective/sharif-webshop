@@ -12,11 +12,12 @@ type SessionContext = {
 }
 
 type Props = {
+  open: boolean
+  onClose: () => void
   getSessionContext: () => SessionContext
 }
 
-export default function AgentPanel({ getSessionContext }: Props) {
-  const [open, setOpen] = useState(false)
+export default function AgentPanel({ open, onClose, getSessionContext }: Props) {
   const [input, setInput] = useState("")
   const chatRef = useRef<HTMLDivElement>(null)
 
@@ -44,27 +45,11 @@ export default function AgentPanel({ getSessionContext }: Props) {
     }
   }
 
-  return (
-    <>
-      {/* Toggle button — fixed bottom-right, above cart badge */}
-      {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-[70] flex h-12 w-12 items-center justify-center rounded-full bg-[#212529] text-white shadow-lg hover:bg-[#343a40] transition-colors"
-          aria-label="Åpne dekkrådgiver"
-          title="Chat med Sharif-rådgiveren"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
-      )}
+  if (!open) return null
 
-      {/* Panel */}
-      {open && (
+  return (
         <div
-          className="fixed bottom-0 right-0 z-[75] flex h-full w-[360px] flex-col border-l border-[#dee2e6] bg-white shadow-2xl"
-          style={{ maxHeight: "100vh" }}
+          className="fixed bottom-0 right-0 top-14 z-[80] flex w-full flex-col border-l border-[#dee2e6] bg-white shadow-2xl sm:w-[360px]"
         >
           {/* Header */}
           <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#dee2e6] px-4">
@@ -85,7 +70,7 @@ export default function AgentPanel({ getSessionContext }: Props) {
                 </svg>
               </button>
               <button
-                onClick={() => setOpen(false)}
+                onClick={onClose}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-[#6c757d] hover:bg-[#f8f9fa] transition-colors"
                 aria-label="Lukk"
               >
@@ -174,7 +159,5 @@ export default function AgentPanel({ getSessionContext }: Props) {
             </div>
           </div>
         </div>
-      )}
-    </>
   )
 }
