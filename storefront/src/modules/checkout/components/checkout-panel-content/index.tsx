@@ -25,7 +25,7 @@ type Props = {
   onRegisterBack?: (fn: () => void) => void
   onSuccess?: (orderId: string) => void
   onConfirmationReached?: () => void
-  supportOpen?: boolean
+  chatOpen?: boolean
 }
 
 const STEP_TITLES: Record<string, string> = {
@@ -58,7 +58,7 @@ export default function CheckoutPanelContent({
   onRegisterBack,
   onSuccess,
   onConfirmationReached,
-  supportOpen,
+  chatOpen,
 }: Props) {
   const [data, setData] = useState<CheckoutData | null>(null)
   const [loading, setLoading] = useState(true)

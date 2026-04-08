@@ -85,7 +85,7 @@ export default function FlowShell({
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>([])
   const [activeSort, setActiveSort] = useState<SortKey>("price")
   const [menuOpen, setMenuOpen] = useState(false)
-  const [supportOpen, setSupportOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
   const [hideBack, setHideBack] = useState(false)
   const [searchMeta, setSearchMeta] = useState<SearchMeta>({
     dimension: "",
@@ -498,7 +498,7 @@ export default function FlowShell({
                   </svg>
                 </button>
               )}
-              <img src="/sharif-logo.png" alt="Sharif" className="h-7 w-auto" />
+              <img src="/sharif-logo.png" alt="Sharif" className={`w-auto ${hasSearch ? "h-5 sm:h-7" : "h-7"}`} />
             </div>
 
             {/* Center: dimension chip OR checkout step title */}
@@ -506,16 +506,15 @@ export default function FlowShell({
               {activeSection === "checkout" && checkoutStepTitle ? (
                 <span className="truncate text-sm font-semibold text-ui-fg-base">{checkoutStepTitle}</span>
               ) : hasSearch ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="truncate text-xs font-medium text-ui-fg-subtle">
-                    {searchMeta.dimension} · {searchMeta.seasonLabel}
-                  </span>
+                <div className="flex min-w-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={() => scrollToSection("home")}
-                    className="flex-none text-xs text-ui-fg-muted underline hover:text-ui-fg-base"
+                    className="min-w-0 truncate text-xs font-medium text-ui-fg-subtle hover:text-ui-fg-base"
+                    title={`${searchMeta.dimension} · ${searchMeta.seasonLabel} — trykk for å endre`}
                   >
-                    Endre
+                    <span>{searchMeta.dimension}</span>
+                    <span className="hidden sm:inline"> · {searchMeta.seasonLabel}</span>
                   </button>
                   <button
                     type="button"
@@ -531,16 +530,16 @@ export default function FlowShell({
               ) : null}
             </div>
 
-            {/* Right: support + lang + cart */}
+            {/* Right: chat + lang + cart */}
             <div className="flex flex-none items-center gap-1">
               <button
                 type="button"
-                onClick={() => setSupportOpen((open) => !open)}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${supportOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"}`}
-                aria-label={t.callUs}
+                onClick={() => setChatOpen((open) => !open)}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${chatOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"}`}
+                aria-label="Chat"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.68A2 2 0 012 .9h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 8.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
               </button>
               <div className="relative" ref={langMenuRef}>
@@ -739,7 +738,7 @@ export default function FlowShell({
                   embedded
                   isActive={activeSection === "checkout"}
                   cartLoading={cartLoading}
-                  supportOpen={supportOpen}
+                  chatOpen={chatOpen}
                   onStepTitle={setCheckoutStepTitle}
                   onRegisterBack={(fn) => { checkoutBackRef.current = fn }}
                   onBack={handleBack}
@@ -765,19 +764,8 @@ export default function FlowShell({
             />
           )}
 
-          <AgentPanel getSessionContext={getSessionContext} />
+          <AgentPanel open={chatOpen} onClose={() => setChatOpen(false)} getSessionContext={getSessionContext} />
 
-          <aside className={`fixed right-0 top-14 z-[80] flex h-[calc(100%-3.5rem)] w-80 flex-col border-l border-ui-border-base bg-white shadow-xl transition-transform duration-300 ease-in-out ${supportOpen ? "translate-x-0" : "translate-x-full"}`}>
-            <div className="flex-1 overflow-y-auto p-4">
-              <p className="text-sm text-ui-fg-subtle">Har du spørsmål? Chat med oss.</p>
-              <a
-                href="tel:+4793485790"
-                className="mt-4 block text-sm font-medium text-ui-fg-base hover:underline"
-              >
-                Ring oss: +47 934 85 790
-              </a>
-            </div>
-          </aside>
         </div>
       </AgentToolContextProvider>
     </LanguageContext.Provider>
