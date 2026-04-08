@@ -82,8 +82,8 @@ export default function FlowShell({
   const [lang, setLang] = useState<Lang>("no")
   const [langMenuOpen, setLangMenuOpen] = useState(false)
   const [headerSortOpen, setHeaderSortOpen] = useState(false)
-  const headerSortRef = useRef<HTMLDivElement>(null)
   const langMenuRef = useRef<HTMLDivElement>(null)
+  const headerSortRef = useRef<HTMLDivElement>(null)
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>([])
   const [activeSort, setActiveSort] = useState<SortKey>("price")
   const [menuOpen, setMenuOpen] = useState(false)
@@ -336,6 +336,7 @@ export default function FlowShell({
     return () => document.removeEventListener("mousedown", close)
   }, [headerSortOpen])
 
+
   const showResultsSection = Boolean(searchMeta.dimension)
   const showCheckoutSection = Boolean(selectedTire) && checkoutKey > 0
 
@@ -458,6 +459,11 @@ export default function FlowShell({
   }), [activeSection, searchMeta.dimension, products, selectedTire, checkoutStepTitle])
 
   const chipDimension = searchMeta.dimension || previewDimension || ""
+  const chipSeasonLabel = searchMeta.dimension ? (
+    searchMeta.season === "sommer" ? t.summerTires :
+    searchMeta.season === "vinter-piggfritt" ? t.winterStudless :
+    searchMeta.season === "vinter-piggdekk" ? t.winterStudded : ""
+  ) : ""
   const hasSearch = Boolean(chipDimension)
   const inFlow = activeSection !== "home"
 
@@ -544,10 +550,11 @@ export default function FlowShell({
                     type="button"
                     onClick={() => scrollToSection("home")}
                     className="min-w-0 truncate text-xs font-medium text-ui-fg-subtle hover:text-ui-fg-base"
-                    title={`${chipDimension}${searchMeta.seasonLabel ? ` · ${searchMeta.seasonLabel}` : ""} — trykk for å endre`}
+                    title={`${chipDimension}${chipSeasonLabel ? ` · ${chipSeasonLabel}` : ""}${searchMeta.qty ? ` · ${searchMeta.qty} stk` : ""} — trykk for å endre`}
                   >
                     <span>{chipDimension}</span>
-                    <span className="hidden sm:inline">{searchMeta.seasonLabel ? ` · ${searchMeta.seasonLabel}` : ""}</span>
+                    {chipSeasonLabel ? <span> · {chipSeasonLabel}</span> : null}
+                    {searchMeta.qty ? <span> · {searchMeta.qty} stk</span> : null}
                   </button>
                   <button
                     type="button"
@@ -573,37 +580,43 @@ export default function FlowShell({
             {/* Right: context-aware controls */}
             <div className="flex flex-none items-center gap-1">
 
-              {/* Results view: count + sort */}
-              {activeSection === "results" && (
-                <div className="relative flex items-center gap-2 mr-1" ref={headerSortRef}>
-                  <span className="hidden sm:block text-xs text-ui-fg-subtle whitespace-nowrap">{displayCount} dekk</span>
-                  <button
-                    type="button"
-                    onClick={() => setHeaderSortOpen((o) => !o)}
-                    className="flex items-center gap-1 rounded-full bg-[#212529] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#343a40] transition-colors"
-                  >
-                    {SORT_OPTIONS.find((o) => o.key === activeSort)?.label ?? "Sorter"}
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </button>
-                  {headerSortOpen && (
-                    <div className="absolute right-0 top-full mt-1 z-[70] w-52 rounded-xl border border-ui-border-base bg-white shadow-lg overflow-hidden">
-                      {SORT_OPTIONS.map((option) => (
-                        <button
-                          key={option.key}
-                          type="button"
-                          onClick={() => { setActiveSort(option.key); setHeaderSortOpen(false) }}
-                          className={`flex w-full items-center justify-between px-4 py-3 text-sm transition-colors ${option.key === activeSort ? "bg-ui-bg-subtle font-semibold" : "hover:bg-ui-bg-subtle"}`}
-                        >
-                          {option.label}
-                          {option.key === activeSort && <span className="text-ui-fg-interactive">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Results: count + sort — fades in/out with slide */}
+              <div
+                ref={headerSortRef}
+                className="relative flex items-center gap-2 mr-1 transition-all duration-300"
+                style={{
+                  opacity: activeSection === "results" ? 1 : 0,
+                  transform: activeSection === "results" ? "translateY(0)" : "translateY(-4px)",
+                  pointerEvents: activeSection === "results" ? "auto" : "none",
+                }}
+              >
+                <span className="hidden sm:block text-xs text-ui-fg-subtle whitespace-nowrap">{displayCount} dekk</span>
+                <button
+                  type="button"
+                  onClick={() => setHeaderSortOpen((o) => !o)}
+                  className="flex items-center gap-1 rounded-full bg-[#212529] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#343a40] transition-colors"
+                >
+                  {SORT_OPTIONS.find((o) => o.key === activeSort)?.label ?? "Sorter"}
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                {headerSortOpen && (
+                  <div className="absolute right-0 top-full mt-1 z-[70] w-52 rounded-xl border border-ui-border-base bg-white shadow-lg overflow-hidden">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.key}
+                        type="button"
+                        onClick={() => { setActiveSort(option.key); setHeaderSortOpen(false) }}
+                        className={`flex w-full items-center justify-between px-4 py-3 text-sm transition-colors ${option.key === activeSort ? "bg-ui-bg-subtle font-semibold" : "hover:bg-ui-bg-subtle"}`}
+                      >
+                        {option.label}
+                        {option.key === activeSort && <span className="text-ui-fg-interactive">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="button"
@@ -704,7 +717,7 @@ export default function FlowShell({
             {showResultsSection && (
               <section
                 ref={resultsSectionRef}
-                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base"
+                className="scroll-mt-14 min-h-screen border-t border-ui-border-base bg-ui-bg-base"
               >
                 {!isLoading && products.length === 0 ? (
                   <div className="px-4 py-16 text-center">
@@ -728,7 +741,7 @@ export default function FlowShell({
                   </div>
                 ) : (
                   <>
-                    <div className="px-3 pt-4 pb-8 md:hidden">
+                    <div className="px-3 pt-20 pb-8 md:hidden">
                       <div className="grid grid-cols-2 gap-3">
                         {isLoading
                           ? Array.from({ length: skeletonCount }).map((_, i) => (
@@ -749,7 +762,7 @@ export default function FlowShell({
                       </div>
                     </div>
 
-                    <div className="hidden px-4 pt-4 pb-8 md:block">
+                    <div className="hidden px-4 pt-20 pb-8 md:block">
                       <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
                         {isLoading
                           ? Array.from({ length: skeletonCount }).map((_, i) => (
@@ -802,7 +815,7 @@ export default function FlowShell({
             {showCheckoutSection && (
               <section
                 ref={checkoutSectionRef}
-                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base"
+                className="scroll-mt-14 min-h-screen border-t border-ui-border-base bg-ui-bg-base"
               >
                 <CheckoutPanelContent
                   key={checkoutKey}
