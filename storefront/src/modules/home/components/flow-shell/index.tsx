@@ -45,6 +45,19 @@ function TireCardSkeleton() {
   )
 }
 
+export type InitialSearch = {
+  width: string
+  profile: string
+  rim: string
+  season: string
+  qty: number
+}
+
+/** Build a clean /dekk/ URL path from search params */
+function buildDekkPath(width: string, profile: string, rim: string, season: string, qty: number): string {
+  return `/dekk/${width}-${profile}R${rim}/${season}/${qty}`
+}
+
 export default function FlowShell({
   availableDimensions,
   dimensionCounts,
@@ -52,13 +65,17 @@ export default function FlowShell({
   region,
   cartBadge,
   landingContent,
+  landingFooter,
+  initialSearch,
 }: {
   availableDimensions: string[]
   dimensionCounts: Record<string, number>
   countryCode: string
   region: HttpTypes.StoreRegion
   cartBadge: React.ReactNode
-  landingContent: React.ReactNode
+  landingContent?: React.ReactNode
+  landingFooter?: React.ReactNode
+  initialSearch?: InitialSearch
 }) {
   const [view, setView] = useState<FlowView>("home")
   const [activeSection, setActiveSection] = useState<FlowView>("home")
@@ -86,6 +103,7 @@ export default function FlowShell({
   const [checkoutStepTitle, setCheckoutStepTitle] = useState("")
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
+  const resetSearchRef = useRef<(() => void) | null>(null)
   const agentPrefillRef = useRef<((field: string, value: string) => void) | null>(null)
   const agentOpenPaymentRef = useRef<(() => void) | null>(null)
   const [, startTransition] = useTransition()
@@ -145,14 +163,8 @@ export default function FlowShell({
     setView("results")
 
     if (pushHistory) {
-      const qs = new URLSearchParams({
-        w: params.width,
-        p: params.profile,
-        r: params.rim,
-        qty: String(qty),
-        season,
-      }).toString()
-      window.history.pushState({ flowView: "results" }, "", `?${qs}`)
+      const dekkPath = buildDekkPath(params.width, params.profile, params.rim, season, qty)
+      window.history.pushState({ flowView: "results" }, "", dekkPath)
     }
 
     const cached = prefetchCache.current.get(dimension)
@@ -238,22 +250,27 @@ export default function FlowShell({
   }, [router, syncSelectedTire, view])
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const w = urlParams.get("w")
-    const p = urlParams.get("p")
-    const r = urlParams.get("r")
-
-    if (w && p && r) {
+    if (initialSearch) {
       runSearch({
-        width: w,
-        profile: p,
-        rim: r,
-        qty: urlParams.get("qty") || "4",
-        season: urlParams.get("season") || "sommer",
+        width: initialSearch.width,
+        profile: initialSearch.profile,
+        rim: initialSearch.rim,
+        qty: String(initialSearch.qty),
+        season: initialSearch.season,
       }, false)
-      window.history.replaceState({ flowView: "results" }, "", window.location.href)
+      const dekkPath = buildDekkPath(initialSearch.width, initialSearch.profile, initialSearch.rim, initialSearch.season, initialSearch.qty)
+      // Ensure there's a "home" entry below so history.back() works on direct /dekk/ loads
+      window.history.replaceState({ flowView: "home" }, "", "/")
+      window.history.pushState({ flowView: "results" }, "", dekkPath)
     } else {
-      window.history.replaceState({ flowView: "home" }, "", window.location.href)
+      window.history.replaceState({ flowView: "home" }, "", "/")
+    }
+
+    /** Parse /dekk/:dim/:season/:qty from a URL pathname */
+    const parseDekkUrl = (pathname: string) => {
+      const match = pathname.match(/^\/dekk\/(\d+)-(\d+)R(\d+)\/([^/]+?)(?:\/(\d+))?$/)
+      if (!match) return null
+      return { width: match[1], profile: match[2], rim: match[3], season: match[4], qty: match[5] || "4" }
     }
 
     const onPopState = (e: PopStateEvent) => {
@@ -268,18 +285,15 @@ export default function FlowShell({
 
       if (flowView === "results") {
         e.stopImmediatePropagation()
-        const params = new URLSearchParams(window.location.search)
-        const width = params.get("w")
-        const profile = params.get("p")
-        const rim = params.get("r")
+        const parsed = parseDekkUrl(window.location.pathname)
 
-        if (width && profile && rim) {
+        if (parsed) {
           runSearch({
-            width,
-            profile,
-            rim,
-            qty: params.get("qty") || "4",
-            season: params.get("season") || "sommer",
+            width: parsed.width,
+            profile: parsed.profile,
+            rim: parsed.rim,
+            qty: parsed.qty,
+            season: parsed.season,
           }, false)
         } else {
           setActiveSection("results")
@@ -298,7 +312,7 @@ export default function FlowShell({
 
     window.addEventListener("popstate", onPopState, true)
     return () => window.removeEventListener("popstate", onPopState, true)
-  }, [runSearch])
+  }, [runSearch, initialSearch])
 
   useEffect(() => {
     if (!langMenuOpen) return
@@ -315,7 +329,11 @@ export default function FlowShell({
   const showResultsSection = Boolean(searchMeta.dimension)
   const showCheckoutSection = Boolean(selectedTire) && checkoutKey > 0
 
+  const prevViewRef = useRef<FlowView>(view)
   useEffect(() => {
+    if (view === prevViewRef.current) return
+    prevViewRef.current = view
+
     if (view === "results" && !showResultsSection) return
     if (view === "checkout" && !showCheckoutSection) return
 
@@ -424,6 +442,9 @@ export default function FlowShell({
     step: activeSection === "checkout" ? checkoutStepTitle || null : null,
   }), [activeSection, searchMeta.dimension, products, selectedTire, checkoutStepTitle])
 
+  const hasSearch = Boolean(searchMeta.dimension && products.length > 0)
+  const inFlow = activeSection !== "home"
+
   const handleHeaderBack = () => {
     if (activeSection === "checkout") {
       checkoutBackRef.current?.()
@@ -432,12 +453,24 @@ export default function FlowShell({
     handleBack()
   }
 
+  const clearSearch = () => {
+    setSearchMeta({ dimension: "", qty: 4, season: "sommer", seasonLabel: "" })
+    setProducts([])
+    setView("home")
+    syncSelectedTire(null)
+    resetSearchRef.current?.()
+    window.history.replaceState({ flowView: "home" }, "", "/")
+  }
+
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
       <AgentToolContextProvider handlers={agentHandlers}>
-        <div className="relative h-screen overflow-hidden bg-ui-bg-base">
-          <div className="absolute inset-x-0 top-0 z-[60] flex h-14 items-center gap-2 border-b border-ui-border-base bg-white px-3">
-            <div className="flex flex-1 items-center gap-2">
+        <div className="relative h-screen overflow-hidden bg-ui-bg-base" style={{ scrollbarGutter: "stable" as any }}>
+          {/* ── Header bar ── */}
+          <header className="absolute inset-x-0 top-0 z-[90] flex h-14 items-center border-b border-ui-border-base bg-white px-3">
+
+            {/* Left: nav icon + logo */}
+            <div className="flex flex-none items-center gap-2">
               {activeSection === "home" ? (
                 <button
                   type="button"
@@ -451,7 +484,9 @@ export default function FlowShell({
                     <rect y="10" width="16" height="2" rx="1" fill="currentColor" />
                   </svg>
                 </button>
-              ) : hideBack ? null : (
+              ) : hideBack ? (
+                <div className="w-9" />
+              ) : (
                 <button
                   type="button"
                   onClick={handleHeaderBack}
@@ -464,36 +499,44 @@ export default function FlowShell({
                 </button>
               )}
               <img src="/sharif-logo.png" alt="Sharif" className="h-7 w-auto" />
-              {(activeSection === "results" || activeSection === "checkout") && searchMeta.dimension && (
-                <>
-                  <span className="text-xs font-medium text-ui-fg-subtle">
-                    {searchMeta.dimension} · {searchMeta.qty} stk · {searchMeta.seasonLabel}
+            </div>
+
+            {/* Center: dimension chip OR checkout step title */}
+            <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+              {activeSection === "checkout" && checkoutStepTitle ? (
+                <span className="truncate text-sm font-semibold text-ui-fg-base">{checkoutStepTitle}</span>
+              ) : hasSearch ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="truncate text-xs font-medium text-ui-fg-subtle">
+                    {searchMeta.dimension} · {searchMeta.seasonLabel}
                   </span>
                   <button
                     type="button"
-                    onClick={handleBack}
-                    className="ml-1 text-xs text-ui-fg-muted underline hover:text-ui-fg-base"
+                    onClick={() => scrollToSection("home")}
+                    className="flex-none text-xs text-ui-fg-muted underline hover:text-ui-fg-base"
                   >
                     Endre
                   </button>
-                </>
-              )}
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="flex h-5 w-5 flex-none items-center justify-center rounded-full text-ui-fg-muted hover:text-ui-fg-base"
+                    aria-label="Fjern søk"
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              ) : null}
             </div>
 
-            <div className="absolute left-1/2 flex -translate-x-1/2 items-center justify-center">
-              {activeSection === "results" && (
-                <span className="text-sm font-semibold text-ui-fg-base">{t.stepResults}</span>
-              )}
-              {activeSection === "checkout" && checkoutStepTitle && (
-                <span className="text-sm font-semibold text-ui-fg-base">{checkoutStepTitle}</span>
-              )}
-            </div>
-
-            <div className="flex-none flex items-center gap-1">
+            {/* Right: support + lang + cart */}
+            <div className="flex flex-none items-center gap-1">
               <button
                 type="button"
                 onClick={() => setSupportOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-ui-border-base text-ui-fg-base transition-colors hover:bg-ui-bg-subtle"
+                className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${supportOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"}`}
                 aria-label={t.callUs}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -530,7 +573,7 @@ export default function FlowShell({
               </div>
               {cartBadge}
             </div>
-          </div>
+          </header>
 
           {menuOpen && (
             <div className="absolute inset-x-0 top-14 z-50 flex items-center justify-between border-b border-ui-border-base bg-white p-4 shadow-md">
@@ -549,15 +592,14 @@ export default function FlowShell({
 
           <div
             ref={surfaceRef}
-            className="absolute inset-0 overflow-y-auto scroll-smooth snap-y snap-mandatory"
-            style={{ scrollPaddingTop: "56px", overscrollBehaviorY: "contain", scrollbarGutter: "stable" as any }}
+            className="absolute inset-0 overflow-y-auto scroll-smooth"
+            style={{ scrollPaddingTop: "56px", overscrollBehaviorY: "contain" }}
           >
             <section
               ref={homeSectionRef}
-              className="min-h-screen snap-start bg-ui-bg-base pt-14"
-              style={{ scrollSnapStop: "always" }}
+              className="bg-ui-bg-base pt-14"
             >
-              <div className="flex min-h-[calc(70vh-3.5rem)] items-center justify-center px-4 pb-8">
+              <div className="flex justify-center px-4 pb-12 pt-[12vh]">
                 <div className="w-full max-w-xl">
                   <h1 className="mb-3 text-center text-4xl font-bold md:text-5xl">
                     {t.homeTitle}
@@ -573,18 +615,19 @@ export default function FlowShell({
                     onFormChange={(params) => { pendingParams.current = params }}
                     previewCount={previewDimension ? dimensionCounts[previewDimension] : undefined}
                     onMount={(fn) => { setDimensionRef.current = fn }}
+                    onResetRef={(fn) => { resetSearchRef.current = fn }}
                   />
                 </div>
               </div>
 
-              {!showResultsSection && landingContent}
+              {landingContent}
+              {!showResultsSection && landingFooter}
             </section>
 
             {showResultsSection && (
               <section
                 ref={resultsSectionRef}
-                className="min-h-screen snap-start border-t border-ui-border-base bg-ui-bg-base pt-14"
-                style={{ scrollSnapStop: "always" }}
+                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base pt-14"
               >
                 {!isLoading && products.length === 0 ? (
                   <div className="px-4 py-16 text-center">
@@ -688,8 +731,7 @@ export default function FlowShell({
             {showCheckoutSection && (
               <section
                 ref={checkoutSectionRef}
-                className="min-h-screen snap-start border-t border-ui-border-base bg-ui-bg-base pt-14"
-                style={{ scrollSnapStop: "always" }}
+                className="min-h-screen border-t border-ui-border-base bg-ui-bg-base pt-14"
               >
                 <CheckoutPanelContent
                   key={checkoutKey}
@@ -725,17 +767,7 @@ export default function FlowShell({
 
           <AgentPanel getSessionContext={getSessionContext} />
 
-          <aside className={`fixed right-0 top-0 z-[80] flex h-full w-80 flex-col border-l border-ui-border-base bg-white shadow-xl transition-transform duration-300 ease-in-out ${supportOpen ? "translate-x-0" : "translate-x-full"}`}>
-            <div className="flex h-14 items-center justify-between border-b border-ui-border-base px-4">
-              <span className="text-sm font-semibold">Support</span>
-              <button
-                type="button"
-                onClick={() => setSupportOpen(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-ui-bg-subtle"
-              >
-                ×
-              </button>
-            </div>
+          <aside className={`fixed right-0 top-14 z-[80] flex h-[calc(100%-3.5rem)] w-80 flex-col border-l border-ui-border-base bg-white shadow-xl transition-transform duration-300 ease-in-out ${supportOpen ? "translate-x-0" : "translate-x-full"}`}>
             <div className="flex-1 overflow-y-auto p-4">
               <p className="text-sm text-ui-fg-subtle">Har du spørsmål? Chat med oss.</p>
               <a

@@ -1,5 +1,4 @@
 import { Container, clx } from "@medusajs/ui"
-import Image from "next/image"
 import React from "react"
 
 type ThumbnailProps = {
@@ -44,9 +43,13 @@ const Thumbnail: React.FC<ThumbnailProps> = ({
   )
 }
 
-const TIRE_PLACEHOLDER = "/tire-placeholder.svg"
+const TIRE_PLACEHOLDER = "/tire-placeholder.jpg"
 
-const PLACEHOLDER_PATHS = ["/tire-placeholder.svg", "/tire-placeholder.jpg", "/static/tire-placeholder.jpg"]
+const PLACEHOLDER_PATHS = [
+  "/tire-placeholder.svg",
+  "/tire-placeholder.jpg",
+  "/static/tire-placeholder.jpg",
+]
 
 const isNonEmptyString = (value?: string | null): value is string =>
   typeof value === "string" && value.trim().length > 0
@@ -95,18 +98,16 @@ const getImageSource = (
 
 const ImageOrPlaceholder = ({
   image,
-  size,
 }: Pick<ThumbnailProps, "size"> & { image?: string }) => {
+  const src = image || TIRE_PLACEHOLDER
   return (
-    <Image
-      src={image || TIRE_PLACEHOLDER}
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
       alt="Thumbnail"
-      className="absolute inset-0 object-cover object-center"
+      className="absolute inset-0 w-full h-full object-cover object-center"
       draggable={false}
-      quality={50}
       loading="lazy"
-      sizes="(max-width: 576px) 280px, (max-width: 768px) 360px, (max-width: 992px) 480px, 800px"
-      fill
     />
   )
 }

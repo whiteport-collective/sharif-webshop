@@ -246,12 +246,12 @@
 
 | ID | Issue | Severity | Status |
 |----|-------|----------|--------|
-| FB-01 | Scrollbar layout shift | Low | Fixed |
-| FB-02 | Empty start page | Medium | Fixed |
-| FB-03 | Support drawer pushes icons | Low | Open |
+| FB-01 | Scrollbar layout shift | Low | Fixed (scrollbarGutter moved to outer container) |
+| FB-02 | Empty start page | Medium | Fixed (snap removed so landing content scrollable) |
+| FB-03 | Support drawer pushes icons | Low | Fixed (header z-index above aside, aside starts below header) |
 | FB-04 | "Finn dekk" not red | Low | Fixed |
-| FB-05 | Scroll snapping broken | High | Open |
-| FB-06 | Too much space above tire list | Low | Open |
+| FB-05 | Scroll snapping broken | High | Fixed (removed CSS snap entirely, programmatic scroll only) |
+| FB-06 | Too much space above tire list | Low | Fixed (TireResultsHeader pt-5 → pt-2) |
 | FB-07 | Leveringsmate heading + values | Medium | Fixed |
 | FB-08 | Kundeopplysninger no values | Medium | Fixed |
 | FB-09 | Stripe insecure connection warning | Medium | Fixed |
