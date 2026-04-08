@@ -1,5 +1,41 @@
 # Design Log — Sharif Webshop
 
+## 2026-04-08 freya
+
+- Rewrite the FlowShell header dimension area in `storefront/src/modules/home/components/flow-shell/index.tsx:457-515`. Remove all `activeSection`-based conditionals from the dimension chip and action buttons. The header should be one stable bar: logo + dimension chip (when search active) + "Endre" link (always scrolls to search form) + small x icon to clear search. The left icon (hamburger/back) should also not blink — use the back arrow whenever results exist, hamburger only on clean home state (no `searchMeta.dimension`).
+
+## 2026-04-08 freya
+
+- Implement virtual URL routing: add Next.js catch-all route `[countryCode]/[[...search]]/page.tsx`, update FlowShell to call `history.replaceState` with `/no/205-55R16/Sommer` on search, parse URL segments on load to restore search state, and show a dimension chip next to the SHARIF logo in the nav when a search dimension is present in the URL.
+
+## 2026-04-08 freya
+
+- Adjust the home section layout in `storefront/src/modules/home/components/flow-shell/index.tsx:563` so the first `border-t` (trust bar) sits at the viewport fold. The form container uses `min-h-[calc(100vh-3.5rem)]` — find an approach that keeps the form visually centered but leaves ~200px for landing content to peek above the fold. Consider moving the tagline into the form area or using a different centering strategy.
+
+## 2026-04-07 freya
+
+- Open https://localhost:8000/no in Chrome, hard-refresh, and visually verify all scroll/spacing/support-drawer fixes from this session. Then browser-debug why order confirmation doesn't appear after payment.
+
+## 2026-04-07 freya
+
+- Create WO-006-02 feedback file and run a second feedback round focusing on the fixes from this session — verify collapsed step summaries show real data after a completed order, test terms checkbox on payment step, and confirm "Boka montering" button label on booking step.
+
+## 2026-04-07 freya
+
+- Implement the new OrderConfirmedInline component in storefront/src/modules/checkout/components/checkout-panel-content/index.tsx: replace the current simple checkmark+text confirmation with collapsed step summaries showing filled-in data, the rating-to-step-widget flow, and the AI chat textarea that posts to /api/dialog/[id]/message.
+
+## 2026-04-07 mimir
+
+- Run `cd c:/dev/Sharif/sharif-webshop/backend && npx medusa db:migrate` to create sharif_setting + sharif_escalation tables, then boot with `claude --chrome` and execute test checklist from Agent Space message dc25b27e.
+
+## 2026-04-07 freya
+
+- Fix the nav logo display — confirm sharif-logo.png renders correctly at storefront/src/modules/layout/templates/nav/index.tsx using <img src="/sharif-logo.png">. Then source real tire product images: ask Mårten where the actual tire photos are and upload them via Medusa admin at localhost:9000/app.
+
+## 2026-04-07 freya
+
+- Boot in brownfield mode: scan design-process/ against actual storefront + backend code, present gap map of what is specced vs built, then offer to write Work Orders for gaps and hand to Mimir.
+
 ## 2026-04-06 freya
 
 - Redraw 03.3 Orders as a list-only wireframe (no detail panel visible — clicking a row navigates to 03.3b). Read `c:/dev/WDS/whiteport-design-studio/src/skills/wireframe/SKILL.md` first. Also update `design-process/C-UX-Scenarios/03-admin-dashboard/03.3-orders/03.3-orders.md`: change "Opens order detail panel (right side)" → "Navigates to order detail page (03.3b)" in the user actions table.

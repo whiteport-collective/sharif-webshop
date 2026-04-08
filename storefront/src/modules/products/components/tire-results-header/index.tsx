@@ -72,7 +72,7 @@ export default function TireResultsHeader({
   return (
     <>
       {/* Results header */}
-      <div className="flex items-center justify-between px-4 pb-3 pt-5">
+      <div className="flex items-center justify-between px-4 pb-3 pt-2">
         <p className="text-sm text-ui-fg-subtle">{count} dekk funnet</p>
 
         {/* Mobile: opens drawer */}

@@ -61,16 +61,13 @@ export default async function Home(props: {
     </Suspense>
   )
 
-  // Landing content — shown below the tire widget on the home panel
+  // Landing content — tagline + value props (always visible)
   const landingContent = (
     <div className="pb-16">
-      {/* Tagline */}
-      <p className="px-4 pt-4 pb-12 text-center text-sm text-ui-fg-muted">
+      <p className="px-4 pt-4 pb-20 text-center text-sm text-ui-fg-muted">
         60+ merker · Montering inkludert · Fra 499 kr
       </p>
-
-      {/* Value propositions */}
-      <div className="mx-auto max-w-4xl px-6 grid grid-cols-1 md:grid-cols-3 gap-8 pb-16">
+      <div className="mx-auto max-w-4xl px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
             <svg className="h-7 w-7 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -100,8 +97,12 @@ export default async function Home(props: {
           <p className="text-sm text-ui-fg-subtle">Hjemlevering eller hent hos verksted. De fleste bestillinger klare innen 2-3 virkedager.</p>
         </div>
       </div>
+    </div>
+  )
 
-      {/* Trust bar */}
+  // Landing footer — brands + workshops (hidden after search)
+  const landingFooter = (
+    <div>
       <div className="border-t border-ui-border-base py-10">
         <p className="text-center text-xs font-semibold uppercase tracking-wider text-ui-fg-muted mb-6">Merker vi forer</p>
         <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-x-10 gap-y-4 px-6">
@@ -110,8 +111,6 @@ export default async function Home(props: {
           ))}
         </div>
       </div>
-
-      {/* Workshop locations */}
       <div className="border-t border-ui-border-base py-12 px-6">
         <div className="mx-auto max-w-2xl grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="rounded-xl border border-ui-border-base p-6">
@@ -137,6 +136,7 @@ export default async function Home(props: {
       region={region}
       cartBadge={cartBadge}
       landingContent={landingContent}
+      landingFooter={landingFooter}
     />
   )
 }

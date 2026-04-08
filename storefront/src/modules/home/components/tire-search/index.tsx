@@ -20,6 +20,7 @@ type Props = {
   onFormChange?: (params: TireSearchParams | null) => void
   previewCount?: number
   onMount?: (setDimension: (width: string, profile: string, rim: string) => void) => void
+  onResetRef?: (reset: () => void) => void
 }
 
 type Segment = "width" | "profile" | "rim"
@@ -179,7 +180,7 @@ function SegmentInput({
   )
 }
 
-export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount }: Props) {
+export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount, onResetRef }: Props) {
   const { t } = useLanguage()
   const [width, setWidth] = useState("")
   const [profile, setProfile] = useState("")
@@ -200,6 +201,18 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
       setRimLetterSeen(false)
       setAgentPulse(true)
       setTimeout(() => setAgentPulse(false), 1200)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!onResetRef) return
+    onResetRef(() => {
+      setWidth("")
+      setProfile("")
+      setRim("")
+      setRimLetterSeen(false)
+      setQuantity("4")
+      setSeason("sommer")
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -333,9 +346,14 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
             onChange={(e) => setQuantity(e.target.value)}
             className="w-full border border-ui-border-base rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-ui-fg-base transition-colors bg-white"
           >
-            <option value="4">4 stk</option>
-            <option value="2">2 stk</option>
             <option value="1">1 stk</option>
+            <option value="2">2 stk</option>
+            <option value="3">3 stk</option>
+            <option value="4">4 stk</option>
+            <option value="5">5 stk</option>
+            <option value="6">6 stk</option>
+            <option value="7">7 stk</option>
+            <option value="8">8 stk</option>
           </select>
         </div>
         <div>
@@ -404,15 +422,6 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
             }}
           />
         </div>
-        {isComplete && (
-          <p className="mt-2 text-center text-sm font-medium text-ui-fg-subtle transition-opacity duration-200">
-            {previewCount !== undefined
-              ? previewCount === 0
-                ? t.noTiresFound
-                : t.tiresFound(previewCount)
-              : `${width}/${profile}R${rimNorm}`}
-          </p>
-        )}
       </div>
 
       <button
@@ -426,6 +435,15 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
       >
         {t.findTires}
       </button>
+      {isComplete && (
+        <p className="mt-2 text-center text-sm font-medium text-ui-fg-subtle transition-opacity duration-200">
+          {previewCount !== undefined
+            ? previewCount === 0
+              ? t.noTiresFound
+              : t.tiresFound(previewCount)
+            : `${width}/${profile}R${rimNorm}`}
+        </p>
+      )}
     </form>
   )
 }

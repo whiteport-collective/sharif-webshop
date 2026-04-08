@@ -204,7 +204,7 @@ const Payment = ({
                 Velg monteringstid
               </Button>
             ) : (
-              <PaymentButton cart={cart} data-testid="submit-order-button" onSuccess={onSuccess} disabled={!termsAccepted} />
+              <PaymentButton cart={cart} data-testid="submit-order-button" onSuccess={onSuccess} disabled={!termsAccepted} buttonLabel="Fullfør bestilling" />
             )}
           </div>
         </div>

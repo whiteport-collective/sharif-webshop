@@ -1,30 +1,24 @@
 ## Learned
-- Feedback skill goes in WDS repo (`src/skills/feedback/SKILL.md`) not as a standalone command — travels with WDS distribution
-- Bitwarden CLI pattern: `bw get template item` → python to build JSON → `bw encode | bw create item`
-- agent_messages table requires `thread_id` (NOT NULL) — use `gen_random_uuid()` when inserting; body column is `content` not `body`
-- Sub-agent (Claude) is right for immediate local implementation; Codex for async PR-based work
-- 13-issue storefront fix batch was implemented by a sub-agent directly — all changes live in `storefront/src/`
-- Scenario 03 is Admin Dashboard (not 05/06 as previously in the index)
-- Purchase planning is a key feature of 03.4: agent compares current stock vs 3yr historical sales to generate buy recommendations
-- Do proper WDS spec + wireframes before sending Codex WO for complex admin builds — vibe coding doesn't work here
+- Next.js middleware rewrites (not redirects) keep clean URLs in the browser while internally routing to `[countryCode]` paths. Sharif is Norway-only so `/no/` should never be visible.
+- `usePathname()` returns the original browser URL with rewrites, not the rewritten path. NavController segment checks must handle both `/dekk/...` and `/no/dekk/...`.
+- The FlowShell header dimension chip was repeatedly gated on `activeSection` scroll state, causing it to vanish when scrolling up. The rule: dimension chip visibility must ONLY depend on search state (`searchMeta.dimension` + `products.length > 0`), never on scroll position.
+- Puppeteer `setNativeValue` hack bypasses React state — unreliable for testing controlled inputs. Use direct URL navigation for proper React state testing.
 
 ## Context
-- **Feedback skill:** Created at `C:/dev/WDS/whiteport-design-studio/src/skills/feedback/SKILL.md`
-- **13-issue storefront fix:** Sub-agent completed all 13 fixes in `storefront/`. SVG logo + placeholder in `public/`, i18n extended, FlowShell menu/support/confirmation wired, checkout desktop layout, step headlines, scroll lock, Drammen auto-select, support sidebar scaffold
-- **Scenario 03 Admin Dashboard:** Full structure at `design-process/C-UX-Scenarios/03-admin-dashboard/`. All 7 step folders + spec files with: screen purpose, user actions, Medusa data connections, agent tools + example queries, user scenario narratives (named, specific), open questions. 03.2 has sales chart + 8 pattern types
-- **Anthropic API key:** Saved to Bitwarden as "Anthropic API Key — Sharif" + added to `backend/.env`
-- **Admin Codex WO:** Not sent — paused to do proper WDS spec first (correct)
-- **Old storefront WOs** (39697e4f, bbab3550): cancelled in DB, superseded by sub-agent
+Implemented virtual URL routing for the Sharif storefront:
+- **Middleware** (`storefront/src/middleware.ts`): Rewrites all clean URLs to `/no/...` internally. No more 307 redirects. `/dekk/*`, `/`, and all other paths work without `/no/` visible.
+- **Dekk route** (`storefront/src/app/[countryCode]/(main)/dekk/[[...slug]]/page.tsx`): Optional catch-all that parses `/dekk/205-55R16/sommer/4` into search params and renders FlowShell with `initialSearch` prop.
+- **FlowShell** (`storefront/src/modules/home/components/flow-shell/index.tsx`): Uses `/dekk/` URLs in history.pushState. Added `initialSearch`, `landingFooter`, `resetSearchRef` props. Split landing content into always-visible (value props) and pre-search-only (brands/workshops).
+- **NavController**: Hides Medusa nav on `/dekk/` pages.
+- **Header dimension chip**: Shows after products load, persists across all sections. "Ta bort" on home clears search + inputs. "Endre" on results/checkout scrolls back.
+
+**Known issue**: The header has sloppy conditional logic — left icon (hamburger vs back) and action button (Ta bort vs Endre) both swap based on `activeSection` scroll state, causing blinks at section boundaries. Needs a clean rewrite.
 
 ## Plan
-Draw Excalidraw wireframes for Scenario 03, one screen at a time, user approves each before writing WDS spec. Then one Codex WO for the full admin build.
-
-Order: 03.1 Login → 03.2 Open Glass → 03.3 Orders → 03.4 Products → 03.5 Customers → 03.6 Agent Sidebar → 03.7 Settings → full WDS spec → Codex WO
+Complete storefront order flow for Moohsen demo. URL routing done. Next: fix the header to be stable (no scroll-dependent swaps), then remaining feedback items: FB-22 (language change scroll), FB-23 (order confirmation), FB-24 (home delivery button label).
 
 ## Next
-Draw wireframe 03.1 Login in Excalidraw at `design-process/C-UX-Scenarios/03-admin-dashboard/Sketches/03.1-login.excalidraw` — desktop canvas (1440×900), Sharif logo top-left, email+password form centered, minimal. Present to user for approval before 03.2.
+Rewrite the FlowShell header dimension area in `storefront/src/modules/home/components/flow-shell/index.tsx:457-515`. Remove all `activeSection`-based conditionals from the dimension chip and action buttons. The header should be one stable bar: logo + dimension chip (when search active) + "Endre" link (always scrolls to search form) + small x icon to clear search. The left icon (hamburger/back) should also not blink — use the back arrow whenever results exist, hamburger only on clean home state (no `searchMeta.dimension`).
 
 ## Spec Sync
-- `00-ux-scenarios.md` updated — Scenario 03 added, old 05/06 entries removed
-- All 7 scenario step files written with full meta descriptions
-- `03.2-open-glass.md` extended with sales chart + patterns section
+None
