@@ -19,7 +19,7 @@ import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
 import { FlowShellResults } from "./flow-shell-results"
 import type { FlowShellProps, FlowView, SearchMeta, SessionContext } from "./types"
-import { buildDekkPath, getSeasonLabel, getSkeletonCount, parseDekkPath } from "./utils"
+import { buildDekkPath, getSeasonChipLabel, getSkeletonCount, parseDekkPath } from "./utils"
 import { searchTires } from "../../../../app/actions/search-tires"
 
 export default function FlowShell({
@@ -51,6 +51,7 @@ export default function FlowShell({
   const [detailProduct, setDetailProduct] = useState<HttpTypes.StoreProduct | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [previewDimension, setPreviewDimension] = useState<string | null>(null)
+  const [previewMeta, setPreviewMeta] = useState<SearchMeta | null>(null)
   const [visibleLimit, setVisibleLimit] = useState(6)
   const [checkoutKey, setCheckoutKey] = useState(0)
   const [cartLoading, setCartLoading] = useState(false)
@@ -398,8 +399,10 @@ export default function FlowShell({
   const skeletonCount = getSkeletonCount(knownCount)
   const hasMoreResults = !isLoading && sortedProducts.length > visibleLimit
   const showCheckoutAction = !isLoading && Boolean(selectedTire)
-  const chipDimension = searchMeta.dimension || previewDimension || ""
-  const chipSeasonLabel = searchMeta.dimension ? getSeasonLabel(searchMeta.season, lang) : ""
+  const chipDimension = searchMeta.dimension || previewMeta?.dimension || previewDimension || ""
+  const chipSeason = searchMeta.dimension ? searchMeta.season : previewMeta?.season
+  const chipSeasonLabel = chipSeason ? getSeasonChipLabel(chipSeason, lang) : ""
+  const chipQty = searchMeta.dimension ? searchMeta.qty : (previewMeta?.qty ?? 0)
   const hasSearch = Boolean(chipDimension)
 
   const handleSearch = useCallback((params: TireSearchParams) => {
@@ -434,6 +437,7 @@ export default function FlowShell({
     setView("home")
     setDetailProduct(null)
     setPreviewDimension(null)
+    setPreviewMeta(null)
     setCheckoutKey(0)
     setHideBack(false)
     setCheckoutStepTitle("")
@@ -514,7 +518,7 @@ export default function FlowShell({
               setLangMenuOpen={setLangMenuOpen}
               setMenuOpen={setMenuOpen}
               sortMenuRef={sortMenuRef}
-              qty={searchMeta.qty}
+              qty={chipQty}
             />
 
             <div className="flex flex-1 overflow-hidden">
@@ -535,6 +539,15 @@ export default function FlowShell({
                         onDimensionChange={handleDimensionChange}
                         onFormChange={(params) => {
                           pendingParams.current = params
+                          setPreviewMeta(
+                            params
+                              ? {
+                                  dimension: `${params.width}/${params.profile}R${params.rim}`,
+                                  qty: Number(params.qty) || 4,
+                                  season: params.season || "sommer",
+                                }
+                              : null
+                          )
                         }}
                         previewCount={previewDimension ? dimensionCounts[previewDimension] : undefined}
                         onMount={(fn) => {

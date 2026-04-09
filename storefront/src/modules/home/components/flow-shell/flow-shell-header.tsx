@@ -90,12 +90,17 @@ export function FlowShellHeader({
             <button
               type="button"
               onClick={onScrollHome}
-              className="min-w-0 truncate text-xs font-medium text-ui-fg-subtle hover:text-ui-fg-base"
+              className="flex min-w-0 items-center gap-1 text-xs font-medium text-ui-fg-subtle hover:text-ui-fg-base"
               title={`${chipDimension}${chipSeasonLabel ? ` · ${chipSeasonLabel}` : ""}${qty ? ` · ${qty} stk` : ""}`}
             >
-              <span>{chipDimension}</span>
-              {chipSeasonLabel ? <span> · {chipSeasonLabel}</span> : null}
-              {qty ? <span> · {qty} stk</span> : null}
+              <span className="truncate">{chipDimension}</span>
+              {(chipSeasonLabel || qty) && (
+                <span className="shrink-0 rounded-full bg-ui-bg-subtle px-2 py-0.5 text-[11px] font-semibold text-ui-fg-base">
+                  {chipSeasonLabel}
+                  {chipSeasonLabel && qty ? " · " : ""}
+                  {qty ? `${qty} stk` : ""}
+                </span>
+              )}
             </button>
 
             <button
@@ -163,18 +168,7 @@ export function FlowShellHeader({
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setChatOpen((open) => !open)}
-          className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${
-            chatOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"
-          }`}
-          aria-label="Chat"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
-        </button>
+        {cartBadge}
 
         <div className="relative" ref={langMenuRef}>
           <button
@@ -208,7 +202,18 @@ export function FlowShellHeader({
           )}
         </div>
 
-        {cartBadge}
+        <button
+          type="button"
+          onClick={() => setChatOpen((open) => !open)}
+          className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${
+            chatOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"
+          }`}
+          aria-label="Chat"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
       </div>
     </header>
   )
