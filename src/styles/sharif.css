@@ -1,0 +1,131 @@
+@import "tailwindcss";
+@plugin "daisyui";
+
+/* Nordic Grip — extracted from Stitch generation */
+@plugin "daisyui/theme" {
+  name: "sharif";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-primary: #a90000;
+  --color-primary-content: #ffffff;
+  --color-secondary: #af2f21;
+  --color-secondary-content: #ffffff;
+  --color-accent: #d70000;
+  --color-accent-content: #ffffff;
+  --color-neutral: #1a1a1a;
+  --color-neutral-content: #ffffff;
+  --color-base-100: #ffffff;
+  --color-base-200: #fff0ee;
+  --color-base-300: #e0e0e0;
+  --color-base-content: #1a1a1a;
+  --color-success: #51cf66;
+  --color-success-content: #0f3817;
+  --color-warning: #fcc419;
+  --color-warning-content: #5c4702;
+  --color-info: #0047c4;
+  --color-info-content: #ffffff;
+  --color-error: #ba1a1a;
+  --color-error-content: #ffffff;
+  --radius-box: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-selector: 9999px;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@theme {
+  --font-display: "Space Grotesk", "Montserrat", sans-serif;
+  --font-body: "Inter", "Source Sans 3", sans-serif;
+  --font-label: "Inter", sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100vh;
+    background: #fff8f6;
+    color: #1a1a1a;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+}
+
+@layer components {
+  /* Glass card — Stitch "Dekkvelger" style */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(24px);
+    box-shadow: 0 20px 40px rgba(41, 23, 20, 0.06);
+  }
+
+  /* Gradient CTA — Stitch "ignition" button */
+  .btn-ignition {
+    background: linear-gradient(135deg, #a90000 0%, #d70000 100%);
+    color: white;
+    border: none;
+  }
+  .btn-ignition:hover {
+    background: linear-gradient(135deg, #930000 0%, #c00000 100%);
+  }
+  .btn-ignition:disabled {
+    background: #e0e0e0;
+    color: #888888;
+  }
+
+  /* Bottom-border input — Stitch field style */
+  .field-bottom {
+    background: rgba(255, 240, 238, 0.6);
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem 0.5rem 0 0;
+    padding: 12px 8px;
+    transition: border-color 0.2s;
+  }
+  .field-bottom:focus,
+  .field-bottom--active {
+    border-bottom: 2px solid #a90000;
+  }
+
+  /* Ambient shadow */
+  .ambient-shadow {
+    box-shadow: 0 20px 40px rgba(41, 23, 20, 0.06);
+  }
+
+  /* Label style */
+  .field-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: rgba(26, 26, 26, 0.5);
+    margin-bottom: 4px;
+  }
+
+  .page-shell {
+    width: min(calc(100vw - 24px), 1200px);
+    margin-inline: auto;
+  }
+
+  .eyebrow {
+    @apply mb-3 text-[0.78rem] font-extrabold uppercase tracking-[0.14em] text-primary;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  .editorial-spacing {
+    letter-spacing: -0.02em;
+  }
+}

@@ -75,11 +75,8 @@ Each component gets its own `.md` file with a readable ID (e.g., `atom-cta-butto
 
 ## For Agents
 
-**Workflow:** `_bmad/wds/workflows/7-design-system/workflow.md`
-**Agent trigger:** `DS` (Freya)
-**Router:** `_bmad/wds/workflows/7-design-system/design-system-router.md`
-**Templates:** `_bmad/wds/workflows/7-design-system/templates/`
-**Guide:** `_bmad/wds/data/agent-guides/freya/design-system.md`
+**Agent:** Freya (UX Design phase)
+**Skills:** Loaded from Agent Space at boot — no local skill files needed.
 
 **Before creating any component:**
 1. Check if it already exists in the chosen component library
@@ -277,9 +274,9 @@ Used when the main decision is made in scrollable content but the commit action 
 
 Used for shops and booking slots where one option should read as obviously selected. Selected state uses `border-width-strong`, `brand-primary`, and a muted branded background instead of introducing a second component family.
 
-### External checkout handoff
+### Stripe embedded payment
 
-Sharif-owned UI ends before payment provider UI begins. The Sharif spec still documents payload, return URLs, and state transitions, but does not restyle provider-owned modules.
+Stripe Elements is embedded on a Sharif-owned `/checkout` page. Sharif retains full branding and layout control. The Stripe Elements component renders the card form inside the page — no redirect to Stripe hosted checkout. Sharif still documents payload, return URLs, and state transitions.
 
 ### Confirmation-to-booking transition
 
@@ -427,9 +424,9 @@ Detailed specs: [EU Label Display](molecules/eu-label-display.md), [Product Card
 Expandable meter with explanation copy for product-detail interpretation.
 Detailed spec: [EU Label Display](molecules/eu-label-display.md)
 
-### External Checkout Handoff
+### Stripe Payment Form
 
-Sharif-owned container or redirect frame that initiates provider checkout without redefining provider UI.
+Stripe Elements embedded in Sharif-owned checkout page. Card input, submit, and error states are handled by Stripe's PaymentElement or CardElement within the Sharif page layout.
 
 ### Provider Module
 
