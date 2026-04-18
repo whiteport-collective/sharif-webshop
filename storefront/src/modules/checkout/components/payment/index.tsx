@@ -11,6 +11,7 @@ import PaymentContainer, {
   StripeCardContainer,
 } from "@modules/checkout/components/payment-container"
 import Divider from "@modules/common/components/divider"
+import { useLanguage } from "@lib/i18n"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
@@ -42,6 +43,7 @@ const Payment = ({
     activeSession?.provider_id ?? ""
   )
 
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
 
   const isOpen = stepProp ? stepProp === "payment" : searchParams.get("step") === "payment"
@@ -78,6 +80,7 @@ const Payment = ({
         await initiatePaymentSession(cart, {
           provider_id: selectedPaymentMethod,
         })
+        await onCartUpdate?.()
       }
       onStepChange?.("booking")
     } catch (err: any) {
@@ -201,7 +204,7 @@ const Payment = ({
                 onClick={handleSubmit}
                 data-testid="continue-to-booking-button"
               >
-                Velg monteringstid
+                {t.completePayment}
               </Button>
             ) : (
               <PaymentButton cart={cart} data-testid="submit-order-button" onSuccess={onSuccess} disabled={!termsAccepted} buttonLabel="Fullfør bestilling" />

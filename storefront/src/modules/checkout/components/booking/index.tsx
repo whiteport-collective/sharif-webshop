@@ -3,12 +3,11 @@
 import { saveBookingToCart } from "@lib/data/cart"
 import { CheckCircleSolid } from "@medusajs/icons"
 import { HttpTypes } from "@medusajs/types"
-import { Heading, Text, clx } from "@medusajs/ui"
+import { Button, Heading, Text, clx } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
-import PaymentButton from "@modules/checkout/components/payment-button"
 import { useLanguage } from "@lib/i18n"
 import { useSearchParams } from "next/navigation"
-import { useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 
 const WORKSHOPS: Record<string, { name: string; address: string }> = {
   "pickup-fjellhamar": {
@@ -75,13 +74,11 @@ const Booking = ({
   cart,
   step: stepProp,
   onStepChange,
-  onSuccess,
   isWorkshop: isWorkshopProp,
 }: {
   cart: HttpTypes.StoreCart
   step?: string
   onStepChange?: (step: string) => void
-  onSuccess?: (orderId: string) => void
   isWorkshop?: boolean
 }) => {
   const searchParams = useSearchParams()
@@ -98,6 +95,14 @@ const Booking = ({
   })
   const [visibleDays, setVisibleDays] = useState(DAYS_INITIAL)
   const [, startTransition] = useTransition()
+  const ctaRef = useRef<HTMLDivElement>(null)
+
+  const scrollToCta = () => {
+    ctaRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    })
+  }
 
   const handleEdit = () => {
     onStepChange?.("booking")
@@ -129,6 +134,18 @@ const Booking = ({
 
   const slots = getAvailableSlots(visibleDays)
   const bookingReady = !!selectedDate && !!selectedTime
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      scrollToCta()
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [isOpen])
 
   // For home-delivery carts — no booking needed, render nothing
   if (!workshop) return null
@@ -178,7 +195,10 @@ const Booking = ({
                 {/* Day header */}
                 <button
                   type="button"
-                  onClick={() => toggleDay(slot.date)}
+                  onClick={() => {
+                    toggleDay(slot.date)
+                    window.requestAnimationFrame(() => scrollToCta())
+                  }}
                   className={clx(
                     "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium text-left transition-colors",
                     {
@@ -233,21 +253,25 @@ const Booking = ({
         {visibleDays < DAYS_MAX && (
           <button
             type="button"
-            onClick={() => setVisibleDays((n) => Math.min(n + DAYS_PER_LOAD, DAYS_MAX))}
+            onClick={() => {
+              setVisibleDays((n) => Math.min(n + DAYS_PER_LOAD, DAYS_MAX))
+              window.requestAnimationFrame(() => scrollToCta())
+            }}
             className="w-full py-2.5 text-sm font-medium text-ui-fg-subtle hover:text-ui-fg-base border border-ui-border-base rounded-lg hover:bg-ui-bg-subtle transition-colors mb-6"
           >
             Vis fler dager
           </button>
         )}
 
-        <div className="mt-6">
-          <PaymentButton
-            cart={cart}
-            data-testid="submit-order-button"
+        <div ref={ctaRef} className="mt-8 pb-8">
+          <Button
+            size="large"
             disabled={!bookingReady}
-            onSuccess={onSuccess}
-            buttonLabel={t.bookMounting}
-          />
+            onClick={() => onStepChange?.("confirmation")}
+            data-testid="booking-continue-button"
+          >
+            {t.completeOrder}
+          </Button>
         </div>
       </div>
 

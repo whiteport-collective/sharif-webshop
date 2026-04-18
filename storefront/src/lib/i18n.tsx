@@ -78,6 +78,8 @@ export type Strings = {
   chatPlaceholder: string
   backToHome: string
   paymentSuccessful: string
+  completePayment: string
+  completeOrder: string
 }
 
 export const UI: Record<Lang, Strings> = {
@@ -155,6 +157,8 @@ export const UI: Record<Lang, Strings> = {
     chatPlaceholder: "Har du tankar och frågor om din bestilling...",
     backToHome: "Tilbake til forsiden",
     paymentSuccessful: "Betaling gjennomført",
+    completePayment: "Gjennomfør betaling",
+    completeOrder: "Fullfør bestillingen",
   },
   en: {
     // FlowShell
@@ -230,6 +234,8 @@ export const UI: Record<Lang, Strings> = {
     chatPlaceholder: "Questions about your order...",
     backToHome: "Back to home",
     paymentSuccessful: "Payment successful",
+    completePayment: "Complete payment",
+    completeOrder: "Complete order",
   },
 }
 
