@@ -1,5 +1,6 @@
 import { Metadata } from "next"
 import FlowShell from "@modules/home/components/flow-shell"
+import { HomeLandingContent, HomeLandingFooter } from "@modules/home/components/landing-sections"
 import { getStorefrontShellData } from "@modules/home/lib/storefront-shell-data"
 
 function parseSlug(slug: string[] | undefined) {
@@ -68,6 +69,8 @@ export default async function DekkPage({
       countryCode={countryCode}
       region={shellData.region}
       cartBadge={shellData.cartBadge}
+      landingContent={<HomeLandingContent />}
+      landingFooter={<HomeLandingFooter />}
       initialSearch={
         parsed
           ? {
