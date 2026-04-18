@@ -4,10 +4,12 @@ import { retrieveCart, retrieveCartFresh } from "@lib/data/cart"
 import { retrieveCustomer } from "@lib/data/customer"
 import { listCartShippingMethods } from "@lib/data/fulfillment"
 import { listCartPaymentMethods } from "@lib/data/payment"
+import { Heading } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import Addresses from "@modules/checkout/components/addresses"
 import Booking from "@modules/checkout/components/booking"
 import Payment from "@modules/checkout/components/payment"
+import PaymentButton from "@modules/checkout/components/payment-button"
 import PaymentWrapper from "@modules/checkout/components/payment-wrapper"
 import Shipping from "@modules/checkout/components/shipping"
 import CartTotals from "@modules/common/components/cart-totals"
@@ -21,6 +23,7 @@ type Props = {
   isActive?: boolean
   onBack: () => void
   cartLoading?: boolean
+  onCheckoutStateChange?: (step: string) => void
   onStepTitle?: (title: string) => void
   onRegisterBack?: (fn: () => void) => void
   onSuccess?: (orderId: string) => void
@@ -32,6 +35,7 @@ const STEP_TITLES: Record<string, string> = {
   delivery: "Leveringsmåte",
   payment: "Betaling",
   booking: "Bestill montering",
+  confirmation: "Bekreft bestilling",
 }
 
 type CheckoutData = {
@@ -46,6 +50,7 @@ const STEP_BACK: Record<string, string | null> = {
   address: "delivery",
   payment: "address",
   booking: "payment",
+  confirmation: "booking",
 }
 
 export default function CheckoutPanelContent({
@@ -54,6 +59,7 @@ export default function CheckoutPanelContent({
   isActive = true,
   onBack,
   cartLoading = false,
+  onCheckoutStateChange,
   onStepTitle,
   onRegisterBack,
   onSuccess,
@@ -69,6 +75,14 @@ export default function CheckoutPanelContent({
   const confirmationRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
   const backLocked = useRef(false)
+  const justMounted = useRef(true)
+
+  // Ignore wheel-back gestures for 800ms after mount — prevents elastic overscroll
+  // from the scroll-to-checkout animation from immediately triggering goBack.
+  useEffect(() => {
+    const timer = setTimeout(() => { justMounted.current = false }, 800)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     if (cartLoading) return // wait for parent addToCart to finish before fetching
@@ -93,11 +107,13 @@ export default function CheckoutPanelContent({
 
   const handleStepChange = (next: string) => {
     setStep(next)
-    if (embedded) {
-      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    } else {
+    onCheckoutStateChange?.(next)
+    if (!embedded) {
       containerRef.current?.scrollTo({ top: 0, behavior: "smooth" })
     }
+    // In embedded mode, FlowShell owns scrolling — avoid scrollIntoView,
+    // which can collide with the outer surface's scroll and with Stripe
+    // Elements' iframe layout when the credit card field loads.
   }
 
   // Derive isWorkshop early — needed both for header sync and render
@@ -113,7 +129,8 @@ export default function CheckoutPanelContent({
     const title = step === "address" ? addressTitle : (STEP_TITLES[step] ?? "Kasse")
     onStepTitle?.(title)
     onRegisterBack?.(() => goBackRef.current())
-  }, [step, isWorkshop, orderId])
+    onCheckoutStateChange?.(step)
+  }, [step, isWorkshop, onCheckoutStateChange, onRegisterBack, onStepTitle, orderId])
 
   // Called after initiatePaymentSession — fetches fresh cart so PaymentWrapper
   // gets the new payment_session and renders Stripe Elements
@@ -127,6 +144,7 @@ export default function CheckoutPanelContent({
     setOrderId(id)
     onSuccess?.(id)
     onConfirmationReached?.()
+    onCheckoutStateChange?.("complete")
     setTimeout(() => {
       confirmationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
     }, 100)
@@ -148,7 +166,7 @@ export default function CheckoutPanelContent({
   // Scroll-up at top → go back. Uses React onWheel prop (more reliable than addEventListener
   // on children of CSS-transformed elements, where some browsers delay or drop events).
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!isActive) return
+    if (justMounted.current || !isActive) return
     const el = containerRef.current
     if (!el || (el.scrollTop ?? 0) > 0) return
     if (e.deltaY < -40) goBackRef.current()
@@ -191,7 +209,7 @@ export default function CheckoutPanelContent({
           <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-x-8 gap-y-8">
             {/* Left column */}
             {orderId ? (
-              <div ref={confirmationRef}>
+              <div ref={confirmationRef} className="scroll-mt-14">
                 <OrderConfirmedInline
                   orderId={orderId}
                   countryCode={countryCode}
@@ -230,9 +248,15 @@ export default function CheckoutPanelContent({
                     cart={data.cart}
                     step={step}
                     onStepChange={handleStepChange}
-                    onSuccess={handleOrderSuccess}
                     isWorkshop={isWorkshop}
                   />
+                  {isWorkshop && (
+                    <ConfirmationStep
+                      cart={data.cart}
+                      step={step}
+                      onSuccess={handleOrderSuccess}
+                    />
+                  )}
                 </div>
               </PaymentWrapper>
             )}
@@ -247,6 +271,87 @@ export default function CheckoutPanelContent({
                 </div>
               </div>
             </div>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Confirmation step ────────────────────────────────────────────────────────
+
+function SummaryRow({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className="px-4 py-3">
+      <p className="text-xs text-ui-fg-muted mb-0.5">{label}</p>
+      <p className={`text-sm text-ui-fg-base${bold ? " font-semibold" : ""}`}>{value}</p>
+    </div>
+  )
+}
+
+function ConfirmationStep({
+  cart,
+  step,
+  onSuccess,
+}: {
+  cart: HttpTypes.StoreCart
+  step: string
+  onSuccess: (orderId: string) => void
+}) {
+  const isOpen = step === "confirmation"
+
+  const shippingMethod = cart.shipping_methods?.[0]
+  const addr = cart.shipping_address
+  const bookingDate = cart.metadata?.booking_date ? String(cart.metadata.booking_date) : null
+  const bookingTime = cart.metadata?.booking_time ? String(cart.metadata.booking_time) : null
+  const bookingWorkshop = cart.metadata?.booking_workshop ? String(cart.metadata.booking_workshop) : null
+  const total = cart.total != null
+    ? `NOK ${(cart.total / 100).toFixed(2).replace(".", ",")}`
+    : "—"
+
+  return (
+    <div className="bg-white">
+      <Heading
+        level="h2"
+        className={`flex flex-row text-3xl-regular gap-x-2 items-baseline mb-6${
+          !isOpen ? " opacity-50 pointer-events-none select-none" : ""
+        }`}
+      >
+        Bekreft bestilling
+      </Heading>
+
+      {isOpen && (
+        <>
+          <div className="divide-y divide-ui-border-base border border-ui-border-base rounded-lg overflow-hidden mb-8">
+            <SummaryRow label="Leveringsmåte" value={shippingMethod?.name ?? "—"} />
+            {addr && (
+              <SummaryRow
+                label="Adresse"
+                value={[addr.address_1, addr.postal_code, addr.city].filter(Boolean).join(", ")}
+              />
+            )}
+            {bookingDate && (
+              <SummaryRow
+                label="Monteringstid"
+                value={[
+                  bookingDate,
+                  bookingTime ? `kl. ${bookingTime}` : null,
+                  bookingWorkshop,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              />
+            )}
+            <SummaryRow label="Totalbeløp" value={total} bold />
+          </div>
+
+          <div className="pb-8">
+            <PaymentButton
+              cart={cart}
+              data-testid="submit-order-button"
+              onSuccess={onSuccess}
+              buttonLabel="Bekreft og betal"
+            />
           </div>
         </>
       )}
