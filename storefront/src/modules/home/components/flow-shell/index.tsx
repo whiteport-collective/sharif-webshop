@@ -1,8 +1,7 @@
 "use client"
 
 import { HttpTypes } from "@medusajs/types"
-import { useRouter } from "next/navigation"
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { startTransition, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { LanguageContext, UI, type Lang } from "@lib/i18n"
 import { addToCart, deleteLineItem, retrieveCart } from "@lib/data/cart"
 import { sortProducts } from "@lib/util/sort-tires"
@@ -19,6 +18,13 @@ import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
 import { FlowShellResults } from "./flow-shell-results"
 import type { FlowShellProps, FlowView, SearchMeta, SessionContext } from "./types"
+import {
+  canNavigateBack,
+  deriveFlowShellScene,
+  initialFlowShellState,
+  mapFlowToLegacyView,
+  reduceFlowShellState,
+} from "./state"
 import { buildDekkPath, getSeasonChipLabel, getSkeletonCount, parseDekkPath } from "./utils"
 import { searchTires } from "../../../../app/actions/search-tires"
 
@@ -32,7 +38,7 @@ export default function FlowShell({
   landingFooter,
   region,
 }: FlowShellProps) {
-  const [view, setView] = useState<FlowView>("home")
+  const [appState, dispatch] = useReducer(reduceFlowShellState, initialFlowShellState)
   const [activeSection, setActiveSection] = useState<FlowView>("home")
   const [lang, setLang] = useState<Lang>("no")
   const [langMenuOpen, setLangMenuOpen] = useState(false)
@@ -40,8 +46,6 @@ export default function FlowShell({
   const [products, setProducts] = useState<HttpTypes.StoreProduct[]>([])
   const [activeSort, setActiveSort] = useState<SortKey>("price")
   const [menuOpen, setMenuOpen] = useState(false)
-  const [chatOpen, setChatOpen] = useState(false)
-  const [hideBack, setHideBack] = useState(false)
   const [searchMeta, setSearchMeta] = useState<SearchMeta>({
     dimension: "",
     qty: 4,
@@ -56,6 +60,8 @@ export default function FlowShell({
   const [checkoutKey, setCheckoutKey] = useState(0)
   const [cartLoading, setCartLoading] = useState(false)
   const [checkoutStepTitle, setCheckoutStepTitle] = useState("")
+  const [cartQty, setCartQty] = useState<number | null>(null)
+  const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
   const resetSearchRef = useRef<(() => void) | null>(null)
@@ -63,7 +69,6 @@ export default function FlowShell({
   const agentOpenPaymentRef = useRef<(() => void) | null>(null)
   const langMenuRef = useRef<HTMLDivElement>(null)
   const sortMenuRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
 
   const t = UI[lang]
   const prefetchCache = useRef<Map<string, HttpTypes.StoreProduct[]>>(new Map())
@@ -73,9 +78,23 @@ export default function FlowShell({
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const checkoutSectionRef = useRef<HTMLDivElement>(null)
   const backLocked = useRef(false)
+  const programmaticScroll = useRef(false)
   const pendingParams = useRef<TireSearchParams | null>(null)
   const selectedTireRef = useRef<SelectedTire | null>(null)
   const previousViewRef = useRef<FlowView>("home")
+  const view = mapFlowToLegacyView(appState.flow)
+  const scene = deriveFlowShellScene(appState)
+  const chatOpen = appState.assistant === "open"
+  const hideBack = appState.checkoutLocked || appState.flow === "complete"
+
+  useEffect(() => {
+    retrieveCart().then((fresh) => {
+      const qty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
+      setCartQty(qty)
+      setCart(fresh ?? null)
+      dispatch({ type: "CART_UPDATED", hasItems: qty > 0 })
+    })
+  }, [])
 
   const syncSelectedTire = useCallback((tire: SelectedTire | null) => {
     selectedTireRef.current = tire
@@ -100,8 +119,15 @@ export default function FlowShell({
       return
     }
 
+    // Use getBoundingClientRect so the offset is relative to the scroll container,
+    // not the nearest positioned ancestor (which includes the 56px sticky header).
+    const surfaceTop = surface.getBoundingClientRect().top
+    const targetTop = target.getBoundingClientRect().top
+    // Guard scroll-sync from hijacking view while our own smooth scroll is running.
+    programmaticScroll.current = true
+    setTimeout(() => { programmaticScroll.current = false }, 900)
     surface.scrollTo({
-      top: target.offsetTop,
+      top: surface.scrollTop + (targetTop - surfaceTop),
       behavior,
     })
   }, [])
@@ -115,11 +141,11 @@ export default function FlowShell({
     const qty = Number(params.qty) || 4
     const season = params.season || "sommer"
 
-    setHideBack(false)
     setSearchMeta({ dimension, qty, season })
     setActiveSort("price")
     setVisibleLimit(6)
-    setView("results")
+    dispatch({ type: "DIMENSIONS_VALID" })
+    dispatch({ type: "SEARCH_SUBMITTED" })
 
     if (pushHistory) {
       pushFlowState("results", buildDekkPath(params.width, params.profile, params.rim, season, qty))
@@ -154,21 +180,28 @@ export default function FlowShell({
       backLocked.current = false
     }, 600)
 
-    setHideBack(false)
     setCheckoutKey((current) => current || 1)
     pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
-    setView("checkout")
+    dispatch({ type: "NAV_TO_CHECKOUT" })
   }, [pushFlowState])
 
   const handleSelectTire = useCallback((product: HttpTypes.StoreProduct, qty: number) => {
+    if (backLocked.current) {
+      return
+    }
+
+    backLocked.current = true
+    setTimeout(() => {
+      backLocked.current = false
+    }, 600)
+
     const variant = (product.variants?.[0] ?? {}) as any
     const existing = selectedTireRef.current
 
     if (existing?.lineItemId && existing.product.variants?.[0]?.id === variant.id) {
-      setHideBack(false)
       setCheckoutKey((current) => current + 1)
       pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
-      setView("checkout")
+      dispatch({ type: "NAV_TO_CHECKOUT" })
       return
     }
 
@@ -181,35 +214,55 @@ export default function FlowShell({
       return
     }
 
-    setHideBack(false)
+    dispatch({ type: "CART_SYNC_STARTED" })
     setCartLoading(true)
     setCheckoutKey((current) => current + 1)
     pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
-    setView("checkout")
+    dispatch({ type: "NAV_TO_CHECKOUT" })
 
     startTransition(async () => {
       try {
-        const currentCart = await retrieveCart()
+        let currentCart = await retrieveCart()
         const alreadyInCart = currentCart?.items?.some((item: any) => item.variant_id === variant.id)
 
         if (!alreadyInCart) {
           await addToCart({ variantId: variant.id, quantity: qty, countryCode })
+          currentCart = await retrieveCart()
         }
+
+        const lineItem = currentCart?.items?.find((item: any) => item.variant_id === variant.id)
+        if (lineItem && selectedTireRef.current) {
+          const updated = { ...selectedTireRef.current, lineItemId: lineItem.id }
+          selectedTireRef.current = updated
+          setSelectedTire(updated)
+        }
+        const newQty = currentCart?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? qty
+        setCartQty(newQty)
+        setCart(currentCart ?? null)
+        dispatch({ type: "CART_UPDATED", hasItems: newQty > 0 })
       } catch {
         // Checkout refreshes cart state on its own.
+        setCartQty(qty)
+        dispatch({ type: "CART_SYNC_FAILED" })
       }
 
       setCartLoading(false)
-      router.refresh()
     })
-  }, [countryCode, pushFlowState, region.currency_code, router, syncSelectedTire])
+  }, [countryCode, pushFlowState, region.currency_code, syncSelectedTire])
 
-  const handleRemoveTire = useCallback(() => {
-    const lineItemId = selectedTireRef.current?.lineItemId
-    syncSelectedTire(null)
+  const handleRemoveTire = useCallback((product: HttpTypes.StoreProduct) => {
+    const variantId = product.variants?.[0]?.id
+    const selectedVariantId = selectedTireRef.current?.product.variants?.[0]?.id
+    const lineItemId =
+      (selectedVariantId && selectedVariantId === variantId
+        ? selectedTireRef.current?.lineItemId
+        : undefined) ??
+      ((cart?.items ?? []) as Array<{ id?: string; variant_id?: string }>).find(
+        (item) => item.variant_id === variantId
+      )?.id
 
-    if (view === "checkout") {
-      setView("results")
+    if (selectedTireRef.current?.product.id === product.id) {
+      syncSelectedTire(null)
     }
 
     if (!lineItemId) {
@@ -218,12 +271,46 @@ export default function FlowShell({
 
     startTransition(async () => {
       await deleteLineItem(lineItemId)
-      router.refresh()
+      const fresh = await retrieveCart()
+      const nextQty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
+      setCartQty(nextQty)
+      setCart(fresh ?? null)
+      if (nextQty === 0) {
+        setCheckoutKey(0)
+        setCheckoutStepTitle("")
+        setActiveSection(searchMeta.dimension ? "results" : "home")
+      }
+      dispatch({ type: "CART_UPDATED", hasItems: nextQty > 0 })
     })
-  }, [router, syncSelectedTire, view])
+  }, [cart?.items, searchMeta.dimension, syncSelectedTire])
+
+  const handleRemoveLine = useCallback((lineItemId: string) => {
+    if (selectedTireRef.current?.lineItemId === lineItemId) {
+      syncSelectedTire(null)
+    }
+    startTransition(async () => {
+      await deleteLineItem(lineItemId)
+      const fresh = await retrieveCart()
+      const qty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
+      setCartQty(qty)
+      setCart(fresh ?? null)
+      if (qty === 0) {
+        setCheckoutKey(0)
+        setCheckoutStepTitle("")
+        setActiveSection(searchMeta.dimension ? "results" : "home")
+      }
+      dispatch({ type: "CART_UPDATED", hasItems: qty > 0 })
+    })
+  }, [searchMeta.dimension, syncSelectedTire])
 
   const handleDimensionChange = useCallback((dimension: string | null) => {
     setPreviewDimension(dimension)
+
+    if (!dimension) {
+      dispatch({ type: "DIMENSIONS_PARTIAL" })
+    } else if (cartQty && cartQty > 0 && searchMeta.dimension && dimension !== searchMeta.dimension) {
+      dispatch({ type: "DIMENSION_CONFLICT" })
+    }
 
     if (!dimension || prefetchCache.current.has(dimension) || prefetchInFlight.current.has(dimension)) {
       return
@@ -244,10 +331,20 @@ export default function FlowShell({
   const handlePopState = useCallback((event: PopStateEvent) => {
     const flowView = event.state?.flowView as FlowView | undefined
 
+    if (!canNavigateBack(appState)) {
+      event.stopImmediatePropagation()
+      window.history.pushState(
+        { flowView: mapFlowToLegacyView(appState.flow) },
+        "",
+        `${window.location.pathname}${window.location.search}`
+      )
+      return
+    }
+
     if (flowView === "home") {
       event.stopImmediatePropagation()
       setActiveSection("home")
-      setView("home")
+      dispatch({ type: "NAV_TO_DEFAULT" })
       return
     }
 
@@ -256,6 +353,8 @@ export default function FlowShell({
       const parsed = parseDekkPath(window.location.pathname)
 
       if (parsed) {
+        setActiveSection("results")
+        dispatch({ type: "NAV_TO_RESULTS" })
         runSearch(
           {
             width: parsed.width,
@@ -266,9 +365,10 @@ export default function FlowShell({
           },
           false
         )
+        window.requestAnimationFrame(() => scrollToSection("results", "auto"))
       } else {
         setActiveSection("results")
-        setView("results")
+        dispatch({ type: "NAV_TO_RESULTS" })
       }
       return
     }
@@ -277,9 +377,13 @@ export default function FlowShell({
       event.stopImmediatePropagation()
       const nextView = selectedTireRef.current ? "checkout" : "results"
       setActiveSection(nextView)
-      setView(nextView)
+      dispatch({ type: nextView === "checkout" ? "NAV_TO_CHECKOUT" : "NAV_TO_RESULTS" })
     }
-  }, [runSearch])
+  }, [appState, runSearch, scrollToSection])
+
+  const initialSearchKey = initialSearch
+    ? `${initialSearch.width}/${initialSearch.profile}/${initialSearch.rim}/${initialSearch.season}/${initialSearch.qty}`
+    : null
 
   useEffect(() => {
     if (initialSearch) {
@@ -302,7 +406,8 @@ export default function FlowShell({
     } else {
       window.history.replaceState({ flowView: "home" }, "", "/")
     }
-  }, [initialSearch, pushFlowState, runSearch])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSearchKey, pushFlowState, runSearch])
 
   useEffect(() => {
     window.addEventListener("popstate", handlePopState, true)
@@ -347,7 +452,10 @@ export default function FlowShell({
     }
 
     const frame = window.requestAnimationFrame(() => {
-      scrollToSection(view, view === "home" ? "auto" : "smooth")
+      // View changes are state-driven and should land immediately.
+      // Smooth scrolling here leaves visible “extra roll” when entering
+      // checkout/results and when returning after cart mutations.
+      scrollToSection(view, "auto")
     })
 
     return () => window.cancelAnimationFrame(frame)
@@ -377,10 +485,6 @@ export default function FlowShell({
           setMenuOpen(false)
         }
 
-        if (nextSection === "home") {
-          setView("home")
-        }
-
         return nextSection
       })
     }
@@ -406,11 +510,16 @@ export default function FlowShell({
   const hasSearch = Boolean(chipDimension)
 
   const handleSearch = useCallback((params: TireSearchParams) => {
+    setMenuOpen(false)
     runSearch(params, true)
   }, [runSearch])
 
   const handleBack = useCallback(() => {
     if (backLocked.current) {
+      return
+    }
+
+    if (!canNavigateBack(appState)) {
       return
     }
 
@@ -420,7 +529,7 @@ export default function FlowShell({
     }, 600)
 
     window.history.back()
-  }, [])
+  }, [appState])
 
   const handleHeaderBack = useCallback(() => {
     if (activeSection === "checkout") {
@@ -434,18 +543,35 @@ export default function FlowShell({
   const clearSearch = useCallback(() => {
     setSearchMeta({ dimension: "", qty: 4, season: "sommer" })
     setProducts([])
-    setView("home")
     setDetailProduct(null)
     setPreviewDimension(null)
     setPreviewMeta(null)
     setCheckoutKey(0)
-    setHideBack(false)
     setCheckoutStepTitle("")
+    setActiveSection("home")
+    setHeaderSortOpen(false)
     syncSelectedTire(null)
     pendingParams.current = null
     resetSearchRef.current?.()
+    dispatch({ type: "DIMENSIONS_CLEARED" })
     window.history.replaceState({ flowView: "home" }, "", "/")
   }, [syncSelectedTire])
+
+  useEffect(() => {
+    if (view === "home") {
+      setActiveSection("home")
+      return
+    }
+
+    if (view === "results" && showResultsSection) {
+      setActiveSection("results")
+      return
+    }
+
+    if (view === "checkout" && showCheckoutSection) {
+      setActiveSection("checkout")
+    }
+  }, [showCheckoutSection, showResultsSection, view])
 
   const agentHandlers: AgentToolHandlers = {
     fillDimensionField: (width, profile, rim) => {
@@ -477,10 +603,11 @@ export default function FlowShell({
   const getSessionContext = useCallback((): SessionContext => ({
     view: activeSection,
     dimension: searchMeta.dimension || null,
+    scene,
     visibleProductIds: products.map((product) => product.id ?? ""),
     cartItems: selectedTire ? [{ productId: selectedTire.product.id ?? "", qty: selectedTire.initialQty }] : [],
     step: activeSection === "checkout" ? checkoutStepTitle || null : null,
-  }), [activeSection, checkoutStepTitle, products, searchMeta.dimension, selectedTire])
+  }), [activeSection, checkoutStepTitle, products, scene, searchMeta.dimension, selectedTire])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
@@ -488,12 +615,15 @@ export default function FlowShell({
         <div className="relative flex h-screen overflow-hidden bg-ui-bg-base" style={{ scrollbarGutter: "stable" as any }}>
           <FlowShellMenu menuOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
-          <div className="relative flex flex-1 flex-col overflow-hidden">
+          <div className="relative flex flex-1 flex-col overflow-hidden" style={{ minWidth: 0 }}>
             <FlowShellHeader
               activeSection={activeSection}
               activeSort={activeSort}
+              cart={cart}
               cartBadge={cartBadge}
+              cartQty={cartQty}
               chatOpen={chatOpen}
+              checkoutLocked={appState.checkoutLocked}
               checkoutStepTitle={checkoutStepTitle}
               chipDimension={chipDimension}
               chipSeasonLabel={chipSeasonLabel}
@@ -507,13 +637,17 @@ export default function FlowShell({
               langMenuRef={langMenuRef}
               menuOpen={menuOpen}
               onClearSearch={clearSearch}
+              onRemoveLine={handleRemoveLine}
               onScrollHome={() => scrollToSection("home")}
               onSelectLanguage={(nextLang) => {
                 setLang(nextLang)
                 setLangMenuOpen(false)
               }}
               onSortChange={setActiveSort}
-              setChatOpen={setChatOpen}
+              setChatOpen={(next) => {
+                const resolved = typeof next === "function" ? next(chatOpen) : next
+                dispatch({ type: resolved ? "ASSISTANT_OPENED" : "ASSISTANT_CLOSED" })
+              }}
               setHeaderSortOpen={setHeaderSortOpen}
               setLangMenuOpen={setLangMenuOpen}
               setMenuOpen={setMenuOpen}
@@ -527,6 +661,45 @@ export default function FlowShell({
                 className="flex-1 overflow-y-auto"
                 style={{ overscrollBehaviorY: "contain", scrollBehavior: "smooth" }}
               >
+                {appState.conflict === "dimension_conflict" && (
+                  <div className="sticky top-0 z-20 border-b border-amber-300 bg-amber-50 px-4 py-3 text-sm">
+                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+                      <p className="text-amber-900">
+                        You already have items in the cart. Start a new search for another car or cancel to keep the current results.
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearSearch()
+                            dispatch({ type: "DIMENSION_CONFLICT_DISMISSED" })
+                            scrollToSection("home", "auto")
+                          }}
+                          className="rounded-lg bg-amber-900 px-3 py-2 text-xs font-semibold text-white"
+                        >
+                          Start new search
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            dispatch({ type: "DIMENSION_CONFLICT_DISMISSED" })
+                            if (searchMeta.dimension) {
+                              const [width, rest] = searchMeta.dimension.split("/")
+                              const [profile, rim] = rest.split("R")
+                              setDimensionRef.current?.(width, profile, rim)
+                            }
+                            setPreviewDimension(null)
+                            setPreviewMeta(null)
+                          }}
+                          className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <section ref={homeSectionRef} className="min-h-screen bg-ui-bg-base">
                   <div className="flex justify-center px-4 pb-16 pt-[18vh]">
                     <div className="w-full max-w-xl">
@@ -570,6 +743,7 @@ export default function FlowShell({
                     className="min-h-screen scroll-mt-14 border-t border-ui-border-base bg-ui-bg-base"
                   >
                     <FlowShellResults
+                      cart={cart}
                       hasMoreResults={hasMoreResults}
                       isLoading={isLoading}
                       onLoadMore={() => setVisibleLimit((current) => current + 6)}
@@ -603,21 +777,28 @@ export default function FlowShell({
                       isActive={activeSection === "checkout"}
                       cartLoading={cartLoading}
                       chatOpen={chatOpen}
+                      onCheckoutStateChange={(step) => {
+                        if (step === "complete") {
+                          dispatch({ type: "BOOKING_CONFIRMED" })
+                          return
+                        }
+
+                        dispatch({ type: "CHECKOUT_STEP_CHANGED", step })
+                      }}
                       onStepTitle={setCheckoutStepTitle}
                       onRegisterBack={(fn) => {
                         checkoutBackRef.current = fn
                       }}
                       onBack={handleBack}
                       onConfirmationReached={() => {
-                        setHideBack(true)
                         setCheckoutStepTitle("")
+                        dispatch({ type: "BOOKING_CONFIRMED" })
                       }}
                     />
                   </section>
                 )}
               </div>
 
-              <AgentPanel open={chatOpen} onClose={() => setChatOpen(false)} getSessionContext={getSessionContext} />
             </div>
 
             {detailProduct && (
@@ -633,6 +814,12 @@ export default function FlowShell({
               />
             )}
           </div>
+
+          <AgentPanel
+            open={chatOpen}
+            onClose={() => dispatch({ type: "ASSISTANT_CLOSED" })}
+            getSessionContext={getSessionContext}
+          />
         </div>
       </AgentToolContextProvider>
     </LanguageContext.Provider>
