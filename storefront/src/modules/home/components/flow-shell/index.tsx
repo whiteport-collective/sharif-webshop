@@ -365,7 +365,14 @@ export default function FlowShell({
           },
           false
         )
-        window.requestAnimationFrame(() => scrollToSection("results", "auto"))
+        window.requestAnimationFrame(() => {
+          setActiveSection("results")
+          scrollToSection("results", "auto")
+          window.setTimeout(() => {
+            setActiveSection("results")
+            scrollToSection("results", "auto")
+          }, 60)
+        })
       } else {
         setActiveSection("results")
         dispatch({ type: "NAV_TO_RESULTS" })
@@ -413,6 +420,15 @@ export default function FlowShell({
     window.addEventListener("popstate", handlePopState, true)
     return () => window.removeEventListener("popstate", handlePopState, true)
   }, [handlePopState])
+
+  // Order complete — cart was consumed by placeOrder, clear local state so the
+  // badge shows empty and the cart popup is empty.
+  useEffect(() => {
+    if (appState.flow === "complete") {
+      setCartQty(0)
+      setCart(null)
+    }
+  }, [appState.flow])
 
   const handleDocumentMouseDown = useCallback((event: MouseEvent) => {
     if (langMenuOpen && langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
@@ -469,12 +485,20 @@ export default function FlowShell({
     }
 
     const syncActiveSection = () => {
+      if (programmaticScroll.current) {
+        return
+      }
+
       const scrollMarker = surface.scrollTop + 64
       const resultsTop = showResultsSection ? (resultsSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
       const checkoutTop = showCheckoutSection ? (checkoutSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
 
       const nextSection =
         scrollMarker >= checkoutTop ? "checkout" : scrollMarker >= resultsTop ? "results" : "home"
+
+      if (view === "results" && showResultsSection && nextSection === "home") {
+        return
+      }
 
       setActiveSection((current) => {
         if (current === nextSection) {
@@ -700,44 +724,46 @@ export default function FlowShell({
                   </div>
                 )}
 
-                <section ref={homeSectionRef} className="min-h-screen bg-ui-bg-base">
-                  <div className="flex justify-center px-4 pb-16 pt-[18vh]">
-                    <div className="w-full max-w-xl">
-                      <h1 className="mb-3 text-center text-4xl font-bold md:text-5xl">{t.homeTitle}</h1>
-                      <p className="mb-8 text-center text-ui-fg-subtle">{t.homeSubtitle}</p>
-                      <TireSearch
-                        availableDimensions={availableDimensions}
-                        dimensionCounts={dimensionCounts}
-                        onSearch={handleSearch}
-                        onDimensionChange={handleDimensionChange}
-                        onFormChange={(params) => {
-                          pendingParams.current = params
-                          setPreviewMeta(
-                            params
-                              ? {
-                                  dimension: `${params.width}/${params.profile}R${params.rim}`,
-                                  qty: Number(params.qty) || 4,
-                                  season: params.season || "sommer",
-                                }
-                              : null
-                          )
-                        }}
-                        previewCount={previewDimension ? dimensionCounts[previewDimension] : undefined}
-                        onMount={(fn) => {
-                          setDimensionRef.current = fn
-                        }}
-                        onResetRef={(fn) => {
-                          resetSearchRef.current = fn
-                        }}
-                      />
+                {appState.flow !== "complete" && (
+                  <section ref={homeSectionRef} className="min-h-screen bg-ui-bg-base">
+                    <div className="flex justify-center px-4 pb-16 pt-[18vh]">
+                      <div className="w-full max-w-xl">
+                        <h1 className="mb-3 text-center text-4xl font-bold md:text-5xl">{t.homeTitle}</h1>
+                        <p className="mb-8 text-center text-ui-fg-subtle">{t.homeSubtitle}</p>
+                        <TireSearch
+                          availableDimensions={availableDimensions}
+                          dimensionCounts={dimensionCounts}
+                          onSearch={handleSearch}
+                          onDimensionChange={handleDimensionChange}
+                          onFormChange={(params) => {
+                            pendingParams.current = params
+                            setPreviewMeta(
+                              params
+                                ? {
+                                    dimension: `${params.width}/${params.profile}R${params.rim}`,
+                                    qty: Number(params.qty) || 4,
+                                    season: params.season || "sommer",
+                                  }
+                                : null
+                            )
+                          }}
+                          previewCount={previewDimension ? dimensionCounts[previewDimension] : undefined}
+                          onMount={(fn) => {
+                            setDimensionRef.current = fn
+                          }}
+                          onResetRef={(fn) => {
+                            resetSearchRef.current = fn
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
 
-                  {landingContent}
-                  {!showResultsSection && landingFooter}
-                </section>
+                    {landingContent}
+                    {!showResultsSection && landingFooter}
+                  </section>
+                )}
 
-                {showResultsSection && (
+                {appState.flow !== "complete" && showResultsSection && (
                   <section
                     ref={resultsSectionRef}
                     className="min-h-screen scroll-mt-14 border-t border-ui-border-base bg-ui-bg-base"

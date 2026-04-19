@@ -2,6 +2,7 @@ import { HttpTypes } from "@medusajs/types"
 import type { Lang } from "@lib/i18n"
 import type { SelectedTire } from "@modules/home/components/quantity-shop"
 import type { SortKey } from "@modules/products/lib/tire-sorting"
+import type { FlowShellScene } from "./state"
 
 export type SearchMeta = {
   dimension: string
@@ -33,6 +34,7 @@ export type FlowShellProps = {
 export type SessionContext = {
   cartItems: { productId: string; qty: number }[]
   dimension: string | null
+  scene?: FlowShellScene
   step: string | null
   view: FlowView
   visibleProductIds: string[]
@@ -41,8 +43,11 @@ export type SessionContext = {
 export type HeaderProps = {
   activeSection: FlowView
   activeSort: SortKey
+  cart: HttpTypes.StoreCart | null
   cartBadge: React.ReactNode
+  cartQty: number | null
   chatOpen: boolean
+  checkoutLocked: boolean
   checkoutStepTitle: string
   chipDimension: string
   chipSeasonLabel: string
@@ -56,6 +61,7 @@ export type HeaderProps = {
   langMenuRef: React.RefObject<HTMLDivElement | null>
   menuOpen: boolean
   onClearSearch: () => void
+  onRemoveLine: (lineItemId: string) => void
   onScrollHome: () => void
   onSelectLanguage: (lang: Lang) => void
   onSortChange: (key: SortKey) => void
@@ -68,12 +74,13 @@ export type HeaderProps = {
 }
 
 export type ResultsSectionProps = {
+  cart: HttpTypes.StoreCart | null
   hasMoreResults: boolean
   isLoading: boolean
   onLoadMore: () => void
   onOpenCheckout: () => void
   onProductDetail: (product: HttpTypes.StoreProduct) => void
-  onRemoveTire: () => void
+  onRemoveTire: (product: HttpTypes.StoreProduct) => void
   onSearchChange: () => void
   onSelectTire: (product: HttpTypes.StoreProduct, qty: number) => void
   qty: number

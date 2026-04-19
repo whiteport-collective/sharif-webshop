@@ -1,8 +1,156 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import LocalizedClientLink from "@modules/common/components/localized-client-link"
+import Thumbnail from "@modules/products/components/thumbnail"
 import { SORT_OPTIONS } from "@modules/products/lib/tire-sorting"
 import type { HeaderProps } from "./types"
+
+function formatNOK(amount: number | undefined | null) {
+  if (amount == null) return ""
+  return new Intl.NumberFormat("nb-NO", {
+    style: "currency",
+    currency: "NOK",
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function MiniCart({
+  cart,
+  cartQty,
+  checkoutLocked,
+  onRemoveLine,
+}: {
+  cart: HeaderProps["cart"]
+  cartQty: number
+  checkoutLocked: boolean
+  onRemoveLine: (lineItemId: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const items = cart?.items ?? []
+  const subtotal = cart?.subtotal ?? 0
+
+  useEffect(() => {
+    if (!open) return
+    const onMouseDown = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onMouseDown)
+    return () => document.removeEventListener("mousedown", onMouseDown)
+  }, [open])
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Handlekurv"
+        aria-expanded={open}
+        className="relative flex h-9 w-9 items-center justify-center rounded-full border border-ui-border-base text-ui-fg-base hover:bg-ui-bg-subtle transition-colors"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <path d="M16 10a4 4 0 01-8 0" />
+        </svg>
+        {cartQty > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+            {cartQty}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[360px] overflow-hidden rounded-xl border border-ui-border-base bg-white shadow-xl">
+          <div className="flex items-center justify-between border-b border-ui-border-base px-4 py-3">
+            <h3 className="text-sm font-semibold text-ui-fg-base">Handlekurv</h3>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Lukk handlekurv"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-ui-fg-muted hover:bg-ui-bg-subtle hover:text-ui-fg-base transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                <path d="M2 2l10 10M12 2L2 12" />
+              </svg>
+            </button>
+          </div>
+
+          {items.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-ui-fg-muted">
+              Handlekurven er tom
+            </div>
+          ) : (
+            <>
+              <div className="max-h-[320px] overflow-y-auto">
+                {items
+                  .slice()
+                  .sort((a: any, b: any) => ((a.created_at ?? "") > (b.created_at ?? "") ? -1 : 1))
+                  .map((item: any) => (
+                    <div key={item.id} className="flex gap-3 border-b border-ui-border-base px-4 py-3 last:border-b-0">
+                      <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-md bg-ui-bg-subtle">
+                        <Thumbnail
+                          thumbnail={item.thumbnail}
+                          images={item.variant?.product?.images}
+                          size="square"
+                        />
+                      </div>
+                      <div className="flex flex-1 flex-col justify-between text-xs">
+                        <div>
+                          <p className="font-medium text-ui-fg-base line-clamp-2 leading-tight">
+                            {item.product_title ?? item.title}
+                          </p>
+                          <p className="mt-0.5 text-ui-fg-muted">
+                            {item.quantity} stk · {formatNOK(item.unit_price)}
+                          </p>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <button
+                            type="button"
+                            onClick={() => onRemoveLine(item.id)}
+                            className="text-xs text-ui-fg-muted underline hover:text-red-600 transition-colors disabled:no-underline disabled:opacity-50"
+                            disabled={checkoutLocked}
+                          >
+                            {checkoutLocked ? "Låst" : "Fjern"}
+                          </button>
+                          <p className="text-sm font-semibold text-ui-fg-base">
+                            {formatNOK(item.total)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+              <div className="flex items-center justify-between border-t border-ui-border-base px-4 py-3">
+                <span className="text-sm text-ui-fg-muted">Totalt</span>
+                <span className="text-sm font-semibold text-ui-fg-base">
+                  {formatNOK(subtotal)}
+                </span>
+              </div>
+              <div className="px-4 pb-4">
+                {checkoutLocked ? (
+                  <div className="rounded-lg border border-ui-border-base bg-ui-bg-subtle px-4 py-2.5 text-center text-xs text-ui-fg-muted">
+                    Checkout is locked after confirmation. Use chat for changes.
+                  </div>
+                ) : (
+                  <LocalizedClientLink
+                    href="/cart"
+                    className="flex w-full items-center justify-center rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                  >
+                    Til kassen
+                  </LocalizedClientLink>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function MenuIcon({ activeSection }: { activeSection: HeaderProps["activeSection"] }) {
   return (
@@ -36,8 +184,11 @@ function MenuIcon({ activeSection }: { activeSection: HeaderProps["activeSection
 export function FlowShellHeader({
   activeSection,
   activeSort,
+  cart,
   cartBadge,
+  cartQty,
   chatOpen,
+  checkoutLocked,
   checkoutStepTitle,
   chipDimension,
   chipSeasonLabel,
@@ -51,6 +202,7 @@ export function FlowShellHeader({
   langMenuRef,
   menuOpen,
   onClearSearch,
+  onRemoveLine,
   onScrollHome,
   onSelectLanguage,
   onSortChange,
@@ -123,7 +275,7 @@ export function FlowShellHeader({
         </div>
       )}
 
-      <div className="flex flex-none items-center gap-1">
+      <div className="flex flex-none items-center gap-2.5">
         <div
           ref={sortMenuRef}
           className="relative mr-1 flex items-center gap-2 transition-all duration-300"
@@ -168,7 +320,16 @@ export function FlowShellHeader({
           )}
         </div>
 
-        {cartBadge}
+        {cartQty !== null ? (
+          <MiniCart
+            cart={cart}
+            cartQty={cartQty}
+            checkoutLocked={checkoutLocked}
+            onRemoveLine={onRemoveLine}
+          />
+        ) : (
+          cartBadge
+        )}
 
         <div className="relative" ref={langMenuRef}>
           <button
@@ -205,9 +366,13 @@ export function FlowShellHeader({
         <button
           type="button"
           onClick={() => setChatOpen((open) => !open)}
-          className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors hover:bg-ui-bg-subtle ${
-            chatOpen ? "border-ui-fg-base bg-ui-bg-subtle text-ui-fg-base" : "border-ui-border-base text-ui-fg-base"
-          }`}
+          className="flex h-9 w-9 items-center justify-center rounded-full border"
+          style={{
+            backgroundColor: chatOpen ? "#dc2626" : undefined,
+            borderColor: chatOpen ? "#dc2626" : undefined,
+            color: chatOpen ? "white" : undefined,
+            transition: "background-color 300ms ease-in-out, border-color 300ms ease-in-out, color 300ms ease-in-out",
+          }}
           aria-label="Chat"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

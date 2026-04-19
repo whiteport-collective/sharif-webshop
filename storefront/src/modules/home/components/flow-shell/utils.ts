@@ -35,6 +35,19 @@ export function getSeasonLabel(season: string, lang: Lang) {
   }
 }
 
+export function getSeasonChipLabel(season: string, lang: Lang) {
+  switch (season) {
+    case "sommer":
+      return lang === "en" ? "Summer" : "Sommer"
+    case "vinter-piggfritt":
+      return lang === "en" ? "Studless" : "Piggfri"
+    case "vinter-piggdekk":
+      return lang === "en" ? "Studded" : "Pigg"
+    default:
+      return getSeasonLabel(season, lang)
+  }
+}
+
 export function getSkeletonCount(knownCount: number) {
   return Math.min(knownCount || 4, 8)
 }

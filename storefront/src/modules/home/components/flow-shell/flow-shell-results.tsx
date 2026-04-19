@@ -24,6 +24,7 @@ function TireCardSkeleton() {
 }
 
 function ResultsGrid({
+  cart,
   isLoading,
   onProductDetail,
   onRemoveTire,
@@ -35,9 +36,10 @@ function ResultsGrid({
   sortedProducts,
   visibleLimit,
 }: {
+  cart: ResultsSectionProps["cart"]
   isLoading: boolean
   onProductDetail: (product: ResultsSectionProps["sortedProducts"][number]) => void
-  onRemoveTire: () => void
+  onRemoveTire: (product: ResultsSectionProps["sortedProducts"][number]) => void
   onSelectTire: (product: ResultsSectionProps["sortedProducts"][number], qty: number) => void
   qty: number
   region: ResultsSectionProps["region"]
@@ -50,21 +52,33 @@ function ResultsGrid({
     return Array.from({ length: skeletonCount }).map((_, index) => <TireCardSkeleton key={index} />)
   }
 
-  return sortedProducts.slice(0, visibleLimit).map((product) => (
-    <TireCard
-      key={product.id}
-      product={product}
-      region={region}
-      qty={qty}
-      isInCart={selectedTire?.product.id === product.id}
-      onSelectTire={onSelectTire}
-      onRemoveTire={onRemoveTire}
-      onProductDetail={onProductDetail}
-    />
-  ))
+  return sortedProducts.slice(0, visibleLimit).map((product) => {
+    const variantId = product.variants?.[0]?.id
+    const cartLine = variantId
+      ? ((cart?.items ?? []) as Array<{ variant_id?: string; quantity?: number }>).find(
+          (item) => item.variant_id === variantId
+        )
+      : null
+    const isInCart = Boolean(cartLine) || selectedTire?.product.id === product.id
+    const cardQty = cartLine?.quantity ?? qty
+
+    return (
+      <TireCard
+        key={product.id}
+        product={product}
+        region={region}
+        qty={cardQty}
+        isInCart={isInCart}
+        onSelectTire={onSelectTire}
+        onRemoveTire={() => onRemoveTire(product)}
+        onProductDetail={onProductDetail}
+      />
+    )
+  })
 }
 
 export function FlowShellResults({
+  cart,
   hasMoreResults,
   isLoading,
   onLoadMore,
@@ -110,6 +124,7 @@ export function FlowShellResults({
       <div className="px-3 pb-8 pt-20 md:hidden">
         <div className="grid grid-cols-2 gap-3">
           <ResultsGrid
+            cart={cart}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}
@@ -127,6 +142,7 @@ export function FlowShellResults({
       <div className="hidden px-4 pb-8 pt-20 md:block">
         <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
           <ResultsGrid
+            cart={cart}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}
