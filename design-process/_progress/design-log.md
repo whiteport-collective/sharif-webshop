@@ -1,5 +1,97 @@
 # Design Log — Sharif Webshop
 
+## 2026-04-19 mimir
+
+- MODEL:Opus — Bygg Avancerat-popover för orders-admin. Filter-option "Avancerat" i filter-dropdownen, popover med raw `<textarea>` för JSON + `Kör`-knapp + step-results-lista (step_index, label, input_count → output_count, samples). Ömsesidig exklusivitet: Avancerat aktivt rensar native chips, välja native chip rensar Avancerat. När agent-chatten returnerar `ui_action: { type: "apply_scripted_selection" }` ska popovern öppnas prefilled med scriptet. Ny backend-endpoint `/admin/agent/chat/v2/run-script` tar `{ script: ScriptedCriterion[] }` och returnerar `{ count, steps, samples }` — ingen LLM-plan, bara kör `runScriptedProbe`-logiken från [v2/route.ts](backend/src/api/admin/agent/chat/v2/route.ts). Validera med `ScriptedCriterionSchema` från [planner.ts](backend/src/lib/admin-agent/planner.ts). Verifiera i browsern: orders-sidan → Avancerat → klistra in `[{"kind":"minimum_total","label":"över 5000","amount":5000}]` → Kör → se 9 träffar.
+
+## 2026-04-19 freya
+
+- MODEL:Sonnet — Skriv WO för agent-assisterat orderflöde. Spec ska täcka: (1) hemsida — sätta 5 sökfält + trigga sökning + scrolla till resultat; (2) resultatsida — hämta produktlista, ge produktinfo, trigga "Gå till kassen"-knapp; (3) kassen — fylla adress, välja leveransmetod, sätta bokningstid; (4) betalning — hands-off, kunden fyller i själv. Basa på befintlig AgentToolHandlers-scaffolding i flow-shell/index.tsx och AgentToolContext. Fil: design-process/E-Development/WO-012-agent-ordering-api.md
+
+## 2026-04-19 freya
+
+- MODEL:Sonnet — Browser-testa hela checkout-flödet end-to-end på localhost: Delivery (Drammen) → Address → Booking (välj tid) → Payment (Stripe test card 4242...) → verifiera OrderConfirmedInline visas, scroll upp blockerat, cart-badge = 0. Testa även non-workshop home-delivery flöde (ska hoppa över booking). Om OK: commit ändringarna i `storefront/src/modules/checkout/components/{checkout-panel-content,booking,payment,addresses}/index.tsx` + `flow-shell/index.tsx` med separata meningsfulla commits, sedan merga `freya/fix-back-to-results` → `main`.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Öppna localhost:9000/app, logga in, navigera till Orders-vyn, skriv "Hur många ordrar finns det totalt?" i admin-chatten. Verifiera att svaret är ett riktigt antal (inte failure-text). Testa även "visa ordrar från igår" (ska filtrera listan + narrera), "avbryt order [id]" (ska visa bekräftelsekort). Fixa eventuella fel.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Öppna localhost:9000/app, logga in, navigera till Orders-vyn, skriv "Hur många ordrar finns det totalt?" i admin-chatten. Verifiera att svaret är ett riktigt antal (inte failure-text). Testa även "visa ordrar från igår" (ska filtrera listan + narrera), "avbryt order [id]" (ska visa bekräftelsekort). Fixa eventuella fel.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Öppna localhost:9000/app, logga in, navigera till Orders-vyn, skriv "Hur många ordrar finns det totalt?" i admin-chatten. Verifiera att svaret är ett riktigt antal (inte failure-text). Testa även "visa ordrar från igår" (ska filtrera listan + narrera), "avbryt order [id]" (ska visa bekräftelsekort). Fixa eventuella fel.
+
+## 2026-04-19 freya
+
+- MODEL:Sonnet — Merga freya/fix-back-to-results till main. Läs sedan WO-011-scroll-back-chip.md i design-process/E-Development/. Implementera ScrollBackChip-komponent i storefront/src/modules/home/components/flow-shell/scroll-back-chip.tsx. Integrera i index.tsx: tracka scrollDirection via lastScrollTop ref på surfaceRef scroll-events, visa chip när canNavigateBack && scrollingUp && !atTop, klick navigerar tillbaka. Befintlig backLocked-logik behålls — chip är additivt lager.
+
+## 2026-04-19 freya
+
+- MODEL:Sonnet — Merga freya/fix-back-to-results till main. Läs sedan WO-011-scroll-back-chip.md i design-process/E-Development/. Implementera ScrollBackChip-komponent i storefront/src/modules/home/components/flow-shell/scroll-back-chip.tsx. Integrera i index.tsx: tracka scrollDirection via lastScrollTop ref på surfaceRef scroll-events, visa chip när canNavigateBack && scrollingUp && !atTop, klick navigerar tillbaka. Befintlig backLocked-logik behålls — chip är additivt lager.
+
+## 2026-04-19 freya
+
+- MODEL:Sonnet — Merga freya/fix-back-to-results till main. Läs sedan WO-011-scroll-back-chip.md i design-process/E-Development/. Implementera ScrollBackChip-komponent i storefront/src/modules/home/components/flow-shell/scroll-back-chip.tsx. Integrera i index.tsx: tracka scrollDirection via lastScrollTop ref på surfaceRef scroll-events, visa chip när canNavigateBack && scrollingUp && !atTop, klick navigerar tillbaka. Befintlig backLocked-logik behålls — chip är additivt lager.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 mimir
+
+- MODEL:Opus — Läs backend/src/api/admin/agent/chat/route.ts + backend/src/lib/admin-agent/agent-space.ts + tools.ts. Förstå nuvarande intent-detection-logik. Refaktorera till tvåstegs-flöde: (1) LLM-call för intent + följdfrågor, (2) tool-call med view-manifest för filter/action-komposition. Ta bort hårdkodning mot Sharif/orders — gör det app-agnostiskt. Frontend skickar tool-manifest i varje anrop. Verifiera att "Hur många ordrar finns det totalt?" ger ett riktigt svar.
+
+## 2026-04-19 freya
+
+- MODEL:Opus — Boot: reflektera över din uppstart — hur många tool calls tog det, vad kom från semantic_context vs filläsningar, och notera skillnaden. Implementera sedan SSE streaming i tool-anthropic Supabase edge function så att admin-chatten fungerar via Vertex AI/Gemini. Fil: c:/dev/WDS/design-space/database/supabase/functions/tool-anthropic/index.ts. Uppgift: detektera "stream": true i request body, anropa Vertex streaming endpoint (...generateContent?alt=sse), översätt Gemini SSE-chunks till Anthropic SSE-format (event: content_block_delta / data: {"delta":{"type":"text_delta","text":"..."}}), deploya till project uztngidbpduyodrabokm. Icke-streaming-path lämnas orörd. Verifiera end-to-end i admin-chatten på localhost:9000/app efter deploy.
+
+## 2026-04-19 freya
+
+- MODEL:Opus — Implement SSE streaming in the `tool-anthropic` Supabase edge function so that admin chat works via Vertex AI/Gemini. File: `c:/dev/WDS/design-space/database/supabase/functions/tool-anthropic/index.ts`. Task: detect `"stream": true` in request body → call Vertex streaming endpoint (`...generateContent?alt=sse`) → translate Gemini SSE chunks to Anthropic SSE format (`event: content_block_delta` / `data: {"delta":{"type":"text_delta","text":"..."}}`) → deploy to project `uztngidbpduyodrabokm`. Non-streaming path stays as-is. Verify end-to-end in admin chat at localhost:9000/app after deploy.
+
+## 2026-04-19 freya
+
+- MODEL:Opus — Implement SSE streaming in the `tool-anthropic` Supabase edge function so that admin chat works via Vertex AI/Gemini. File: `c:/dev/WDS/design-space/database/supabase/functions/tool-anthropic/index.ts`. Task: detect `"stream": true` in request body → call Vertex streaming endpoint (`...generateContent?alt=sse`) → translate Gemini SSE chunks to Anthropic SSE format (`event: content_block_delta` / `data: {"delta":{"type":"text_delta","text":"..."}}`) → deploy to project `uztngidbpduyodrabokm`. Non-streaming path stays as-is. Verify end-to-end in admin chat at localhost:9000/app after deploy.
+
+## 2026-04-09 freya
+
+- Fix cart badge not clearing after delete: in `storefront/src/modules/home/components/quantity-shop/index.tsx` `handleRemoveItem`, after `router.refresh()`, force a client-side cart count update or revalidate the cart badge path.
+
+## 2026-04-09 freya
+
+- Test checkout flow end-to-end in browser: select a tire → verify checkout section scrolls correctly (heading visible, no bounce back) → place order → verify confirmation section scrolls into view.
+
+## 2026-04-09 freya
+
+- Fix scroll-back after tire selection: add `backLocked.current = true` + 600ms timeout at the start of `handleSelectTire` in `storefront/src/modules/home/components/flow-shell/index.tsx` — same pattern already used in `openCheckoutPanel`.
+
+## 2026-04-09 freya
+
+- Adjust the support chat column (AgentPanel) — width, header styling, and overall feel on desktop. Start in `storefront/src/modules/home/components/agent-panel/index.tsx`.
+
 ## 2026-04-08 freya
 
 - Fix FB-05 first: add `scroll-mt-14` to results and checkout `<section>` elements in `storefront/src/modules/home/components/flow-shell/index.tsx`. Then FB-04: restore `<TireResultsHeader>` as sticky at top of results section and remove the inline sort from the header right zone. Branch: `codex/admin-ai-platform-phase1`.

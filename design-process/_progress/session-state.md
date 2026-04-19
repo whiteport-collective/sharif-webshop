@@ -1,28 +1,51 @@
-# freya — Session State
+# mimir — Session State
 **Repo:** sharif-webshop
-**Wrapped:** 2026-04-08
+**Wrapped:** 2026-04-19
 
 ## Context
-Header refactor session (WO-007-01). Shipped:
-- Dimension chip in header left zone — shows when form complete or search active, uses `chipDimension = searchMeta.dimension || previewDimension`
-- Sort button in header right zone when `activeSection === "results"` (black pill)
-- `SORT_OPTIONS` exported from `TireResultsHeader`
-- Full-height desktop menu column (lg+) with width animation, hamburger/arrow crossfade, auto-close on results
-- AgentPanel as persistent right column on desktop
-- Free scroll restored (all snap logic reverted)
+Branch: `freya/fix-back-to-results` — samma som förra sessionen. Inga commits denna session.
 
-Open (documented in `design-process/E-Development/WO-007-01-header-feedback.md`):
-- **FB-04**: `TireResultsHeader` removed from results section — restore it as sticky bar, remove header sort button
-- **FB-05**: Scroll overshoot — `scrollToSection` uses raw `offsetTop`, header height (56px) not accounted for. Fix: add `scroll-mt-14` to results + checkout `<section>` elements
+Gjort denna session:
+- Ny endpoint `backend/src/api/admin/agent/chat/v2/route.ts` — plan-test-evaluate-loop, JSON-respons
+- Ny fil `backend/src/lib/admin-agent/planner.ts` — Zod-schema (`FilterPlanSchema`, `ScriptedPlanSchema`, `ClarifyPlanSchema`) + `buildPlan()` via `generateText`
+- Uppdaterad `backend/src/lib/admin-agent/tools.ts` — `listOrders` använder `$gte`/`$lte`, default-sort `-created_at`
+- Exporterade `matchCriterion` + `StepExecutionResult` från `scripted-order-selection.ts`
+- Gateway v33 deployad med `coerceToText()` för system-prompt (AI SDK v6 skickar array, inte sträng)
+- Admin-lösenord återställt till `sharif2026`
+
+Verifierat via curl mot v2:
+- "visa ordrar från igår" → route `filter`, count=2
+- "sök efter kund Xerxes Zuluhotel" → route `filter`, count=0, ui_action noop
+- "visa alla ordrar" → route `filter`, clear_filters=true
+- "visa ordrar över 5000 kr" → route `scripted`, count=9
+- "visa ordrar från Oslo över 3000 kr" → route `scripted`, 2 steg, count=2
+
+Inte gjort:
+- Frontend för Avancerat-popover
+- Bana B (narration) och Bana C (actions) i v2
+- SSE-streaming (v2 är JSON-only)
+- Riva ut v1 `route.ts` — lever parallellt
 
 ## Plan
-Complete storefront header (WO-007) then remaining order flow feedback for Moohsen demo.
+- [DONE] Plan-test-evaluate-arkitektur i v2
+- [DONE] Bana A (native filter) verifierad
+- [DONE] Bana D (scripted, inkl multi-step) verifierad
+- [DONE] Gateway v33 + Medusa filter-syntax-fix
+- [CURRENT] Avancerat-popover i orders-vyn (frontend)
+- [ ] Bana B narration (count-frågor)
+- [ ] Bana C actions med confirmation card
+- [ ] SSE-streaming i v2
+- [ ] Peka admin-UI:t på v2, riv ut v1
 
 ## Next:
-Fix FB-05 first: add `scroll-mt-14` to results and checkout `<section>` elements in `storefront/src/modules/home/components/flow-shell/index.tsx`. Then FB-04: restore `<TireResultsHeader>` as sticky at top of results section and remove the inline sort from the header right zone. Branch: `codex/admin-ai-platform-phase1`.
+MODEL:Opus — Bygg Avancerat-popover för orders-admin. Filter-option "Avancerat" i filter-dropdownen, popover med raw `<textarea>` för JSON + `Kör`-knapp + step-results-lista (step_index, label, input_count → output_count, samples). Ömsesidig exklusivitet: Avancerat aktivt rensar native chips, välja native chip rensar Avancerat. När agent-chatten returnerar `ui_action: { type: "apply_scripted_selection" }` ska popovern öppnas prefilled med scriptet. Backend-kontrakt: ny endpoint `/admin/agent/chat/v2/run-script` som tar `{ script: ScriptedCriterion[] }` och returnerar `{ count, steps, samples }` — ingen LLM-plan, bara kör `runScriptedProbe`-logiken. Validera med `ScriptedCriterionSchema` från [planner.ts](backend/src/lib/admin-agent/planner.ts). Verifiera i browsern: orders-sidan → Avancerat → klistra in `[{"kind":"minimum_total","label":"över 5000","amount":5000}]` → Kör → se 9 träffar.
 
 ## Learned
-- Scroll snap (CSS mandatory/proximity) feels violent on a page with variable-height sections — don't use it here.
-- Wheel intercept for fullpage-style nav is complex to get right: accumulator + `e.preventDefault()` + programmatic scroll all interact badly. The custom RAF easing approach overshoots because `offsetTop` inside a flex container shifts as content loads.
-- `TireResultsHeader` should be sticky inside the section, not moved to the global header — moving it caused sort state drift and lost the count display.
-- Dimension chip: use `previewDimension || searchMeta.dimension` so chip appears when form is complete (before submit), not just after products load.
+- **Plan-test-evaluate-arkitektur:** agenten producerar strukturerad plan-JSON (inte tool-calling via AI SDK), backend kör testet mot riktig data, deterministisk eval utifrån `count > 0` avgör om UI ändras.
+- **Gateway v33 fix:** AI SDK v6 skickar `system` som array av content blocks, inte sträng. Fix: `coerceToText()` plattar till sträng innan Vertex-call.
+- **Medusa v2 filter-syntax:** `created_at[$gte]` / `created_at[$lte]` med `$`-prefix. Utan `$` ignoreras filtret tyst. `listOrders`-tool saknade detta.
+- **`generateObject` vs `generateText`:** `generateObject` använder tool-calling under huven — funkar inte stabilt mot Gemini via gatewayen. Använd `generateText` + JSON-parse + Zod istället.
+- **Zero hits = gör ingenting mot UI-state.** Kort ack ("0 träffar — ingen ändring.") räcker. Ingen chatty narration.
+- **Avancerat = raw JSON, inte struktur-editor.** Abstraktion = mindre kraftfullt på power-ytor.
+- **Avancerat vs native = ömsesidigt uteslutande.** Ett läge åt gången, färre permutationer att testa.
+- **Admin-password-reset:** scrypt-kdf base64 → jsonb_set i provider_identity.provider_metadata direkt mot postgres.
