@@ -58,10 +58,10 @@ export default function TireCardCta({
         <button
           type="button"
           onClick={() => onSelect?.(qty)}
-          aria-label={`${qty} ${t.inCart}`}
+          aria-label={t.proceedToCheckout}
           className="flex flex-1 items-center justify-center bg-green-600 px-4 py-3 text-white hover:bg-green-700 active:bg-green-800 transition-colors"
         >
-          {qty} {t.inCart}
+          {t.proceedToCheckout}
         </button>
 
         {/* Divider */}

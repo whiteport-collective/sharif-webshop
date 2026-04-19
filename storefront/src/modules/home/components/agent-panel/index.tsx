@@ -17,7 +17,7 @@ type Props = {
   getSessionContext: () => SessionContext
 }
 
-function AgentPanelContent({ onClose, getSessionContext }: Omit<Props, "open">) {
+function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose">) {
   const [input, setInput] = useState("")
   const chatRef = useRef<HTMLDivElement>(null)
 
@@ -47,65 +47,47 @@ function AgentPanelContent({ onClose, getSessionContext }: Omit<Props, "open">) 
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#dee2e6] px-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#212529]">Sharif-rådgiver</span>
-          <span className="rounded-full bg-[#f8f9fa] px-2 py-0.5 text-[11px] text-[#6c757d]">Beta</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={clearHistory}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#adb5bd] hover:bg-[#f8f9fa] hover:text-[#212529] transition-colors"
-            title="Tøm chat"
-            aria-label="Tøm samtalehistorikk"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-            </svg>
-          </button>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[#6c757d] hover:bg-[#f8f9fa] transition-colors"
-            aria-label="Lukk"
-          >
-            ×
-          </button>
-        </div>
+      <div className="flex h-14 shrink-0 items-center border-b border-[#dee2e6] px-4">
+        <span className="text-sm font-semibold text-[#212529]">Sharif-rådgiver</span>
+        <span className="ml-2 rounded-full bg-[#f8f9fa] px-2 py-0.5 text-[11px] text-[#6c757d]">Beta</span>
       </div>
 
       {/* Messages */}
-      <div ref={chatRef} className="flex flex-1 flex-col gap-3 overflow-y-auto p-4">
+      <div ref={chatRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
-          <div className="mt-8 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f8f9fa] text-[#6c757d]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4M12 8h.01" />
+          <div className="mt-12 flex flex-col items-center gap-3 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#212529] text-white">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <p className="text-sm text-[#6c757d]">
-              Hva slags dekk leter du etter?<br />
-              <span className="text-xs">F.eks. "205/55R16" eller "vinterdekk til SUV"</span>
-            </p>
+            <p className="text-sm font-medium text-[#212529]">Hva leter du etter?</p>
+            <p className="text-xs text-[#6c757d]">F.eks. "205/55R16" eller "vinterdekk til SUV"</p>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+            {msg.role === "assistant" && (
+              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#212529] text-white">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+              </div>
+            )}
             <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[82%] text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === "user"
-                  ? "rounded-br-sm bg-[#212529] text-white"
-                  : "rounded-bl-sm border border-[#dee2e6] bg-white text-[#212529]"
+                  ? "rounded-2xl rounded-tr-sm bg-[#f1f3f5] px-3.5 py-2.5 text-[#212529]"
+                  : "text-[#212529]"
               }`}
             >
               {msg.content ||
                 (isStreaming && i === messages.length - 1 ? (
-                  <span className="flex gap-1">
-                    <span className="animate-bounce delay-0 inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" />
-                    <span className="animate-bounce delay-100 inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" />
-                    <span className="animate-bounce delay-200 inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" />
+                  <span className="flex gap-1 py-1">
+                    <span className="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" style={{ animationDelay: "0ms" }} />
+                    <span className="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" style={{ animationDelay: "150ms" }} />
+                    <span className="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" style={{ animationDelay: "300ms" }} />
                   </span>
                 ) : "")}
             </div>
@@ -113,36 +95,41 @@ function AgentPanelContent({ onClose, getSessionContext }: Omit<Props, "open">) 
         ))}
       </div>
 
-      {/* Input */}
-      <div className="shrink-0 border-t border-[#dee2e6] p-3">
-        <div className="flex items-end gap-2">
-          <button
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#dee2e6] bg-[#f8f9fa] text-[#6c757d] hover:bg-[#e9ecef] transition-colors"
-            title="Last opp fil (kommer snart)"
-            aria-label="Last opp fil"
-          >
-            +
-          </button>
+      {/* Input — GPT-style box */}
+      <div className="shrink-0 p-3">
+        <div className="flex flex-col rounded-2xl border border-[#dee2e6] bg-white shadow-sm focus-within:border-[#adb5bd] transition-colors">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder="Skriv en melding…"
+            placeholder="Skriv din melding…"
             disabled={isStreaming}
-            className="flex-1 resize-none rounded-lg border border-[#dee2e6] bg-[#f8f9fa] px-3 py-2 text-sm leading-snug text-[#212529] placeholder:text-[#adb5bd] focus:outline-none focus:ring-1 focus:ring-[#212529] disabled:opacity-50"
+            className="w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm leading-relaxed text-[#212529] placeholder:text-[#adb5bd] focus:outline-none disabled:opacity-50"
             style={{ maxHeight: 120 }}
           />
-          <button
-            onClick={handleSend}
-            disabled={isStreaming || !input.trim()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#212529] text-white transition-colors hover:bg-[#343a40] disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Send"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" />
-            </svg>
-          </button>
+          <div className="flex items-center justify-between px-3 pb-2.5">
+            <label
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-[#adb5bd] transition-colors hover:bg-[#f1f3f5] hover:text-[#495057]"
+              title="Last opp fil"
+              aria-label="Last opp fil"
+            >
+              <input type="file" className="sr-only" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+            </label>
+            <button
+              onClick={handleSend}
+              disabled={isStreaming || !input.trim()}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#212529] text-white transition-colors hover:bg-[#343a40] disabled:cursor-not-allowed disabled:opacity-30"
+              aria-label="Send"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5M5 12l7-7 7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -155,7 +142,7 @@ export default function AgentPanel({ open, onClose, getSessionContext }: Props) 
       {/* Mobile/tablet: fixed overlay when open */}
       {open && (
         <div className="fixed bottom-0 right-0 top-14 z-[80] flex w-full flex-col border-l border-[#dee2e6] bg-white shadow-2xl sm:w-[360px] lg:hidden">
-          <AgentPanelContent onClose={onClose} getSessionContext={getSessionContext} />
+          <AgentPanelContent getSessionContext={getSessionContext} />
         </div>
       )}
 
@@ -168,7 +155,7 @@ export default function AgentPanel({ open, onClose, getSessionContext }: Props) 
           transition: "width 300ms ease-in-out, border-color 300ms ease-in-out",
         }}
       >
-        {open && <AgentPanelContent onClose={onClose} getSessionContext={getSessionContext} />}
+        {open && <AgentPanelContent getSessionContext={getSessionContext} />}
       </aside>
     </>
   )
