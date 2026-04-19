@@ -38,19 +38,19 @@ const STEP_TITLES: Record<string, string> = {
   confirmation: "Bekreft bestilling",
 }
 
+const STEP_SLUGS: Record<string, string> = {
+  delivery: "leveringsmate",
+  address: "adresse",
+  payment: "betaling",
+  booking: "montering",
+  confirmation: "bekreft",
+}
+
 type CheckoutData = {
   cart: HttpTypes.StoreCart
   customer: HttpTypes.StoreCustomer | null
   shippingMethods: HttpTypes.StoreCartShippingOption[] | null
   paymentMethods: any[] | null
-}
-
-const STEP_BACK: Record<string, string | null> = {
-  delivery: null,
-  address: "delivery",
-  payment: "address",
-  booking: "payment",
-  confirmation: "booking",
 }
 
 export default function CheckoutPanelContent({
@@ -84,6 +84,24 @@ export default function CheckoutPanelContent({
     return () => clearTimeout(timer)
   }, [])
 
+  // Replace the FlowShell checkout-entry state with the first checkout step hash.
+  useEffect(() => {
+    const base = `${window.location.pathname}${window.location.search}`
+    history.replaceState({ checkoutStep: "delivery", flowView: "checkout" }, "", `${base}#leveringsmate`)
+  }, [])
+
+  // Sync browser back/forward within checkout steps.
+  useEffect(() => {
+    const handler = (event: PopStateEvent) => {
+      const checkoutStep = event.state?.checkoutStep as string | undefined
+      if (!checkoutStep || orderId) return
+      setStep(checkoutStep)
+      onCheckoutStateChange?.(checkoutStep)
+    }
+    window.addEventListener("popstate", handler)
+    return () => window.removeEventListener("popstate", handler)
+  }, [orderId, onCheckoutStateChange])
+
   useEffect(() => {
     if (cartLoading) return // wait for parent addToCart to finish before fetching
     let cancelled = false
@@ -106,6 +124,11 @@ export default function CheckoutPanelContent({
   }, [cartLoading])
 
   const handleStepChange = (next: string) => {
+    const slug = STEP_SLUGS[next]
+    if (slug) {
+      const base = `${window.location.pathname}${window.location.search}`
+      history.pushState({ checkoutStep: next, flowView: "checkout" }, "", `${base}#${slug}`)
+    }
     setStep(next)
     onCheckoutStateChange?.(next)
     if (!embedded) {
@@ -154,9 +177,7 @@ export default function CheckoutPanelContent({
     if (backLocked.current || orderId) return
     backLocked.current = true
     setTimeout(() => { backLocked.current = false }, 600)
-    const prev = STEP_BACK[step]
-    if (prev === null || prev === undefined) onBack()
-    else setStep(prev)
+    history.back()
   }
 
   // Wheel: use ref so handler always sees current step/orderId without re-registering

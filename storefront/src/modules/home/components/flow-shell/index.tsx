@@ -381,6 +381,8 @@ export default function FlowShell({
     }
 
     if (flowView === "checkout") {
+      // If checkoutStep is set, CheckoutPanelContent handles the internal step navigation
+      if (event.state?.checkoutStep) return
       event.stopImmediatePropagation()
       const nextView = selectedTireRef.current ? "checkout" : "results"
       setActiveSection(nextView)
