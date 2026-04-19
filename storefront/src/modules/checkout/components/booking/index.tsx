@@ -75,11 +75,13 @@ const Booking = ({
   step: stepProp,
   onStepChange,
   isWorkshop: isWorkshopProp,
+  shippingMethodName: shippingMethodNameProp,
 }: {
   cart: HttpTypes.StoreCart
   step?: string
   onStepChange?: (step: string) => void
   isWorkshop?: boolean
+  shippingMethodName?: string | null
 }) => {
   const searchParams = useSearchParams()
   const { t } = useLanguage()
@@ -123,14 +125,14 @@ const Booking = ({
     startTransition(() => saveBookingToCart(date, time, workshopName))
   }
 
-  // isWorkshop prop controls visibility (driven by in-memory selected option in CheckoutPanelContent)
-  // Workshop name/address still derived from cart.shipping_methods for display purposes
-  const shippingMethodName = cart.shipping_methods?.[0]?.name ?? ""
-  const workshopFromCart = Object.entries(WORKSHOPS).find(([, w]) =>
+  // Workshop name derived from in-memory selected option (parent passes it) with cart fallback.
+  // Reading cart.shipping_methods alone is stale before Payment step refreshes the cart.
+  const shippingMethodName = shippingMethodNameProp ?? cart.shipping_methods?.[0]?.name ?? ""
+  const workshopFromName = Object.entries(WORKSHOPS).find(([, w]) =>
     shippingMethodName.toLowerCase().includes(w.name.toLowerCase())
   )?.[1] ?? null
-  // If isWorkshopProp is explicitly false → no booking. Otherwise use cart data.
-  const workshop = isWorkshopProp === false ? null : workshopFromCart
+  // If isWorkshopProp is explicitly false → no booking. Otherwise use resolved workshop.
+  const workshop = isWorkshopProp === false ? null : workshopFromName
 
   const slots = getAvailableSlots(visibleDays)
   const bookingReady = !!selectedDate && !!selectedTime

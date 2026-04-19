@@ -249,6 +249,7 @@ export default function CheckoutPanelContent({
                     step={step}
                     onStepChange={handleStepChange}
                     isWorkshop={isWorkshop}
+                    shippingMethodName={selectedOption?.name ?? data.cart?.shipping_methods?.[0]?.name}
                   />
                   {isWorkshop && (
                     <ConfirmationStep
