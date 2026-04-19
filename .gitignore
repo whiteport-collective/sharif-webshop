@@ -15,6 +15,9 @@ build/
 .env.production
 .env*.local
 
+# Local HTTPS certificates
+storefront/certificates/
+
 # Logs
 *.log
 npm-debug.log*
