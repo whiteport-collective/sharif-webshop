@@ -2,18 +2,11 @@
 
 import { useState, useCallback, useRef } from "react"
 import { useAgentTools } from "./AgentToolContext"
+import type { SessionContext } from "@modules/home/components/flow-shell/types"
 
 export type ChatMessage = {
   role: "user" | "assistant"
   content: string
-}
-
-type SessionContext = {
-  view: string
-  dimension: string | null
-  visibleProductIds: string[]
-  cartItems: { productId: string; qty: number }[]
-  step: string | null
 }
 
 const STORAGE_KEY = "sharif-agent-messages"

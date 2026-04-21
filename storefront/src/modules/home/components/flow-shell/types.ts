@@ -12,6 +12,48 @@ export type SearchMeta = {
 
 export type FlowView = "home" | "results" | "checkout"
 
+export type SearchFormSnapshot = {
+  width: string | null
+  profile: string | null
+  rim: string | null
+  qty: number | null
+  season: string | null
+  submitted: boolean
+}
+
+export type CartSnapshot = {
+  productId: string
+  productTitle: string
+  brand: string
+  price: number
+  qty: number
+  total: number
+}
+
+export type CheckoutStepKey =
+  | "delivery"
+  | "address"
+  | "payment"
+  | "booking"
+  | "confirmation"
+
+export type AddressSnapshot = {
+  filledFields: string[]
+  requiredMissingFields: string[]
+  isComplete: boolean
+}
+
+export type ShippingMethodSnapshot = {
+  id: string
+  name: string
+  price: number
+}
+
+export type BookingSlotSnapshot = {
+  id: string
+  label: string
+}
+
 export type InitialSearch = {
   width: string
   profile: string
@@ -32,15 +74,30 @@ export type FlowShellProps = {
 }
 
 export type SessionContext = {
-  cartItems: { productId: string; qty: number }[]
   countryCode: string
   dimension: string | null
-  qty: number
+  searchForm: SearchFormSnapshot
   scene?: FlowShellScene
-  season: string
-  step: string | null
+  selectedProductId: string | null
+  activeSort: string | null
+  cart: CartSnapshot | null
+  checkoutStep: CheckoutStepKey | null
+  deliveryType: "workshop" | "home" | null
+  address: AddressSnapshot | null
+  shippingMethods: ShippingMethodSnapshot[]
+  selectedShippingMethodId: string | null
+  bookingSlots: BookingSlotSnapshot[]
+  selectedBookingSlotId: string | null
   view: FlowView
   visibleProductIds: string[]
+  visibleProducts: Array<{
+    id: string
+    title: string
+    price: number | null
+    noiseDb: number | null
+    wetGrip: string | null
+    fuelEfficiency: string | null
+  }>
 }
 
 export type HeaderProps = {

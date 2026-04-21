@@ -18,7 +18,7 @@ type ShippingProps = {
   availableShippingMethods: HttpTypes.StoreCartShippingOption[] | null
   step?: string
   onStepChange?: (step: string) => void
-  onShippingMethodChange?: (id: string) => void
+  onShippingMethodChange?: (id: string | null) => void
 }
 
 function formatAddress(address: HttpTypes.StoreCartAddress) {
@@ -111,10 +111,13 @@ const Shipping: React.FC<ShippingProps> = ({
       currentId = prev
       return id
     })
-    onShippingMethodChange?.(id)
     await setShippingMethod({ cartId: cart.id, shippingMethodId: id })
+      .then(() => {
+        onShippingMethodChange?.(id)
+      })
       .catch((err) => {
         setShippingMethodId(currentId)
+        onShippingMethodChange?.(currentId)
         setError(err.message)
       })
       .finally(() => setIsLoading(false))

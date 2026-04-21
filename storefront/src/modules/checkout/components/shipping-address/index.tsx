@@ -7,18 +7,26 @@ import React, { useEffect, useMemo, useState } from "react"
 import AddressSelect from "../address-select"
 import CountrySelect from "../country-select"
 
+export type ShippingAddressSnapshot = {
+  filledFields: string[]
+  requiredMissingFields: string[]
+  isComplete: boolean
+}
+
 const ShippingAddress = ({
   customer,
   cart,
   checked,
   onChange,
   isWorkshop = false,
+  onSnapshotChange,
 }: {
   customer: HttpTypes.StoreCustomer | null
   cart: HttpTypes.StoreCart | null
   checked: boolean
   onChange: () => void
   isWorkshop?: boolean
+  onSnapshotChange?: (snapshot: ShippingAddressSnapshot) => void
 }) => {
   const [formData, setFormData] = useState<Record<string, any>>({
     "shipping_address.first_name": cart?.shipping_address?.first_name || "",
@@ -99,6 +107,52 @@ const ShippingAddress = ({
       [e.target.name]: e.target.value,
     })
   }
+
+  const snapshot = useMemo<ShippingAddressSnapshot>(() => {
+    const visibleFields = [
+      "shipping_address.first_name",
+      "shipping_address.last_name",
+      "email",
+      "shipping_address.phone",
+      "car_registration",
+      ...(!isWorkshop
+        ? [
+            "shipping_address.address_1",
+            "shipping_address.company",
+            "shipping_address.postal_code",
+            "shipping_address.city",
+            "shipping_address.country_code",
+            "shipping_address.province",
+          ]
+        : []),
+    ]
+    const requiredFields = [
+      "shipping_address.first_name",
+      "shipping_address.last_name",
+      "email",
+      "car_registration",
+      ...(!isWorkshop
+        ? [
+            "shipping_address.address_1",
+            "shipping_address.postal_code",
+            "shipping_address.city",
+            "shipping_address.country_code",
+          ]
+        : []),
+    ]
+    const filledFields = visibleFields.filter((field) => String(formData[field] ?? "").trim())
+    const requiredMissingFields = requiredFields.filter((field) => !String(formData[field] ?? "").trim())
+
+    return {
+      filledFields,
+      requiredMissingFields,
+      isComplete: requiredMissingFields.length === 0,
+    }
+  }, [formData, isWorkshop])
+
+  useEffect(() => {
+    onSnapshotChange?.(snapshot)
+  }, [onSnapshotChange, snapshot])
 
   return (
     <>

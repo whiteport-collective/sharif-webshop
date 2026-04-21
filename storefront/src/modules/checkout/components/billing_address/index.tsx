@@ -1,9 +1,21 @@
 import { HttpTypes } from "@medusajs/types"
 import Input from "@modules/common/components/input"
-import React, { useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import CountrySelect from "../country-select"
 
-const BillingAddress = ({ cart }: { cart: HttpTypes.StoreCart | null }) => {
+export type BillingAddressSnapshot = {
+  filledFields: string[]
+  requiredMissingFields: string[]
+  isComplete: boolean
+}
+
+const BillingAddress = ({
+  cart,
+  onSnapshotChange,
+}: {
+  cart: HttpTypes.StoreCart | null
+  onSnapshotChange?: (snapshot: BillingAddressSnapshot) => void
+}) => {
   const [formData, setFormData] = useState<any>({
     "billing_address.first_name": cart?.billing_address?.first_name || "",
     "billing_address.last_name": cart?.billing_address?.last_name || "",
@@ -26,6 +38,39 @@ const BillingAddress = ({ cart }: { cart: HttpTypes.StoreCart | null }) => {
       [e.target.name]: e.target.value,
     })
   }
+
+  const snapshot = useMemo<BillingAddressSnapshot>(() => {
+    const visibleFields = [
+      "billing_address.first_name",
+      "billing_address.last_name",
+      "billing_address.address_1",
+      "billing_address.company",
+      "billing_address.postal_code",
+      "billing_address.city",
+      "billing_address.country_code",
+      "billing_address.province",
+      "billing_address.phone",
+    ]
+    const requiredFields = [
+      "billing_address.first_name",
+      "billing_address.last_name",
+      "billing_address.address_1",
+      "billing_address.postal_code",
+      "billing_address.country_code",
+    ]
+    const filledFields = visibleFields.filter((field) => String(formData[field] ?? "").trim())
+    const requiredMissingFields = requiredFields.filter((field) => !String(formData[field] ?? "").trim())
+
+    return {
+      filledFields,
+      requiredMissingFields,
+      isComplete: requiredMissingFields.length === 0,
+    }
+  }, [formData])
+
+  useEffect(() => {
+    onSnapshotChange?.(snapshot)
+  }, [onSnapshotChange, snapshot])
 
   return (
     <>

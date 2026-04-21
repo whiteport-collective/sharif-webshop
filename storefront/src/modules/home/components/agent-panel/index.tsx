@@ -2,14 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useStreamingChat } from "./useStreamingChat"
-
-type SessionContext = {
-  view: string
-  dimension: string | null
-  visibleProductIds: string[]
-  cartItems: { productId: string; qty: number }[]
-  step: string | null
-}
+import type { SessionContext } from "@modules/home/components/flow-shell/types"
 
 type Props = {
   open: boolean

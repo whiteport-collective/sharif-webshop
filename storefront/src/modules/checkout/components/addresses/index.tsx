@@ -7,11 +7,17 @@ import { HttpTypes } from "@medusajs/types"
 import { Heading, Text, useToggleState } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import { useSearchParams } from "next/navigation"
-import { useActionState } from "react"
-import BillingAddress from "../billing_address"
+import { useActionState, useEffect, useMemo, useState } from "react"
+import BillingAddress, { type BillingAddressSnapshot } from "../billing_address"
 import ErrorMessage from "../error-message"
-import ShippingAddress from "../shipping-address"
+import ShippingAddress, { type ShippingAddressSnapshot } from "../shipping-address"
 import { SubmitButton } from "../submit-button"
+
+export type AddressDraftSnapshot = {
+  filledFields: string[]
+  requiredMissingFields: string[]
+  isComplete: boolean
+}
 
 const Addresses = ({
   cart,
@@ -19,12 +25,14 @@ const Addresses = ({
   step: stepProp,
   onStepChange,
   isWorkshop,
+  onSnapshotChange,
 }: {
   cart: HttpTypes.StoreCart | null
   customer: HttpTypes.StoreCustomer | null
   step?: string
   onStepChange?: (step: string) => void
   isWorkshop?: boolean
+  onSnapshotChange?: (snapshot: AddressDraftSnapshot | null) => void
 }) => {
   const searchParams = useSearchParams()
 
@@ -40,6 +48,8 @@ const Addresses = ({
       ? compareAddresses(cart?.shipping_address, cart?.billing_address)
       : true
   )
+  const [shippingSnapshot, setShippingSnapshot] = useState<ShippingAddressSnapshot | null>(null)
+  const [billingSnapshot, setBillingSnapshot] = useState<BillingAddressSnapshot | null>(null)
 
   const handleEdit = () => {
     onStepChange?.("address")
@@ -54,6 +64,33 @@ const Addresses = ({
     onStepChange ? panelAction : setAddresses,
     null
   )
+
+  const addressSnapshot = useMemo<AddressDraftSnapshot | null>(() => {
+    if (!shippingSnapshot) {
+      return null
+    }
+
+    const snapshots = [shippingSnapshot]
+
+    if (!sameAsBilling && !isWorkshopOrder && billingSnapshot) {
+      snapshots.push(billingSnapshot)
+    }
+
+    const filledFields = Array.from(new Set(snapshots.flatMap((snapshot) => snapshot.filledFields)))
+    const requiredMissingFields = Array.from(
+      new Set(snapshots.flatMap((snapshot) => snapshot.requiredMissingFields))
+    )
+
+    return {
+      filledFields,
+      requiredMissingFields,
+      isComplete: requiredMissingFields.length === 0,
+    }
+  }, [billingSnapshot, isWorkshopOrder, sameAsBilling, shippingSnapshot])
+
+  useEffect(() => {
+    onSnapshotChange?.(addressSnapshot)
+  }, [addressSnapshot, onSnapshotChange])
 
   return (
     <div className="bg-white">
@@ -84,6 +121,7 @@ const Addresses = ({
               onChange={toggleSameAsBilling}
               cart={cart}
               isWorkshop={isWorkshopOrder}
+              onSnapshotChange={setShippingSnapshot}
             />
 
             {!sameAsBilling && !isWorkshopOrder && (
@@ -95,7 +133,7 @@ const Addresses = ({
                   Fakturaadresse
                 </Heading>
 
-                <BillingAddress cart={cart} />
+                <BillingAddress cart={cart} onSnapshotChange={setBillingSnapshot} />
               </div>
             )}
             <SubmitButton className="mt-6" data-testid="submit-address-button">

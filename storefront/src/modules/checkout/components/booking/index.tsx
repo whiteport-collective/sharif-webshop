@@ -9,6 +9,11 @@ import { useLanguage } from "@lib/i18n"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useRef, useState, useTransition } from "react"
 
+export type BookingSnapshot = {
+  bookingSlots: { id: string; label: string }[]
+  selectedBookingSlotId: string | null
+}
+
 const WORKSHOPS: Record<string, { name: string; address: string }> = {
   "pickup-fjellhamar": {
     name: "Fjellhamar",
@@ -76,12 +81,14 @@ const Booking = ({
   onStepChange,
   isWorkshop: isWorkshopProp,
   shippingMethodName: shippingMethodNameProp,
+  onSnapshotChange,
 }: {
   cart: HttpTypes.StoreCart
   step?: string
   onStepChange?: (step: string) => void
   isWorkshop?: boolean
   shippingMethodName?: string | null
+  onSnapshotChange?: (snapshot: BookingSnapshot) => void
 }) => {
   const searchParams = useSearchParams()
   const { t } = useLanguage()
@@ -136,6 +143,19 @@ const Booking = ({
 
   const slots = getAvailableSlots(visibleDays)
   const bookingReady = !!selectedDate && !!selectedTime
+  const bookingSnapshot: BookingSnapshot = {
+    bookingSlots: workshop
+      ? slots
+          .filter((slot) => expandedDays.has(slot.date))
+          .flatMap((slot) =>
+            slot.times.map((time) => ({
+              id: `${slot.date}|${time}`,
+              label: `${slot.label} · ${time}`,
+            }))
+          )
+      : [],
+    selectedBookingSlotId: selectedDate && selectedTime ? `${selectedDate}|${selectedTime}` : null,
+  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -148,6 +168,10 @@ const Booking = ({
 
     return () => window.cancelAnimationFrame(frame)
   }, [isOpen])
+
+  useEffect(() => {
+    onSnapshotChange?.(bookingSnapshot)
+  }, [bookingSnapshot, onSnapshotChange])
 
   // For home-delivery carts — no booking needed, render nothing
   if (!workshop) return null

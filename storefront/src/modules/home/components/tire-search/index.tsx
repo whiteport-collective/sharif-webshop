@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState, useMemo, useRef, useEffect } from "react"
 import { useLanguage } from "@lib/i18n"
+import type { SearchFormSnapshot } from "@modules/home/components/flow-shell/types"
 
 export type TireSearchParams = {
   width: string
@@ -14,6 +15,10 @@ export type TireSearchParams = {
 
 export type AgentSearchField = "width" | "profile" | "rim" | "qty" | "season"
 
+export type TireSearchAPI = {
+  getFormSnapshot: () => SearchFormSnapshot
+}
+
 type Props = {
   availableDimensions: string[]
   dimensionCounts?: Record<string, number>
@@ -24,6 +29,8 @@ type Props = {
   onMount?: (setDimension: (width: string, profile: string, rim: string) => void) => void
   onFieldMount?: (setField: (field: AgentSearchField, value: string) => void) => void
   onResetRef?: (reset: () => void) => void
+  onRegisterApi?: (api: TireSearchAPI) => void
+  submitted?: boolean
 }
 
 type Segment = "width" | "profile" | "rim"
@@ -183,7 +190,19 @@ function SegmentInput({
   )
 }
 
-export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount, onFieldMount, onResetRef }: Props) {
+export default function TireSearch({
+  availableDimensions,
+  dimensionCounts,
+  onSearch,
+  onDimensionChange,
+  onFormChange,
+  previewCount,
+  onMount,
+  onFieldMount,
+  onResetRef,
+  onRegisterApi,
+  submitted = false,
+}: Props) {
   const { t } = useLanguage()
   const [width, setWidth] = useState("")
   const [profile, setProfile] = useState("")
@@ -364,6 +383,21 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
     widths.includes(width) &&
     profiles.includes(profile) &&
     rims.includes(rimNorm)
+
+  useEffect(() => {
+    if (!onRegisterApi) return
+
+    onRegisterApi({
+      getFormSnapshot: () => ({
+        width: width || null,
+        profile: profile || null,
+        rim: rimNorm || null,
+        qty: quantity ? Number(quantity) : null,
+        season: season || null,
+        submitted,
+      }),
+    })
+  }, [onRegisterApi, profile, quantity, rimNorm, season, submitted, width])
 
   useEffect(() => {
     if (onDimensionChange) {

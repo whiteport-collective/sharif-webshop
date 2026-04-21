@@ -16,7 +16,11 @@ type SkillFrontmatter = {
 type SessionLike = {
   view?: string
   step?: string | null
+  checkoutStep?: string | null
   season?: string
+  searchForm?: {
+    season?: string | null
+  }
   visibleProductIds?: string[]
 }
 
@@ -77,9 +81,11 @@ function matchesTrigger(trigger: SkillFrontmatter["trigger"], ctx: SessionLike):
 
   if (trigger.view && trigger.view !== ctx.view) return false
 
-  if (trigger.step && trigger.step !== ctx.step) return false
+  const step = ctx.checkoutStep ?? ctx.step ?? null
+  if (trigger.step && trigger.step !== step) return false
 
-  if (trigger.season && !ctx.season?.includes(trigger.season)) return false
+  const season = ctx.searchForm?.season ?? ctx.season ?? ""
+  if (trigger.season && !season.includes(trigger.season)) return false
 
   if (trigger.products_min != null) {
     const count = ctx.visibleProductIds?.length ?? 0

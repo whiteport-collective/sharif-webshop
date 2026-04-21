@@ -7,7 +7,9 @@ import { listCartPaymentMethods } from "@lib/data/payment"
 import { Heading } from "@medusajs/ui"
 import { HttpTypes } from "@medusajs/types"
 import Addresses from "@modules/checkout/components/addresses"
+import type { AddressDraftSnapshot } from "@modules/checkout/components/addresses"
 import Booking from "@modules/checkout/components/booking"
+import type { BookingSnapshot } from "@modules/checkout/components/booking"
 import Payment from "@modules/checkout/components/payment"
 import PaymentButton from "@modules/checkout/components/payment-button"
 import PaymentWrapper from "@modules/checkout/components/payment-wrapper"
@@ -16,6 +18,16 @@ import CartTotals from "@modules/common/components/cart-totals"
 import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useLanguage } from "@lib/i18n"
+
+export type CheckoutSnapshot = {
+  step: "delivery" | "address" | "payment" | "booking" | "confirmation"
+  deliveryType: "workshop" | "home" | null
+  address: AddressDraftSnapshot | null
+  shippingMethods: { id: string; name: string; price: number }[]
+  selectedShippingMethodId: string | null
+  bookingSlots: { id: string; label: string }[]
+  selectedBookingSlotId: string | null
+}
 
 export type AgentCheckoutAPI = {
   advanceStep: () => { ok: boolean; step?: string; reason?: string }
@@ -26,6 +38,7 @@ export type AgentCheckoutAPI = {
     cartTotal: number | null
   }
   prefillField: (field: string, value: string) => { ok: boolean; reason?: string }
+  getSnapshot: () => CheckoutSnapshot
 }
 
 const AGENT_ADDRESS_FIELD_MAP: Record<string, string> = {
@@ -94,6 +107,11 @@ export default function CheckoutPanelContent({
   const [step, setStep] = useState("delivery")
   const [orderId, setOrderId] = useState<string | null>(null)
   const [selectedShippingOptionId, setSelectedShippingOptionId] = useState<string | null>(null)
+  const [addressSnapshot, setAddressSnapshot] = useState<AddressDraftSnapshot | null>(null)
+  const [bookingSnapshot, setBookingSnapshot] = useState<BookingSnapshot>({
+    bookingSlots: [],
+    selectedBookingSlotId: null,
+  })
   const containerRef = useRef<HTMLDivElement>(null)
   const confirmationRef = useRef<HTMLDivElement>(null)
   const touchStartY = useRef(0)
@@ -167,6 +185,13 @@ export default function CheckoutPanelContent({
   const isWorkshop = selectedOption
     ? selectedOption.name?.toLowerCase().includes("montering") ?? false
     : data?.cart?.shipping_methods?.[0]?.name?.toLowerCase().includes("montering") ?? false
+  const confirmedShippingMethodId = data?.cart?.shipping_methods?.at(-1)?.shipping_option_id ?? null
+
+  useEffect(() => {
+    if (confirmedShippingMethodId) {
+      setSelectedShippingOptionId(confirmedShippingMethodId)
+    }
+  }, [confirmedShippingMethodId])
 
   // Sync step title and back function to parent header
   useEffect(() => {
@@ -236,6 +261,30 @@ export default function CheckoutPanelContent({
       cartTotal: data?.cart.total ?? null,
     })
 
+    const getSnapshot: AgentCheckoutAPI["getSnapshot"] = () => ({
+      step: (step === "delivery" ||
+      step === "address" ||
+      step === "payment" ||
+      step === "booking" ||
+      step === "confirmation"
+        ? step
+        : "delivery"),
+      deliveryType: selectedOption || data?.cart?.shipping_methods?.[0]?.name
+        ? isWorkshop
+          ? "workshop"
+          : "home"
+        : null,
+      address: addressSnapshot,
+      shippingMethods: (data?.shippingMethods ?? []).map((m) => ({
+        id: m.id,
+        name: m.name ?? "",
+        price: (m as any).amount ?? 0,
+      })),
+      selectedShippingMethodId: confirmedShippingMethodId ?? selectedShippingOptionId ?? null,
+      bookingSlots: bookingSnapshot.bookingSlots,
+      selectedBookingSlotId: bookingSnapshot.selectedBookingSlotId,
+    })
+
     const prefillField: AgentCheckoutAPI["prefillField"] = (field, value) => {
       const domName = AGENT_ADDRESS_FIELD_MAP[field]
       if (!domName) {
@@ -258,9 +307,19 @@ export default function CheckoutPanelContent({
       return { ok: true }
     }
 
-    onRegisterAgentCheckout({ advanceStep, getState, prefillField })
+    onRegisterAgentCheckout({ advanceStep, getState, prefillField, getSnapshot })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, isWorkshop, data, onRegisterAgentCheckout])
+  }, [
+    addressSnapshot,
+    bookingSnapshot,
+    confirmedShippingMethodId,
+    data,
+    isWorkshop,
+    onRegisterAgentCheckout,
+    selectedOption,
+    selectedShippingOptionId,
+    step,
+  ])
 
   // Scroll-up at top → go back. Uses React onWheel prop (more reliable than addEventListener
   // on children of CSS-transformed elements, where some browsers delay or drop events).
@@ -324,7 +383,13 @@ export default function CheckoutPanelContent({
                     availableShippingMethods={data.shippingMethods}
                     step={step}
                     onStepChange={handleStepChange}
-                    onShippingMethodChange={setSelectedShippingOptionId}
+                    onShippingMethodChange={async (id) => {
+                      setSelectedShippingOptionId(id)
+                      const freshCart = await retrieveCartFresh()
+                      if (freshCart) {
+                        setData((prev) => (prev ? { ...prev, cart: freshCart } : prev))
+                      }
+                    }}
                   />
                   <Addresses
                     cart={data.cart}
@@ -332,6 +397,7 @@ export default function CheckoutPanelContent({
                     step={step}
                     onStepChange={handleStepChange}
                     isWorkshop={isWorkshop}
+                    onSnapshotChange={setAddressSnapshot}
                   />
                   {data.paymentMethods && (
                     <Payment
@@ -349,6 +415,7 @@ export default function CheckoutPanelContent({
                     onStepChange={handleStepChange}
                     isWorkshop={isWorkshop}
                     shippingMethodName={selectedOption?.name ?? data.cart?.shipping_methods?.[0]?.name}
+                    onSnapshotChange={setBookingSnapshot}
                   />
                   {isWorkshop && (
                     <ConfirmationStep

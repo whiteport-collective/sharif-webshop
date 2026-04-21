@@ -12,7 +12,11 @@ import {
 } from "@modules/home/components/agent-panel/AgentToolContext"
 import AgentPanel from "@modules/home/components/agent-panel"
 import { type SelectedTire } from "@modules/home/components/quantity-shop"
-import TireSearch, { type AgentSearchField, type TireSearchParams } from "@modules/home/components/tire-search"
+import TireSearch, {
+  type AgentSearchField,
+  type TireSearchAPI,
+  type TireSearchParams,
+} from "@modules/home/components/tire-search"
 import ProductDetailPanel from "@modules/products/components/product-detail-panel"
 import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
@@ -66,6 +70,7 @@ export default function FlowShell({
   const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const agentCheckoutRef = useRef<AgentCheckoutAPI | null>(null)
+  const tireSearchRef = useRef<TireSearchAPI | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
   const setSearchFieldRef = useRef<((field: AgentSearchField, value: string) => void) | null>(null)
   const resetSearchRef = useRef<(() => void) | null>(null)
@@ -721,17 +726,68 @@ export default function FlowShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const getSessionContext = useCallback((): SessionContext => ({
-    view: activeSection,
-    countryCode,
-    dimension: searchMeta.dimension || null,
-    qty: searchMeta.qty,
-    season: searchMeta.season,
-    scene,
-    visibleProductIds: products.map((product) => product.id ?? ""),
-    cartItems: selectedTire ? [{ productId: selectedTire.product.id ?? "", qty: selectedTire.initialQty }] : [],
-    step: activeSection === "checkout" ? checkoutStepTitle || null : null,
-  }), [activeSection, checkoutStepTitle, countryCode, products, scene, searchMeta.dimension, searchMeta.qty, searchMeta.season, selectedTire])
+  const getSessionContext = useCallback((): SessionContext => {
+    const searchForm = tireSearchRef.current?.getFormSnapshot() ?? {
+      width: null,
+      profile: null,
+      rim: null,
+      qty: null,
+      season: null,
+      submitted: Boolean(searchMeta.dimension),
+    }
+    const checkout = agentCheckoutRef.current?.getSnapshot() ?? null
+
+    return {
+      view: activeSection,
+      countryCode,
+      dimension: searchMeta.dimension || null,
+      searchForm,
+      scene,
+      selectedProductId: selectedTire?.product.id ?? null,
+      activeSort: activeSort ?? null,
+      visibleProductIds: products.map((product) => product.id ?? ""),
+      visibleProducts: products.map((product) => {
+        const variant = (product.variants?.[0] ?? {}) as any
+        const meta = (product.metadata ?? {}) as {
+          noise_db?: string | number
+          grip_rating?: string
+          fuel_rating?: string
+        }
+        const noiseDb = meta.noise_db != null && meta.noise_db !== "" ? Number(meta.noise_db) : null
+
+        return {
+          id: product.id ?? "",
+          title: product.title ?? "",
+          price:
+            typeof variant?.calculated_price?.calculated_amount === "number"
+              ? variant.calculated_price.calculated_amount
+              : null,
+          noiseDb: Number.isFinite(noiseDb as number) ? (noiseDb as number) : null,
+          wetGrip: meta.grip_rating ?? null,
+          fuelEfficiency: meta.fuel_rating ?? null,
+        }
+      }),
+      cart: selectedTire
+        ? {
+            productId: selectedTire.product.id ?? "",
+            productTitle: selectedTire.product.title ?? "",
+            brand: String((selectedTire.product as any).brand ?? ""),
+            price: selectedTire.unitPrice ?? 0,
+            qty: selectedTire.initialQty,
+            total: (selectedTire.unitPrice ?? 0) * selectedTire.initialQty,
+          }
+        : null,
+      checkoutStep: activeSection === "checkout" ? checkout?.step ?? null : null,
+      deliveryType: activeSection === "checkout" ? checkout?.deliveryType ?? null : null,
+      address: activeSection === "checkout" ? checkout?.address ?? null : null,
+      shippingMethods: activeSection === "checkout" ? checkout?.shippingMethods ?? [] : [],
+      selectedShippingMethodId:
+        activeSection === "checkout" ? checkout?.selectedShippingMethodId ?? null : null,
+      bookingSlots: activeSection === "checkout" ? checkout?.bookingSlots ?? [] : [],
+      selectedBookingSlotId:
+        activeSection === "checkout" ? checkout?.selectedBookingSlotId ?? null : null,
+    }
+  }, [activeSection, activeSort, countryCode, products, scene, searchMeta.dimension, selectedTire])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
@@ -834,6 +890,7 @@ export default function FlowShell({
                           availableDimensions={availableDimensions}
                           dimensionCounts={dimensionCounts}
                           onSearch={handleSearch}
+                          submitted={Boolean(searchMeta.dimension)}
                           onDimensionChange={handleDimensionChange}
                           onFormChange={(params) => {
                             pendingParams.current = params
@@ -856,6 +913,9 @@ export default function FlowShell({
                           }}
                           onResetRef={(fn) => {
                             resetSearchRef.current = fn
+                          }}
+                          onRegisterApi={(api) => {
+                            tireSearchRef.current = api
                           }}
                         />
                       </div>

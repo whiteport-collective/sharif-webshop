@@ -193,7 +193,6 @@ export const UI_TOOL_NAMES = new Set([
   "highlightProducts",
   "clearHighlights",
   "advanceCheckoutStep",
-  "getCheckoutState",
   "navigateBack",
 ])
 

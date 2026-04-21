@@ -6,6 +6,7 @@ import { executeDataTool } from "@lib/agent/data-tools"
 import { loadSkillsForContext } from "@lib/agent/skill-loader"
 import { searchTires } from "../../../actions/search-tires"
 import { enrichProductsForAgent, type AgentProductPayload } from "@lib/agent/enrich-products"
+import type { SessionContext } from "@modules/home/components/flow-shell/types"
 
 const GATEWAY_BASE_URL =
   process.env.GATEWAY_BASE_URL ??
@@ -45,6 +46,32 @@ type AgentFormState = {
   season: string | null
 }
 
+const EMPTY_SESSION_CONTEXT: SessionContext = {
+  countryCode: "no",
+  dimension: null,
+  searchForm: {
+    width: null,
+    profile: null,
+    rim: null,
+    qty: null,
+    season: null,
+    submitted: false,
+  },
+  selectedProductId: null,
+  activeSort: null,
+  cart: null,
+  checkoutStep: null,
+  deliveryType: null,
+  address: null,
+  shippingMethods: [],
+  selectedShippingMethodId: null,
+  bookingSlots: [],
+  selectedBookingSlotId: null,
+  view: "home",
+  visibleProductIds: [],
+  visibleProducts: [],
+}
+
 function parseInitialDimension(dim: string | null | undefined): [string | null, string | null, string | null] {
   if (!dim) return [null, null, null]
   const m = dim.match(/^(\d+)\/(\d+)R(\d+)$/i)
@@ -56,11 +83,19 @@ function missingFields(state: AgentFormState): (keyof AgentFormState)[] {
 }
 
 export async function POST(req: NextRequest) {
-  const { messages, sessionContext } = await req.json()
+  const {
+    messages,
+    sessionContext,
+  }: {
+    messages: { role: string; content: string }[]
+    sessionContext?: SessionContext
+  } = await req.json()
 
   if (!messages?.length) {
     return NextResponse.json({ error: "messages required" }, { status: 400 })
   }
+
+  console.log("[agent/chat] visibleProducts count:", sessionContext?.visibleProducts?.length ?? 0, "| first noiseDb:", sessionContext?.visibleProducts?.[0]?.noiseDb)
 
   const settings = await getSettings()
 
@@ -68,11 +103,13 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Agent er deaktivert", { status: 503 })
   }
 
-  const skills = await loadSkillsForContext(sessionContext ?? {})
+  const currentSessionContext = sessionContext ?? EMPTY_SESSION_CONTEXT
+
+  const skills = await loadSkillsForContext(currentSessionContext)
   const skillTools = new Set(skills.flatMap((s) => s.requires_tools))
 
   // Hands-off gate: at payment/confirmation the agent sees only read-only tools
-  const checkoutStep = (sessionContext?.step as string | null) ?? null
+  const checkoutStep = currentSessionContext.checkoutStep
   const isPaymentLocked = checkoutStep === "payment" || checkoutStep === "confirmation"
 
   const activeTools = storefrontAgentTools.filter((t) => {
@@ -83,7 +120,7 @@ export async function POST(req: NextRequest) {
     return true
   })
 
-  const basePrompt = buildSystemPrompt(sessionContext ?? {}, settings ?? {})
+  const basePrompt = buildSystemPrompt(currentSessionContext, settings ?? {})
   const paymentOverlay = isPaymentLocked
     ? checkoutStep === "confirmation"
       ? "\n\n---\n\nOrden er gjennomført. Gratulér kunden og oppsummer hva som skjer nå. Du kan ikke kjøre noen handlinger — bare svare."
@@ -94,15 +131,15 @@ export async function POST(req: NextRequest) {
     skills.length > 0 || paymentOverlay
       ? [basePrompt, ...skills.map((s) => `---\n\n# Skill: ${s.name}\n\n${s.content}`)].join("\n\n") + paymentOverlay
       : basePrompt
-  const countryCode = (sessionContext?.countryCode as string) || "no"
+  const countryCode = currentSessionContext.countryCode || "no"
 
-  const [initW, initP, initR] = parseInitialDimension(sessionContext?.dimension)
+  const [initW, initP, initR] = parseInitialDimension(currentSessionContext.dimension)
   const agentFormState: AgentFormState = {
-    width: initW,
-    profile: initP,
-    rim: initR,
-    qty: sessionContext?.qty ? String(sessionContext.qty) : null,
-    season: sessionContext?.season ? String(sessionContext.season) : null,
+    width: currentSessionContext.searchForm.width ?? initW,
+    profile: currentSessionContext.searchForm.profile ?? initP,
+    rim: currentSessionContext.searchForm.rim ?? initR,
+    qty: currentSessionContext.searchForm.qty ? String(currentSessionContext.searchForm.qty) : null,
+    season: currentSessionContext.searchForm.season ?? null,
   }
 
   const encoder = new TextEncoder()
@@ -236,6 +273,35 @@ export async function POST(req: NextRequest) {
                 }),
               })
             }
+          } else if (toolUse.name === "getCheckoutState") {
+            if (!currentSessionContext.checkoutStep) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  ok: false,
+                  reason: "Checkout is not open.",
+                  recoverable: true,
+                }),
+              })
+              continue
+            }
+
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({
+                ok: true,
+                step: currentSessionContext.checkoutStep,
+                deliveryType: currentSessionContext.deliveryType,
+                address: currentSessionContext.address,
+                availableShippingMethods: currentSessionContext.shippingMethods,
+                selectedShippingMethodId: currentSessionContext.selectedShippingMethodId,
+                availableBookingSlots: currentSessionContext.bookingSlots,
+                selectedBookingSlotId: currentSessionContext.selectedBookingSlotId,
+                cartTotal: currentSessionContext.cart?.total ?? null,
+              }),
+            })
           } else if (UI_TOOL_NAMES.has(toolUse.name)) {
             // Fire-and-forget UI dispatch for the remaining browser-side tools.
             send({
