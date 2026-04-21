@@ -656,6 +656,9 @@ export default function FlowShell({
     openPaymentStep: () => {
       agentOpenPaymentRef.current?.()
     },
+    navigateBack: () => {
+      handleBack()
+    },
   }
 
   const getSessionContext = useCallback((): SessionContext => ({

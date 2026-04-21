@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { storefrontAgentTools, UI_TOOL_NAMES } from "@lib/agent/tools"
+import { storefrontAgentTools, UI_TOOL_NAMES, PAYMENT_GATE_TOOL_NAMES } from "@lib/agent/tools"
 import { buildSystemPrompt } from "@lib/agent/system-prompt"
 import { executeDataTool } from "@lib/agent/data-tools"
 import { loadSkillsForContext } from "@lib/agent/skill-loader"
@@ -59,14 +59,29 @@ export async function POST(req: NextRequest) {
 
   const skills = await loadSkillsForContext(sessionContext ?? {})
   const skillTools = new Set(skills.flatMap((s) => s.requires_tools))
-  const activeTools = storefrontAgentTools.filter(
-    (t) => !skillTools.size || skillTools.has(t.name) || !["highlightProducts", "clearHighlights"].includes(t.name)
-  )
+
+  // Hands-off gate: at payment/confirmation the agent sees only read-only tools
+  const checkoutStep = (sessionContext?.step as string | null) ?? null
+  const isPaymentLocked = checkoutStep === "payment" || checkoutStep === "confirmation"
+
+  const activeTools = storefrontAgentTools.filter((t) => {
+    if (isPaymentLocked) return PAYMENT_GATE_TOOL_NAMES.has(t.name)
+    if (skillTools.size && ["highlightProducts", "clearHighlights"].includes(t.name)) {
+      return skillTools.has(t.name)
+    }
+    return true
+  })
 
   const basePrompt = buildSystemPrompt(sessionContext ?? {}, settings ?? {})
+  const paymentOverlay = isPaymentLocked
+    ? checkoutStep === "confirmation"
+      ? "\n\n---\n\nOrden er gjennomført. Gratulér kunden og oppsummer hva som skjer nå. Du kan ikke kjøre noen handlinger — bare svare."
+      : "\n\n---\n\nKunden er nå i betalingssteget. Du må IKKE fylle inn kortopplysninger eller klikke 'Betal' — det gjør kunden selv. Vent til kunden er ferdig, og svar kun på spørsmål de stiller."
+    : ""
+
   const systemPrompt =
-    skills.length > 0
-      ? [basePrompt, ...skills.map((s) => `---\n\n# Skill: ${s.name}\n\n${s.content}`)].join("\n\n")
+    skills.length > 0 || paymentOverlay
+      ? [basePrompt, ...skills.map((s) => `---\n\n# Skill: ${s.name}\n\n${s.content}`)].join("\n\n") + paymentOverlay
       : basePrompt
   const countryCode = (sessionContext?.countryCode as string) || "no"
 

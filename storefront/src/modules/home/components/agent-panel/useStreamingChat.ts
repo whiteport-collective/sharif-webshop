@@ -86,6 +86,9 @@ export function useStreamingChat(getContext: () => SessionContext) {
         case "openPaymentStep":
           tools.openPaymentStep()
           break
+        case "navigateBack":
+          tools.navigateBack()
+          break
       }
     },
     [tools]

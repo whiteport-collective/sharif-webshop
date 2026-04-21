@@ -94,6 +94,15 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
       properties: {},
     },
   },
+  {
+    name: "navigateBack",
+    description:
+      "Go back one step — mirrors the browser back button. Works on all views. Returns ok:false if navigation is locked (e.g. at payment or confirmation step).",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
   // ─── Data tools (server-side Layer 2) ───
   {
     name: "searchProducts",
@@ -185,9 +194,19 @@ export const UI_TOOL_NAMES = new Set([
   "clearHighlights",
   "advanceCheckoutStep",
   "getCheckoutState",
+  "navigateBack",
 ])
 
 // Tools the server intercepts to produce a meaningful tool_result
 // beyond {ok:true}. They still emit a UI tool_call for the browser
 // side effect before resolving on the server.
 export const SERVER_UI_TOOL_NAMES = new Set(["triggerSearch"])
+
+// Read-only tools allowed at payment/confirmation step (hands-off gate).
+// Write tools are absent — LLM can't fill card details or advance payment.
+export const PAYMENT_GATE_TOOL_NAMES = new Set([
+  "getCheckoutState",
+  "lookupOrder",
+  "escalateToAdmin",
+  "getProductDetail",
+])

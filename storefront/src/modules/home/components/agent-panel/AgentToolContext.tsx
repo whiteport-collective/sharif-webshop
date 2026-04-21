@@ -25,6 +25,8 @@ export type AgentToolHandlers = {
   advanceCheckoutStep: () => void
   getCheckoutState: () => void
   openPaymentStep: () => void
+  // Navigation
+  navigateBack: () => void
 }
 
 const AgentToolContext = createContext<AgentToolHandlers>({
@@ -40,6 +42,7 @@ const AgentToolContext = createContext<AgentToolHandlers>({
   advanceCheckoutStep: () => {},
   getCheckoutState: () => {},
   openPaymentStep: () => {},
+  navigateBack: () => {},
 })
 
 export function AgentToolContextProvider({
