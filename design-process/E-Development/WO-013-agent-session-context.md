@@ -1,27 +1,45 @@
-# WO-013 — Fat SessionContext (Agent State Visibility)
+# WO-013 - Rich SessionContext For Agent Read Visibility
 
-**Status:** Draft — Ready for Codex review
-**Priority:** High (demo-blocker — agent is blind during checkout)
-**Assigned to:** Mimir
-**Review before implementation:** Codex
-**Depends on:** `WO-012-agent-ordering-api.md`, current `SessionContext` in `flow-shell/types.ts`
+**Status:** Draft - Revised after Codex review  
+**Priority:** High (demo-blocker - agent is blind during checkout)  
+**Assigned to:** Mimir  
+**Reviewed by:** Codex  
+**Depends on:** `WO-012-agent-ordering-api.md`, current `SessionContext` in `flow-shell/types.ts`, current `FlowShell` state model from `WO-010-flow-shell-state-model.md`  
+
 **Relevant areas:**
-- `storefront/src/modules/home/components/flow-shell/types.ts` (SessionContext type)
-- `storefront/src/modules/home/components/flow-shell/index.tsx` (getSessionContext)
-- `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts` (sends context)
-- `storefront/src/app/api/agent/chat/route.ts` (reads context, dispatches tools)
-- `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx` (source of checkout state)
-- `storefront/src/modules/home/components/tire-search/` (source of search form state)
+- `storefront/src/modules/home/components/flow-shell/types.ts`
+- `storefront/src/modules/home/components/flow-shell/index.tsx`
+- `storefront/src/modules/home/components/tire-search/index.tsx`
+- `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts`
+- `storefront/src/app/api/agent/chat/route.ts`
+- `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`
+- `storefront/src/modules/checkout/components/addresses/index.tsx`
+- `storefront/src/modules/checkout/components/shipping-address/index.tsx`
+- `storefront/src/modules/checkout/components/booking/index.tsx`
 
 ---
 
 ## Objective
 
-Make the agent fully aware of what is happening in the browser at every step of the order flow — without adding a round-trip between server and browser.
+Make the agent aware of the browser state at the **start of each request** so read operations can return real data without a browser round-trip.
 
-The agent currently receives a thin `sessionContext` snapshot. Most checkout state (selected shipping method, booking slots, address fill status, delivery type) is invisible to it. UI tools that should return real data return a fabricated `{ ok: true }` because the server has no way to query the browser mid-turn.
+The current `sessionContext` is too thin. The server knows almost nothing about the live checkout state, so read-style tools such as `getCheckoutState` return fabricated `{ ok: true }` results instead of real state.
 
-The fix: expand `sessionContext` so the client serializes its complete state into every request. The server is then authoritative before calling Claude — no browser queries needed mid-turn.
+This work order expands `sessionContext` and moves **read visibility** to the client snapshot. It does **not** solve truthful same-turn post-mutation acknowledgements for write tools.
+
+---
+
+## Review Outcome
+
+Codex review conclusion:
+
+- The direction is correct.
+- `TireSearch` can expose a live form snapshot with low risk.
+- `CheckoutPanelContent` cannot expose the full proposed checkout snapshot "as-is" because address draft state and booking selection are owned by child components today.
+- The proposed machine step `"shipping"` conflicts with the current FlowShell and WO-010 state model. Shipping choice happens inside the `delivery` step.
+- A rich `sessionContext` can make read tools truthful, but it cannot make write-tool results truthful in the same request unless a separate browser acknowledgment path is added later.
+
+This revised WO reflects those constraints.
 
 ---
 
@@ -31,63 +49,47 @@ The fix: expand `sessionContext` so the client serializes its complete state int
 
 ```ts
 type SessionContext = {
-  view: "home" | "results" | "checkout"
+  cartItems: { productId: string; qty: number }[]
   countryCode: string
   dimension: string | null
   qty: number
-  season: string
   scene?: FlowShellScene
-  step: string | null           // localized display title, e.g. "Adresse"
+  season: string
+  step: string | null
+  view: "home" | "results" | "checkout"
   visibleProductIds: string[]
-  cartItems: { productId: string; qty: number }[]
 }
 ```
 
-### What is missing — by flow step
+### What is missing
 
-**Global:**
-- Cart total (price) — agent cannot quote the order sum
-- Selected product title + brand — agent has `productId`, not the name
-- `step` is a localized display string, not a machine key — unreliable for routing logic
+**Search / results**
+- Current search form field values before submit
+- Whether the user has already submitted a search
+- Selected product separate from cart
+- Active sort
 
-**Home:**
-- Current search form values (width/profile/rim/qty/season) — server-side `agentFormState` resets every request; values typed by the user are not reflected
-- Whether a search has been submitted
+**Cart**
+- Product title / brand
+- Unit price and total
 
-**Results:**
-- Which product is highlighted/selected (separate from cart)
-- Active sort order
-- Whether last search returned zero results
+**Checkout**
+- Machine-readable step
+- Delivery type (`workshop` vs `home`)
+- Available shipping methods
+- Cart-confirmed selected shipping method
+- Address draft completeness
+- Booking slots shown in the UI
+- Selected booking slot
 
-**Checkout: Delivery:**
-- Delivery type selected (`workshop` vs `home`) — determines whether booking step exists
+### Current server limitation
 
-**Checkout: Address:**
-- Which fields are filled
-- Whether the form is currently valid (safe to advance)
+The server receives `sessionContext` once per `/api/agent/chat` request. It does **not** receive updated browser state after a UI tool is dispatched during that same request.
 
-**Checkout: Shipping:**
-- Available shipping methods (id, name, price) — currently fire-and-forget from `getCheckoutState`
-- Selected shipping method id
+That means:
 
-**Checkout: Booking:**
-- Available booking slots (id, label) — fetched independently by the Booking component
-- Selected booking slot id
-
-### The fabricated `{ ok: true }` problem
-
-UI tools in `route.ts` are dispatched via fire-and-forget SSE. The server sends `tool_call` to the browser and immediately returns `{ ok: true }` as the `tool_result` to Claude — without receiving anything back from the browser.
-
-Affected tools:
-| Tool | Should return | Actually returns |
-|---|---|---|
-| `selectTireForCheckout` | `{ ok, cartTotal, productTitle }` | `{ ok: true }` |
-| `advanceCheckoutStep` | `{ ok, step }` | `{ ok: true }` |
-| `getCheckoutState` | real step + methods + slots | `{ ok: true }` |
-| `prefillCheckoutField` | `{ ok, reason }` on failure | `{ ok: true }` always |
-| `navigateBack` | `{ ok, from, to }` | `{ ok: true }` |
-
-With a fat `sessionContext`, the server can answer `getCheckoutState` entirely from the incoming request — no browser query needed. Mutation tools (`prefillCheckoutField`, `advanceCheckoutStep`) still need a `{ ok, reason }` return, but the server can read pre- and post-state from context rather than waiting for browser confirmation.
+- `getCheckoutState` can become truthful from snapshot data.
+- `advanceCheckoutStep`, `prefillCheckoutField`, `navigateBack`, and `selectTireForCheckout` still cannot report authoritative post-action state in the same turn unless a separate acknowledgment design is added later.
 
 ---
 
@@ -95,37 +97,69 @@ With a fat `sessionContext`, the server can answer `getCheckoutState` entirely f
 
 After this WO:
 
-- The agent knows the complete state of the browser at the start of every turn.
-- `getCheckoutState` is answered from `sessionContext`, not dispatched to the browser.
-- The agent can quote cart total, product name, current step, available shipping methods, and available booking slots from the first message in a turn — no extra tool call needed.
-- Fabricated `{ ok: true }` responses are eliminated for read tools.
-- `step` is a reliable machine key throughout route.ts.
+- The agent knows the relevant browser state at request start.
+- `getCheckoutState` is answered from `sessionContext`, not by fire-and-forget browser dispatch.
+- The agent can see current search input, current checkout step, current delivery mode, shipping choices, and booking choices before replying.
+- `agentFormState` is seeded from the user-visible search form rather than reset from `dimension/qty/season` only.
+- Step naming stays aligned with the current FlowShell / WO-010 model.
+
+This WO does **not** promise truthful post-mutation tool results for write tools in the same request.
 
 ---
 
 ## Core Decisions
 
-### 1. Client owns state, agent owns reasoning
+### 1. SessionContext is a pre-turn snapshot
 
-`sessionContext` is a client-side snapshot serialized into every POST. The client has all the truth (React state, refs, Medusa cart data). The server never queries the browser during a turn. This is stateless and requires no sessionId or server-side store.
+`sessionContext` is serialized by the client into every POST. It represents browser state **before** Claude starts the next turn.
 
-### 2. Checkout state is provided by CheckoutPanelContent via callback
+It is authoritative for read visibility at request start, but not for post-tool state after browser mutations inside that same request.
 
-`CheckoutPanelContent` already exposes `AgentCheckoutAPI` via `onRegisterAgentCheckout`. Extend this to also expose a `getSnapshot()` method that `FlowShell` calls when building `sessionContext`.
+### 2. Keep machine step names aligned to the current UI
 
-Same pattern for `TireSearch` — it already has refs for field values; expose `getFormSnapshot()`.
+Use the real current checkout step names:
 
-### 3. `step` becomes a machine key
+- `delivery`
+- `address`
+- `payment`
+- `booking`
+- `confirmation`
 
-`checkoutStepTitle` (localized display string) stays for UI. A new `checkoutStep` machine key (`"delivery" | "address" | "shipping" | "booking" | "payment" | "confirmation"`) is added to `sessionContext`. Route.ts uses the machine key for all routing logic.
+Do **not** introduce a separate `shipping` step. Shipping method selection belongs to the `delivery` step in the current implementation.
 
-### 4. Booking slots come from CheckoutPanelContent snapshot
+### 3. TireSearch owns search form snapshot
 
-The Booking component fetches slots internally. `CheckoutPanelContent` passes them up via snapshot. This avoids prop-drilling — the checkout ref already sits at FlowShell level.
+`TireSearch` already owns `width`, `profile`, `rim`, `quantity`, and `season` in local state. It should expose a `getFormSnapshot()` API.
 
-### 5. `getCheckoutState` becomes a server-side read
+### 4. Checkout snapshot is composite, not parent-only
 
-Route.ts handles `getCheckoutState` by reading `sessionContext` directly — same as it reads `sessionContext.dimension` for `triggerSearch`. The tool is no longer dispatched to the browser. The tool definition and `UI_TOOL_NAMES` set are updated accordingly.
+`CheckoutPanelContent` can provide some snapshot fields directly:
+
+- current step
+- delivery type
+- shipping methods
+- cart-confirmed selected shipping method
+- cart total
+
+But it cannot currently read:
+
+- draft address fill state
+- booking slot list and selection
+
+Those must be passed up from child components (`Addresses` / `ShippingAddress`, `Booking`) via callback or local ref plumbing.
+
+### 5. `getCheckoutState` becomes server-side
+
+`route.ts` should answer `getCheckoutState` from `sessionContext` directly. This is the main value of the richer snapshot.
+
+### 6. Write-tool truthfulness stays out of scope
+
+Do not claim this WO fixes truthful `{ ok, reason, nextStep }` responses for write tools. That requires either:
+
+- a browser-to-server acknowledgment channel, or
+- explicit local simulation rules per tool.
+
+Neither is included here.
 
 ---
 
@@ -133,43 +167,39 @@ Route.ts handles `getCheckoutState` by reading `sessionContext` directly — sam
 
 ```ts
 type SessionContext = {
-  // Existing
   view: "home" | "results" | "checkout"
   countryCode: string
   scene?: FlowShellScene
 
-  // Search form — replaces agentFormState server-side reset
   searchForm: {
     width: string | null
     profile: string | null
     rim: string | null
     qty: number | null
     season: string | null
-    submitted: boolean        // has triggerSearch been run?
+    submitted: boolean
   }
 
-  // Results
-  dimension: string | null    // formatted "205/55R16" or null
+  dimension: string | null
   visibleProductIds: string[]
-  selectedProductId: string | null   // highlighted, may differ from cart
+  selectedProductId: string | null
   activeSort: string | null
 
-  // Cart
   cart: {
     productId: string
     productTitle: string
     brand: string
-    price: number             // unit price
+    price: number
     qty: number
-    total: number             // price × qty
+    total: number
   } | null
 
-  // Checkout
-  checkoutStep: "delivery" | "address" | "shipping" | "booking" | "payment" | "confirmation" | null
+  checkoutStep: "delivery" | "address" | "payment" | "booking" | "confirmation" | null
   deliveryType: "workshop" | "home" | null
   address: {
-    filledFields: string[]    // field names that have non-empty values
-    isValid: boolean          // form passes validation
+    filledFields: string[]
+    requiredMissingFields: string[]
+    isComplete: boolean
   } | null
   shippingMethods: { id: string; name: string; price: number }[]
   selectedShippingMethodId: string | null
@@ -177,47 +207,22 @@ type SessionContext = {
   selectedBookingSlotId: string | null
 }
 ```
+
+Notes:
+
+- `selectedShippingMethodId` should prefer cart-confirmed state, not only optimistic local selection.
+- `bookingSlots[].id` can be a synthetic stable id such as `${date}|${time}` if no backend id exists.
+- `address.isComplete` should mean "required visible fields are filled", not full backend validation.
 
 ---
 
 ## Implementation Plan
 
-### Part 1 — Extend AgentCheckoutAPI with snapshot
+### Part 1 - Extend TireSearch with `getFormSnapshot()`
 
-**File:** `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`
+**File:** `storefront/src/modules/home/components/tire-search/index.tsx`
 
-Add `getSnapshot()` to `AgentCheckoutAPI`:
-
-```ts
-type AgentCheckoutAPI = {
-  advanceStep: () => { ok: boolean; step?: string; reason?: string }
-  getState: () => { ok: boolean; step: string; ... }   // keep for backward compat
-  prefillField: (field: string, value: string) => { ok: boolean; reason?: string }
-  getSnapshot: () => CheckoutSnapshot   // NEW
-}
-
-type CheckoutSnapshot = {
-  step: "delivery" | "address" | "shipping" | "booking" | "payment" | "confirmation"
-  deliveryType: "workshop" | "home" | null
-  address: { filledFields: string[]; isValid: boolean } | null
-  shippingMethods: { id: string; name: string; price: number }[]
-  selectedShippingMethodId: string | null
-  bookingSlots: { id: string; label: string }[]
-  selectedBookingSlotId: string | null
-}
-```
-
-`getSnapshot` reads from current component state synchronously. It is called by FlowShell when building `getSessionContext()` — not by the agent directly.
-
-**Acceptance:** `agentCheckoutRef.current?.getSnapshot()` returns full checkout state including booking slots when on booking step.
-
----
-
-### Part 2 — Extend TireSearch with form snapshot
-
-**File:** `storefront/src/modules/home/components/tire-search/` (index or form component)
-
-Add `getFormSnapshot()` via ref:
+Add a small API exposed to `FlowShell`:
 
 ```ts
 type TireSearchAPI = {
@@ -232,70 +237,112 @@ type TireSearchAPI = {
 }
 ```
 
-`submitted` flips to `true` after the first successful `triggerSearch` and resets on `onClearSearch`.
+Implementation notes:
 
-FlowShell registers the ref via `onRegisterTireSearch={(api) => { tireSearchRef.current = api }}`.
+- `width/profile/rim` come from existing local state.
+- `qty` comes from `quantity`.
+- `submitted` is new local state.
+- Flip `submitted` to `true` on successful search submit.
+- Reset it to `false` on `clearSearch` / reset callback.
 
-**Acceptance:** after user fills width and profile manually, `getSessionContext().searchForm` reflects those values before agent calls `triggerSearch`.
+**Acceptance**
+
+- If the user manually types `205` and `55`, the snapshot reflects those values before the agent triggers search.
+- `submitted` is `false` before first search and resets when the form is cleared.
 
 ---
 
-### Part 3 — Expand getSessionContext in FlowShell
+### Part 2 - Add checkout snapshot plumbing
+
+**Files:**
+- `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`
+- `storefront/src/modules/checkout/components/addresses/index.tsx`
+- `storefront/src/modules/checkout/components/shipping-address/index.tsx`
+- `storefront/src/modules/checkout/components/booking/index.tsx`
+
+Extend `AgentCheckoutAPI`:
+
+```ts
+type AgentCheckoutAPI = {
+  advanceStep: () => { ok: boolean; step?: string; reason?: string }
+  getState: () => { ok: boolean; step: string; availableShippingMethods: ...; cartTotal: number | null }
+  prefillField: (field: string, value: string) => { ok: boolean; reason?: string }
+  getSnapshot: () => CheckoutSnapshot
+}
+
+type CheckoutSnapshot = {
+  step: "delivery" | "address" | "payment" | "booking" | "confirmation"
+  deliveryType: "workshop" | "home" | null
+  address: {
+    filledFields: string[]
+    requiredMissingFields: string[]
+    isComplete: boolean
+  } | null
+  shippingMethods: { id: string; name: string; price: number }[]
+  selectedShippingMethodId: string | null
+  bookingSlots: { id: string; label: string }[]
+  selectedBookingSlotId: string | null
+}
+```
+
+Implementation notes:
+
+- `step`, `deliveryType`, and `shippingMethods` are available in `CheckoutPanelContent`.
+- `selectedShippingMethodId` should use cart-confirmed state when possible:
+  `data?.cart.shipping_methods?.at(-1)?.shipping_option_id ?? null`
+- `Addresses` / `ShippingAddress` should report a lightweight draft snapshot upward.
+- `Booking` should report generated slot list and current selected slot upward.
+- `CheckoutPanelContent` composes those child snapshots into `getSnapshot()`.
+
+Do **not** read address completeness from DOM queries in the parent if child-state plumbing is available. The source of truth should stay close to the child state that already owns the inputs.
+
+**Acceptance**
+
+- `getSnapshot()` returns real `shippingMethods` and the cart-confirmed selected shipping method.
+- While the user types in address inputs, `address.filledFields` changes in the next request snapshot.
+- On booking step, the snapshot includes visible slots and the selected slot.
+
+---
+
+### Part 3 - Expand `FlowShell.getSessionContext()`
 
 **File:** `storefront/src/modules/home/components/flow-shell/index.tsx`
 
-Replace current thin `getSessionContext` with the full shape. Pull from:
-- `agentCheckoutRef.current?.getSnapshot()` for checkout state
-- `tireSearchRef.current?.getFormSnapshot()` for search form state
-- `selectedTire` for cart (productTitle comes from `selectedTire.product.title`)
-- `products`, `activeSort` for results state
+Replace the current thin context builder with a richer one that reads from:
+
+- `tireSearchRef.current?.getFormSnapshot()`
+- `agentCheckoutRef.current?.getSnapshot()`
+- `selectedTire`
+- `products`
+- `activeSort`
 - existing `activeSection`, `countryCode`, `scene`
 
-```ts
-const getSessionContext = useCallback((): SessionContext => {
-  const checkout = agentCheckoutRef.current?.getSnapshot() ?? null
-  const form = tireSearchRef.current?.getFormSnapshot() ?? null
+Implementation notes:
 
-  return {
-    view: activeSection,
-    countryCode,
-    scene,
-    searchForm: form ?? { width: null, profile: null, rim: null, qty: null, season: null, submitted: false },
-    dimension: searchMeta.dimension || null,
-    visibleProductIds: products.map((p) => p.id ?? ""),
-    selectedProductId: selectedTire?.product.id ?? null,
-    activeSort: activeSort ?? null,
-    cart: selectedTire ? {
-      productId: selectedTire.product.id ?? "",
-      productTitle: selectedTire.product.title ?? "",
-      brand: (selectedTire.product as any).brand ?? "",
-      price: selectedTire.unitPrice ?? 0,
-      qty: selectedTire.initialQty,
-      total: (selectedTire.unitPrice ?? 0) * selectedTire.initialQty,
-    } : null,
-    checkoutStep: checkout?.step ?? null,
-    deliveryType: checkout?.deliveryType ?? null,
-    address: checkout?.address ?? null,
-    shippingMethods: checkout?.shippingMethods ?? [],
-    selectedShippingMethodId: checkout?.selectedShippingMethodId ?? null,
-    bookingSlots: checkout?.bookingSlots ?? [],
-    selectedBookingSlotId: checkout?.selectedBookingSlotId ?? null,
-  }
-}, [activeSection, activeSort, countryCode, products, scene, searchMeta.dimension, selectedTire])
-```
+- Add a `tireSearchRef` registration path similar to `agentCheckoutRef`.
+- Keep `checkoutStep` null outside checkout view.
+- Keep `selectedProductId` separate from cart.
+- `cart` should be derived from `selectedTire`.
 
-**Acceptance:** log `sessionContext` on every chat send — all fields populated correctly for each view/step combination.
+**Acceptance**
+
+- Logged request payload for `/api/agent/chat` shows the richer shape populated across home, results, and checkout flows.
 
 ---
 
-### Part 4 — Move getCheckoutState server-side in route.ts
+### Part 4 - Move `getCheckoutState` server-side
 
 **File:** `storefront/src/app/api/agent/chat/route.ts`
 
-Remove `getCheckoutState` from `UI_TOOL_NAMES`. Handle it explicitly:
+Change behavior:
+
+- Remove `getCheckoutState` from the fire-and-forget UI tool set.
+- Intercept it on the server and answer from `sessionContext`.
+
+Example:
 
 ```ts
-} else if (toolUse.name === "getCheckoutState") {
+if (toolUse.name === "getCheckoutState") {
   toolResults.push({
     type: "tool_result",
     tool_use_id: toolUse.id,
@@ -314,28 +361,20 @@ Remove `getCheckoutState` from `UI_TOOL_NAMES`. Handle it explicitly:
 }
 ```
 
-The browser still receives the `tool_call` event (so the agent panel can show "Sjekker bestillingstilstand") — but the `tool_result` is now real data from context, not fabricated.
+The browser may still receive a tool-call event for UI display if desired, but the authoritative `tool_result` must come from the request snapshot.
 
-**Acceptance:** ask agent "hva er status i kassen?" during shipping step — `tool_result` includes real `shippingMethods` list.
+**Acceptance**
 
----
-
-### Part 5 — Update SessionContext type and useStreamingChat
-
-**Files:**
-- `storefront/src/modules/home/components/flow-shell/types.ts` — replace `SessionContext` with new shape
-- `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts` — ensure full context is included in POST body (it already forwards the ref value — no change needed if `getSessionContext` is updated)
-- `storefront/src/lib/agent/system-prompt.ts` — update `buildSystemPrompt` to surface key fields in the system prompt clearly (cart total, step, delivery type)
-
-**Acceptance:** `buildSystemPrompt` output includes cart summary and current step when relevant.
+- During delivery step, asking "which delivery options do I have?" returns real shipping methods.
+- During booking step, asking "which times are available?" returns the visible slot list from snapshot data.
 
 ---
 
-### Part 6 — Sync agentFormState with sessionContext.searchForm
+### Part 5 - Seed `agentFormState` from `searchForm`
 
 **File:** `storefront/src/app/api/agent/chat/route.ts`
 
-Today, `agentFormState` is initialized from `sessionContext.dimension` + `qty` + `season` at request start. After this WO, initialize from the richer `sessionContext.searchForm`:
+Replace the current request-start seeding logic so the server reads the user-visible search form first:
 
 ```ts
 const agentFormState: AgentFormState = {
@@ -347,42 +386,80 @@ const agentFormState: AgentFormState = {
 }
 ```
 
-This means fields the *user* typed manually are visible to the agent before it calls `setSearchField`. The agent won't ask for `width` if the user already filled it.
+**Acceptance**
 
-**Acceptance:** user types "205" in width field, opens chat, says "sett resten". Agent's first `triggerSearch` attempt reports `width` already set, only asks for missing fields.
+- If the user has already typed width manually, the agent does not ask for width again unless it is actually missing.
+
+---
+
+### Part 6 - Update shared types and prompt
+
+**Files:**
+- `storefront/src/modules/home/components/flow-shell/types.ts`
+- `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts`
+- `storefront/src/lib/agent/system-prompt.ts`
+
+Update the shared `SessionContext` type to the richer shape and ensure the prompt clearly surfaces:
+
+- current view
+- search form state
+- cart summary
+- current checkout step
+- delivery type
+
+**Acceptance**
+
+- `buildSystemPrompt()` includes cart and checkout context when present.
 
 ---
 
 ## Out of Scope
 
-- StateEvent / grá status-rader (WO-012 Part 4b) — separate concern
-- Headless drive mode (WO-012 Part 5) — separate WO
-- Hands-off payment gate (WO-012 Part 4) — unblocked by this WO but not included here
-- Booking slot fetching logic — this WO assumes `CheckoutPanelContent` already has slots in state; it reads them, does not change how they are fetched
+- Truthful same-turn post-mutation tool results for write tools
+- Browser-to-server acknowledgment channel
+- Reworking checkout validation rules beyond exposing draft completeness
+- Reworking booking slot generation or persistence
+- State-machine changes already covered by WO-010
 
 ---
 
 ## Test Plan
 
-**Snapshot completeness:**
-1. Open localhost:3001. Open DevTools, intercept POST to `/api/agent/chat`.
-2. At each step, verify `sessionContext` in request body matches browser state:
-   - Home: `searchForm` reflects typed values
-   - Results: `cart` includes productTitle, `visibleProductIds` populated
-   - Checkout address: `checkoutStep === "address"`, `address.filledFields` updates as user types
-   - Checkout shipping: `shippingMethods` lists real options, `selectedShippingMethodId` updates on click
-   - Checkout booking: `bookingSlots` lists real slots, `selectedBookingSlotId` updates on selection
+### Snapshot completeness
 
-**getCheckoutState server-side:**
-1. Navigate to shipping step.
-2. Ask agent: "hvilke leveringsalternativer har jeg?"
-3. Verify: agent lists real shipping methods by name — not a generic answer.
+1. Open localhost:3001 and inspect POSTs to `/api/agent/chat`.
+2. Verify request `sessionContext` across states:
+   - Home: `searchForm` reflects typed values before submit
+   - Results: `selectedProductId`, `activeSort`, and `cart` are populated when relevant
+   - Delivery: `checkoutStep === "delivery"` and `shippingMethods` contains real options
+   - Address: `address.filledFields` updates as the user types
+   - Booking: `bookingSlots` and `selectedBookingSlotId` reflect visible selection
 
-**Form sync:**
-1. Type `205` in width field manually.
-2. Open agent, say "finn 205/55R16 sommerdekk".
-3. Agent should set profile/rim/qty/season only — not re-set width.
+### Server-side read tool
 
-**No fabricated ok: true:**
-1. At address step, ask agent to advance to shipping before filling required fields.
-2. Agent should report `{ ok: false, reason: "..." }` from `advanceCheckoutStep` — not silently succeed.
+1. Go to delivery step.
+2. Ask the agent for available delivery options.
+3. Verify the reply uses real method names from `getCheckoutState`.
+
+### Search form sync
+
+1. Type `205` in width before chatting.
+2. Ask the agent to complete the rest of the search.
+3. Verify the agent treats width as already present.
+
+### Scope guard
+
+1. Ask the agent to advance checkout with missing required address fields.
+2. Verify the system does **not** claim this WO guarantees truthful post-mutation state in the same request.
+
+---
+
+## Final Acceptance
+
+This WO is complete when:
+
+- The richer `sessionContext` is sent on every chat request.
+- `getCheckoutState` is answered from `sessionContext`.
+- The agent can read real search, cart, delivery, address-completeness, and booking snapshot data at request start.
+- Step naming remains aligned with the current FlowShell / WO-010 model.
+- The work order text no longer claims richer snapshot data solves same-turn write-tool acknowledgments.
