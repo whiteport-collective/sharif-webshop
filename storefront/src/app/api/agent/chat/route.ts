@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk"
 import { storefrontAgentTools, UI_TOOL_NAMES } from "@lib/agent/tools"
 import { buildSystemPrompt } from "@lib/agent/system-prompt"
 import { executeDataTool } from "@lib/agent/data-tools"
+import { loadSkillsForContext } from "@lib/agent/skill-loader"
 import { searchTires } from "../../../actions/search-tires"
 import { enrichProductsForAgent, type AgentProductPayload } from "@lib/agent/enrich-products"
 
@@ -56,7 +57,17 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Agent er deaktivert", { status: 503 })
   }
 
-  const systemPrompt = buildSystemPrompt(sessionContext ?? {}, settings ?? {})
+  const skills = await loadSkillsForContext(sessionContext ?? {})
+  const skillTools = new Set(skills.flatMap((s) => s.requires_tools))
+  const activeTools = storefrontAgentTools.filter(
+    (t) => !skillTools.size || skillTools.has(t.name) || !["highlightProducts", "clearHighlights"].includes(t.name)
+  )
+
+  const basePrompt = buildSystemPrompt(sessionContext ?? {}, settings ?? {})
+  const systemPrompt =
+    skills.length > 0
+      ? [basePrompt, ...skills.map((s) => `---\n\n# Skill: ${s.name}\n\n${s.content}`)].join("\n\n")
+      : basePrompt
   const countryCode = (sessionContext?.countryCode as string) || "no"
 
   const [initW, initP, initR] = parseInitialDimension(sessionContext?.dimension)
@@ -87,7 +98,7 @@ export async function POST(req: NextRequest) {
           model: "claude-sonnet-4-6",
           max_tokens: 2048,
           system: systemPrompt,
-          tools: storefrontAgentTools,
+          tools: activeTools,
           messages: conversationMessages,
         })
 

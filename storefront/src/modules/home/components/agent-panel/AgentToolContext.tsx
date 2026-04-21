@@ -16,7 +16,10 @@ export type AgentToolHandlers = {
   fillDimensionField: (width: number, profile: number, rim: number) => void
   // Results domain
   selectTire: (productId: string) => void
+  selectTireForCheckout: (productId: string) => void
   scrollToProduct: (productId: string) => void
+  highlightProducts: (productIds: string[]) => void
+  clearHighlights: () => void
   // Checkout domain
   prefillCheckoutField: (field: string, value: string) => void
   openPaymentStep: () => void
@@ -27,7 +30,10 @@ const AgentToolContext = createContext<AgentToolHandlers>({
   triggerSearch: () => {},
   fillDimensionField: () => {},
   selectTire: () => {},
+  selectTireForCheckout: () => {},
   scrollToProduct: () => {},
+  highlightProducts: () => {},
+  clearHighlights: () => {},
   prefillCheckoutField: () => {},
   openPaymentStep: () => {},
 })

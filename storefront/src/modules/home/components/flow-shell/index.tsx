@@ -62,6 +62,7 @@ export default function FlowShell({
   const [checkoutStepTitle, setCheckoutStepTitle] = useState("")
   const [cartQty, setCartQty] = useState<number | null>(null)
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
+  const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
   const setSearchFieldRef = useRef<((field: AgentSearchField, value: string) => void) | null>(null)
@@ -618,9 +619,28 @@ export default function FlowShell({
         handleSelectTire(product, searchMeta.qty)
       }
     },
+    selectTireForCheckout: (productId) => {
+      const product = products.find((entry) => entry.id === productId)
+      if (!product) return
+      const variant = product.variants?.[0] as any
+      const existingTire = selectedTireRef.current
+      if (existingTire && existingTire.product.variants?.[0]?.id === variant?.id && existingTire.lineItemId) {
+        setCheckoutKey((current) => current + 1)
+        pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
+        dispatch({ type: "NAV_TO_CHECKOUT" })
+        return
+      }
+      handleSelectTire(product, searchMeta.qty)
+    },
     scrollToProduct: (productId) => {
       const element = document.querySelector(`[data-product-id="${productId}"]`)
       element?.scrollIntoView({ behavior: "smooth", block: "center" })
+    },
+    highlightProducts: (productIds) => {
+      setHighlightedProductIds(new Set(productIds))
+    },
+    clearHighlights: () => {
+      setHighlightedProductIds(new Set())
     },
     prefillCheckoutField: (field, value) => {
       agentPrefillRef.current?.(field, value)
@@ -783,6 +803,7 @@ export default function FlowShell({
                     <FlowShellResults
                       cart={cart}
                       hasMoreResults={hasMoreResults}
+                      highlightedProductIds={highlightedProductIds}
                       isLoading={isLoading}
                       onLoadMore={() => setVisibleLimit((current) => current + 6)}
                       onOpenCheckout={openCheckoutPanel}

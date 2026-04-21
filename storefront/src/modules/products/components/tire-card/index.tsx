@@ -92,6 +92,7 @@ export default function TireCard({
   region,
   qty = 4,
   isInCart = false,
+  isHighlighted = false,
   onSelectTire,
   onRemoveTire,
   onProductDetail,
@@ -100,6 +101,7 @@ export default function TireCard({
   region: HttpTypes.StoreRegion
   qty?: number
   isInCart?: boolean
+  isHighlighted?: boolean
   onSelectTire?: (product: HttpTypes.StoreProduct, qty: number) => void
   onRemoveTire?: () => void
   onProductDetail?: (product: HttpTypes.StoreProduct) => void
@@ -158,7 +160,13 @@ export default function TireCard({
   const isAvailable = stockStatus !== "out-of-stock" || inventoryQty == null
 
   return (
-    <div className="group flex h-full flex-col overflow-hidden rounded-xl border border-ui-border-base bg-ui-bg-base shadow-sm transition-shadow hover:shadow-md">
+    <div
+      className={`group flex h-full flex-col overflow-hidden rounded-xl border bg-ui-bg-base shadow-sm transition-shadow hover:shadow-md ${
+        isHighlighted
+          ? "border-amber-400 ring-2 ring-amber-400 ring-offset-1"
+          : "border-ui-border-base"
+      }`}
+    >
       <button
         type="button"
         onClick={() => onProductDetail ? onProductDetail(product) : undefined}

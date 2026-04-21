@@ -25,6 +25,7 @@ function TireCardSkeleton() {
 
 function ResultsGrid({
   cart,
+  highlightedProductIds,
   isLoading,
   onProductDetail,
   onRemoveTire,
@@ -37,6 +38,7 @@ function ResultsGrid({
   visibleLimit,
 }: {
   cart: ResultsSectionProps["cart"]
+  highlightedProductIds: Set<string>
   isLoading: boolean
   onProductDetail: (product: ResultsSectionProps["sortedProducts"][number]) => void
   onRemoveTire: (product: ResultsSectionProps["sortedProducts"][number]) => void
@@ -69,6 +71,7 @@ function ResultsGrid({
         region={region}
         qty={cardQty}
         isInCart={isInCart}
+        isHighlighted={product.id != null && highlightedProductIds.has(product.id)}
         onSelectTire={onSelectTire}
         onRemoveTire={() => onRemoveTire(product)}
         onProductDetail={onProductDetail}
@@ -80,6 +83,7 @@ function ResultsGrid({
 export function FlowShellResults({
   cart,
   hasMoreResults,
+  highlightedProductIds,
   isLoading,
   onLoadMore,
   onOpenCheckout,
@@ -125,6 +129,7 @@ export function FlowShellResults({
         <div className="grid grid-cols-2 gap-3">
           <ResultsGrid
             cart={cart}
+            highlightedProductIds={highlightedProductIds}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}
@@ -143,6 +148,7 @@ export function FlowShellResults({
         <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
           <ResultsGrid
             cart={cart}
+            highlightedProductIds={highlightedProductIds}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}

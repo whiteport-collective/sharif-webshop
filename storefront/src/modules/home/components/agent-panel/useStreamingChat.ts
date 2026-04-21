@@ -62,6 +62,15 @@ export function useStreamingChat(getContext: () => SessionContext) {
         case "selectTire":
           tools.selectTire(input.productId as string)
           break
+        case "selectTireForCheckout":
+          tools.selectTireForCheckout(input.productId as string)
+          break
+        case "highlightProducts":
+          tools.highlightProducts(input.productIds as string[])
+          break
+        case "clearHighlights":
+          tools.clearHighlights()
+          break
         case "scrollToProduct":
           tools.scrollToProduct(input.productId as string)
           break

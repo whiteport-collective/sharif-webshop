@@ -79,6 +79,7 @@ export type HeaderProps = {
 export type ResultsSectionProps = {
   cart: HttpTypes.StoreCart | null
   hasMoreResults: boolean
+  highlightedProductIds: Set<string>
   isLoading: boolean
   onLoadMore: () => void
   onOpenCheckout: () => void

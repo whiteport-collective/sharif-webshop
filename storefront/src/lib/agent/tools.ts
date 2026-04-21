@@ -28,8 +28,9 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
     },
   },
   {
-    name: "selectTire",
-    description: "Open the checkout panel for a specific product",
+    name: "selectTireForCheckout",
+    description:
+      "Open the checkout panel for a specific product. Idempotent: if the product is already in cart, navigates to checkout without duplicating the line item. Returns { ok, cartTotal, productTitle } so you can confirm the selection to the customer.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -39,14 +40,27 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
     },
   },
   {
-    name: "scrollToProduct",
-    description: "Scroll the product carousel to a specific product card",
+    name: "highlightProducts",
+    description:
+      "Highlight one or more product cards with a golden ring to draw the customer's attention — use this after eliciting their priority to visually mark your recommendations. Call clearHighlights before highlighting a new set.",
     input_schema: {
       type: "object" as const,
       properties: {
-        productId: { type: "string" },
+        productIds: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of product IDs to highlight (1–3 max for clarity).",
+        },
       },
-      required: ["productId"],
+      required: ["productIds"],
+    },
+  },
+  {
+    name: "clearHighlights",
+    description: "Remove all product highlights.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
     },
   },
   {
@@ -59,14 +73,6 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
         value: { type: "string" },
       },
       required: ["field", "value"],
-    },
-  },
-  {
-    name: "openPaymentStep",
-    description: "Advance the checkout to the payment step",
-    input_schema: {
-      type: "object" as const,
-      properties: {},
     },
   },
   // ─── Data tools (server-side Layer 2) ───
@@ -152,9 +158,12 @@ export const UI_TOOL_NAMES = new Set([
   "fillDimensionField",
   "triggerSearch",
   "selectTire",
+  "selectTireForCheckout",
   "scrollToProduct",
   "prefillCheckoutField",
   "openPaymentStep",
+  "highlightProducts",
+  "clearHighlights",
 ])
 
 // Tools the server intercepts to produce a meaningful tool_result
