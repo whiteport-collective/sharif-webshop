@@ -89,6 +89,7 @@ export default function FlowShell({
   const backLocked = useRef(false)
   const programmaticScroll = useRef(false)
   const pendingParams = useRef<TireSearchParams | null>(null)
+  const agentSearchFields = useRef<{ width?: string; profile?: string; rim?: string; qty?: string; season?: string }>({})
   const selectedTireRef = useRef<SelectedTire | null>(null)
   const previousViewRef = useRef<FlowView>("home")
   const sessionIdRef = useRef<string | null>(null)
@@ -613,12 +614,16 @@ export default function FlowShell({
   const agentHandlers: AgentToolHandlers = {
     setSearchField: (field, value) => {
       setSearchFieldRef.current?.(field, String(value))
+      agentSearchFields.current[field] = String(value)
     },
     fillDimensionField: (width, profile, rim) => {
       setDimensionRef.current?.(String(width), String(profile), String(rim))
     },
     triggerSearch: () => {
-      if (pendingParams.current) {
+      const af = agentSearchFields.current
+      if (af.width && af.profile && af.rim) {
+        runSearch({ width: af.width, profile: af.profile, rim: af.rim, qty: af.qty ?? "4", season: af.season ?? "sommer" }, true)
+      } else if (pendingParams.current) {
         runSearch(pendingParams.current, true)
       }
     },

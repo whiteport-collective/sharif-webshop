@@ -193,15 +193,24 @@ export default function CheckoutPanelContent({
     }
   }, [confirmedShippingMethodId])
 
-  // Sync step title and back function to parent header
+  // Sync step title and back function to parent header.
+  // Callbacks are stored in refs to avoid re-firing when FlowShell re-renders
+  // and recreates inline arrow function props on every render.
+  const onStepTitleRef = useRef(onStepTitle)
+  const onRegisterBackRef = useRef(onRegisterBack)
+  const onCheckoutStateChangeRef = useRef(onCheckoutStateChange)
+  onStepTitleRef.current = onStepTitle
+  onRegisterBackRef.current = onRegisterBack
+  onCheckoutStateChangeRef.current = onCheckoutStateChange
+
   useEffect(() => {
     if (orderId) return
     const addressTitle = isWorkshop ? "Kundeopplysninger" : "Leveringsadresse"
     const title = step === "address" ? addressTitle : (STEP_TITLES[step] ?? "Kasse")
-    onStepTitle?.(title)
-    onRegisterBack?.(() => goBackRef.current())
-    onCheckoutStateChange?.(step)
-  }, [step, isWorkshop, onCheckoutStateChange, onRegisterBack, onStepTitle, orderId])
+    onStepTitleRef.current?.(title)
+    onRegisterBackRef.current?.(() => goBackRef.current())
+    onCheckoutStateChangeRef.current?.(step)
+  }, [step, isWorkshop, orderId])
 
   // Called after initiatePaymentSession — fetches fresh cart so PaymentWrapper
   // gets the new payment_session and renders Stripe Elements

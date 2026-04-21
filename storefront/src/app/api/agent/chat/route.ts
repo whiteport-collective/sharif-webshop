@@ -95,8 +95,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "messages required" }, { status: 400 })
   }
 
-  console.log("[agent/chat] visibleProducts count:", sessionContext?.visibleProducts?.length ?? 0, "| first noiseDb:", sessionContext?.visibleProducts?.[0]?.noiseDb)
-
   const settings = await getSettings()
 
   if (settings?.agent_enabled === false) {
