@@ -12,6 +12,8 @@ export type TireSearchParams = {
   season: string
 }
 
+export type AgentSearchField = "width" | "profile" | "rim" | "qty" | "season"
+
 type Props = {
   availableDimensions: string[]
   dimensionCounts?: Record<string, number>
@@ -20,6 +22,7 @@ type Props = {
   onFormChange?: (params: TireSearchParams | null) => void
   previewCount?: number
   onMount?: (setDimension: (width: string, profile: string, rim: string) => void) => void
+  onFieldMount?: (setField: (field: AgentSearchField, value: string) => void) => void
   onResetRef?: (reset: () => void) => void
 }
 
@@ -180,7 +183,7 @@ function SegmentInput({
   )
 }
 
-export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount, onResetRef }: Props) {
+export default function TireSearch({ availableDimensions, dimensionCounts, onSearch, onDimensionChange, onFormChange, previewCount, onMount, onFieldMount, onResetRef }: Props) {
   const { t } = useLanguage()
   const [width, setWidth] = useState("")
   const [profile, setProfile] = useState("")
@@ -189,6 +192,8 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
   const [quantity, setQuantity] = useState("4")
   const [season, setSeason] = useState("sommer")
   const [agentPulse, setAgentPulse] = useState(false)
+  const [qtyPulse, setQtyPulse] = useState(false)
+  const [seasonPulse, setSeasonPulse] = useState(false)
   const router = useRouter()
 
   // Expose setDimension to parent (used by agent fillDimensionField tool)
@@ -201,6 +206,42 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
       setRimLetterSeen(false)
       setAgentPulse(true)
       setTimeout(() => setAgentPulse(false), 1200)
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Expose per-field setter for agent setSearchField tool (all 5 fields).
+  useEffect(() => {
+    if (!onFieldMount) return
+    onFieldMount((field, value) => {
+      const raw = String(value ?? "")
+      switch (field) {
+        case "width":
+          setWidth(raw)
+          setAgentPulse(true)
+          setTimeout(() => setAgentPulse(false), 1200)
+          break
+        case "profile":
+          setProfile(raw)
+          setAgentPulse(true)
+          setTimeout(() => setAgentPulse(false), 1200)
+          break
+        case "rim":
+          setRim(raw.replace(/^[a-zA-Z]+/, ""))
+          setRimLetterSeen(false)
+          setAgentPulse(true)
+          setTimeout(() => setAgentPulse(false), 1200)
+          break
+        case "qty":
+          setQuantity(raw)
+          setQtyPulse(true)
+          setTimeout(() => setQtyPulse(false), 1200)
+          break
+        case "season":
+          setSeason(raw)
+          setSeasonPulse(true)
+          setTimeout(() => setSeasonPulse(false), 1200)
+          break
+      }
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -344,7 +385,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
           <select
             value={quantity}
             onChange={(e) => setQuantity(e.target.value)}
-            className="w-full border border-ui-border-base rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-ui-fg-base transition-colors bg-white"
+            className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-ui-fg-base transition-colors bg-white ${qtyPulse ? "border-amber-400 ring-2 ring-amber-200 animate-pulse" : "border-ui-border-base"}`}
           >
             <option value="1">1 stk</option>
             <option value="2">2 stk</option>
@@ -363,7 +404,7 @@ export default function TireSearch({ availableDimensions, dimensionCounts, onSea
           <select
             value={season}
             onChange={(e) => setSeason(e.target.value)}
-            className="w-full border border-ui-border-base rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-ui-fg-base transition-colors bg-white"
+            className={`w-full border rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-ui-fg-base transition-colors bg-white ${seasonPulse ? "border-amber-400 ring-2 ring-amber-200 animate-pulse" : "border-ui-border-base"}`}
           >
             <option value="sommer">{t.summerTires}</option>
             <option value="vinter-piggfritt">{t.winterStudless}</option>

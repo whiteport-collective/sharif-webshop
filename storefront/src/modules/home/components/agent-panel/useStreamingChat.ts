@@ -43,6 +43,12 @@ export function useStreamingChat(getContext: () => SessionContext) {
   const dispatchToolCall = useCallback(
     (name: string, input: Record<string, unknown>) => {
       switch (name) {
+        case "setSearchField":
+          tools.setSearchField(
+            input.field as "width" | "profile" | "rim" | "qty" | "season",
+            String(input.value ?? "")
+          )
+          break
         case "fillDimensionField":
           tools.fillDimensionField(
             input.width as number,

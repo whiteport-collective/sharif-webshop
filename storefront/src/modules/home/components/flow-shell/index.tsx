@@ -12,7 +12,7 @@ import {
 } from "@modules/home/components/agent-panel/AgentToolContext"
 import AgentPanel from "@modules/home/components/agent-panel"
 import { type SelectedTire } from "@modules/home/components/quantity-shop"
-import TireSearch, { type TireSearchParams } from "@modules/home/components/tire-search"
+import TireSearch, { type AgentSearchField, type TireSearchParams } from "@modules/home/components/tire-search"
 import ProductDetailPanel from "@modules/products/components/product-detail-panel"
 import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
@@ -64,6 +64,7 @@ export default function FlowShell({
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
+  const setSearchFieldRef = useRef<((field: AgentSearchField, value: string) => void) | null>(null)
   const resetSearchRef = useRef<(() => void) | null>(null)
   const agentPrefillRef = useRef<((field: string, value: string) => void) | null>(null)
   const agentOpenPaymentRef = useRef<(() => void) | null>(null)
@@ -600,6 +601,9 @@ export default function FlowShell({
   }, [showCheckoutSection, showResultsSection, view])
 
   const agentHandlers: AgentToolHandlers = {
+    setSearchField: (field, value) => {
+      setSearchFieldRef.current?.(field, String(value))
+    },
     fillDimensionField: (width, profile, rim) => {
       setDimensionRef.current?.(String(width), String(profile), String(rim))
     },
@@ -628,12 +632,15 @@ export default function FlowShell({
 
   const getSessionContext = useCallback((): SessionContext => ({
     view: activeSection,
+    countryCode,
     dimension: searchMeta.dimension || null,
+    qty: searchMeta.qty,
+    season: searchMeta.season,
     scene,
     visibleProductIds: products.map((product) => product.id ?? ""),
     cartItems: selectedTire ? [{ productId: selectedTire.product.id ?? "", qty: selectedTire.initialQty }] : [],
     step: activeSection === "checkout" ? checkoutStepTitle || null : null,
-  }), [activeSection, checkoutStepTitle, products, scene, searchMeta.dimension, selectedTire])
+  }), [activeSection, checkoutStepTitle, countryCode, products, scene, searchMeta.dimension, searchMeta.qty, searchMeta.season, selectedTire])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t }}>
@@ -752,6 +759,9 @@ export default function FlowShell({
                           previewCount={previewDimension ? dimensionCounts[previewDimension] : undefined}
                           onMount={(fn) => {
                             setDimensionRef.current = fn
+                          }}
+                          onFieldMount={(fn) => {
+                            setSearchFieldRef.current = fn
                           }}
                           onResetRef={(fn) => {
                             resetSearchRef.current = fn

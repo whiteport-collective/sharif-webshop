@@ -2,18 +2,30 @@
 
 import { createContext, useContext } from "react"
 
+export type AgentSearchField = "width" | "profile" | "rim" | "qty" | "season"
+
+export type ToolResult =
+  | { ok: true; [key: string]: unknown }
+  | { ok: false; reason: string; recoverable?: boolean }
+
 export type AgentToolHandlers = {
-  fillDimensionField: (width: number, profile: number, rim: number) => void
+  // Home domain
+  setSearchField: (field: AgentSearchField, value: string) => void
   triggerSearch: () => void
+  // Legacy — kept as internal convenience wrapper, no longer in LLM tool list
+  fillDimensionField: (width: number, profile: number, rim: number) => void
+  // Results domain
   selectTire: (productId: string) => void
   scrollToProduct: (productId: string) => void
+  // Checkout domain
   prefillCheckoutField: (field: string, value: string) => void
   openPaymentStep: () => void
 }
 
 const AgentToolContext = createContext<AgentToolHandlers>({
-  fillDimensionField: () => {},
+  setSearchField: () => {},
   triggerSearch: () => {},
+  fillDimensionField: () => {},
   selectTire: () => {},
   scrollToProduct: () => {},
   prefillCheckoutField: () => {},

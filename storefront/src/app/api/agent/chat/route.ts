@@ -3,6 +3,8 @@ import Anthropic from "@anthropic-ai/sdk"
 import { storefrontAgentTools, UI_TOOL_NAMES } from "@lib/agent/tools"
 import { buildSystemPrompt } from "@lib/agent/system-prompt"
 import { executeDataTool } from "@lib/agent/data-tools"
+import { searchTires } from "../../../actions/search-tires"
+import { enrichProductsForAgent, type AgentProductPayload } from "@lib/agent/enrich-products"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -23,6 +25,24 @@ async function getSettings() {
   }
 }
 
+type AgentFormState = {
+  width: string | null
+  profile: string | null
+  rim: string | null
+  qty: string | null
+  season: string | null
+}
+
+function parseInitialDimension(dim: string | null | undefined): [string | null, string | null, string | null] {
+  if (!dim) return [null, null, null]
+  const m = dim.match(/^(\d+)\/(\d+)R(\d+)$/i)
+  return m ? [m[1], m[2], m[3]] : [null, null, null]
+}
+
+function missingFields(state: AgentFormState): (keyof AgentFormState)[] {
+  return (Object.keys(state) as (keyof AgentFormState)[]).filter((k) => !state[k])
+}
+
 export async function POST(req: NextRequest) {
   const { messages, sessionContext } = await req.json()
 
@@ -37,6 +57,16 @@ export async function POST(req: NextRequest) {
   }
 
   const systemPrompt = buildSystemPrompt(sessionContext ?? {}, settings ?? {})
+  const countryCode = (sessionContext?.countryCode as string) || "no"
+
+  const [initW, initP, initR] = parseInitialDimension(sessionContext?.dimension)
+  const agentFormState: AgentFormState = {
+    width: initW,
+    profile: initP,
+    rim: initR,
+    qty: sessionContext?.qty ? String(sessionContext.qty) : null,
+    season: sessionContext?.season ? String(sessionContext.season) : null,
+  }
 
   const encoder = new TextEncoder()
 
@@ -88,8 +118,86 @@ export async function POST(req: NextRequest) {
         const toolResults: Anthropic.ToolResultBlockParam[] = []
 
         for (const toolUse of toolUseBlocks) {
-          if (UI_TOOL_NAMES.has(toolUse.name)) {
-            // Emit to browser — will be dispatched via AgentToolContext
+          if (toolUse.name === "setSearchField") {
+            const { field, value } = toolUse.input as { field: keyof AgentFormState; value: string | number }
+            const normalized = String(value ?? "").trim()
+            if (!["width", "profile", "rim", "qty", "season"].includes(field)) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({ ok: false, reason: `Unknown field: ${field}` }),
+              })
+              continue
+            }
+            agentFormState[field] = normalized || null
+            send({
+              type: "tool_call",
+              name: "setSearchField",
+              input: { field, value: normalized },
+            })
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: JSON.stringify({
+                ok: true,
+                field,
+                value: normalized,
+                allSet: missingFields(agentFormState).length === 0,
+                missing: missingFields(agentFormState),
+              }),
+            })
+          } else if (toolUse.name === "triggerSearch") {
+            const missing = missingFields(agentFormState)
+            if (missing.length > 0) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  ok: false,
+                  reason: `Missing fields: ${missing.join(", ")}`,
+                  recoverable: true,
+                }),
+              })
+              continue
+            }
+
+            try {
+              const result = await searchTires(
+                countryCode,
+                agentFormState.width as string,
+                agentFormState.profile as string,
+                agentFormState.rim as string
+              )
+              const products: AgentProductPayload[] = enrichProductsForAgent(result.products)
+              const dimension = `${agentFormState.width}/${agentFormState.profile}R${agentFormState.rim}`
+
+              send({ type: "tool_call", name: "triggerSearch", input: {} })
+
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  ok: true,
+                  dimension,
+                  qty: Number(agentFormState.qty),
+                  season: agentFormState.season,
+                  productCount: products.length,
+                  products,
+                }),
+              })
+            } catch (err) {
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: toolUse.id,
+                content: JSON.stringify({
+                  ok: false,
+                  reason: err instanceof Error ? err.message : "search failed",
+                  recoverable: true,
+                }),
+              })
+            }
+          } else if (UI_TOOL_NAMES.has(toolUse.name)) {
+            // Fire-and-forget UI dispatch for the remaining browser-side tools.
             send({
               type: "tool_call",
               name: toolUse.name,
@@ -101,7 +209,6 @@ export async function POST(req: NextRequest) {
               content: JSON.stringify({ ok: true }),
             })
           } else if (toolUse.name === "escalateToAdmin") {
-            // Call escalate endpoint
             try {
               const { email, message } = toolUse.input as { email?: string; message: string }
               const escalateRes = await fetch(

@@ -3,21 +3,25 @@ import Anthropic from "@anthropic-ai/sdk"
 export const storefrontAgentTools: Anthropic.Tool[] = [
   // ─── UI tools (browser-side, dispatched via AgentToolContext) ───
   {
-    name: "fillDimensionField",
-    description: "Fill the dimension search fields (width, profile, rim) with amber pulse animation",
+    name: "setSearchField",
+    description:
+      "Set ONE field in the tire search form on the home view. Call once per field — do not batch. Fills the field in the UI with an amber pulse so the customer sees what you did. Valid fields: width (three-digit mm, e.g. 205), profile (two-digit aspect ratio, e.g. 55), rim (two-digit inches, e.g. 16), qty (1–8), season (one of: sommer, vinter-piggfritt, vinter-piggdekk).",
     input_schema: {
       type: "object" as const,
       properties: {
-        width: { type: "number" },
-        profile: { type: "number" },
-        rim: { type: "number" },
+        field: {
+          type: "string",
+          enum: ["width", "profile", "rim", "qty", "season"],
+        },
+        value: { type: "string", description: "Field value as a string." },
       },
-      required: ["width", "profile", "rim"],
+      required: ["field", "value"],
     },
   },
   {
     name: "triggerSearch",
-    description: "Fire the search — triggers parallax to results view",
+    description:
+      "Run the tire search and scroll the customer to the results view. Fails with ok:false if the search form is incomplete. On success, returns the full product list inline so you can describe what you found without a second call.",
     input_schema: {
       type: "object" as const,
       properties: {},
@@ -144,6 +148,7 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
 ]
 
 export const UI_TOOL_NAMES = new Set([
+  "setSearchField",
   "fillDimensionField",
   "triggerSearch",
   "selectTire",
@@ -151,3 +156,8 @@ export const UI_TOOL_NAMES = new Set([
   "prefillCheckoutField",
   "openPaymentStep",
 ])
+
+// Tools the server intercepts to produce a meaningful tool_result
+// beyond {ok:true}. They still emit a UI tool_call for the browser
+// side effect before resolving on the server.
+export const SERVER_UI_TOOL_NAMES = new Set(["triggerSearch"])

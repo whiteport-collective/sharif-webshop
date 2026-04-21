@@ -33,8 +33,11 @@ export type FlowShellProps = {
 
 export type SessionContext = {
   cartItems: { productId: string; qty: number }[]
+  countryCode: string
   dimension: string | null
+  qty: number
   scene?: FlowShellScene
+  season: string
   step: string | null
   view: FlowView
   visibleProductIds: string[]
