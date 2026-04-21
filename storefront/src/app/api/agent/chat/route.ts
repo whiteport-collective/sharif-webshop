@@ -7,7 +7,18 @@ import { loadSkillsForContext } from "@lib/agent/skill-loader"
 import { searchTires } from "../../../actions/search-tires"
 import { enrichProductsForAgent, type AgentProductPayload } from "@lib/agent/enrich-products"
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const GATEWAY_BASE_URL =
+  process.env.GATEWAY_BASE_URL ??
+  "https://uztngidbpduyodrabokm.supabase.co/functions/v1/tool-anthropic"
+const GATEWAY_TOKEN =
+  process.env.GATEWAY_TOKEN ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6dG5naWRicGR1eW9kcmFib2ttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI1MTc3ODksImV4cCI6MjA4ODA5Mzc4OX0.FNnTd5p9Qj3WeD0DxQORmNf2jgaVSZ6FU1EGy0W7MRo"
+
+const anthropic = new Anthropic({
+  apiKey: "gateway",
+  baseURL: GATEWAY_BASE_URL,
+  defaultHeaders: { Authorization: `Bearer ${GATEWAY_TOKEN}` },
+})
 
 const BACKEND = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "http://localhost:9000"
 const BACKEND_API_KEY = process.env.MEDUSA_BACKEND_API_KEY ?? ""
@@ -101,6 +112,10 @@ export async function POST(req: NextRequest) {
       const send = (data: unknown) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`))
       }
+      const sendError = (message: string) => {
+        try { send({ type: "error", message }) } catch { /* ignore */ }
+        try { controller.close() } catch { /* ignore */ }
+      }
 
       const conversationMessages: Anthropic.MessageParam[] = messages.map(
         (m: { role: string; content: string }) => ({ role: m.role as "user" | "assistant", content: m.content })
@@ -108,8 +123,9 @@ export async function POST(req: NextRequest) {
 
       let continueLoop = true
 
+      try {
       while (continueLoop) {
-        const claudeStream = await anthropic.messages.stream({
+        const finalMessage = await anthropic.messages.create({
           model: "claude-sonnet-4-6",
           max_tokens: 2048,
           system: systemPrompt,
@@ -117,13 +133,11 @@ export async function POST(req: NextRequest) {
           messages: conversationMessages,
         })
 
-        for await (const event of claudeStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            send({ type: "text", text: event.delta.text })
-          }
-        }
-
-        const finalMessage = await claudeStream.finalMessage()
+        const textContent = (finalMessage.content as Anthropic.ContentBlock[])
+          .filter((b): b is Anthropic.TextBlock => b.type === "text")
+          .map((b) => b.text)
+          .join("")
+        if (textContent) send({ type: "text", text: textContent })
 
         if (finalMessage.stop_reason === "end_turn") {
           continueLoop = false
@@ -275,6 +289,10 @@ export async function POST(req: NextRequest) {
       }
 
       controller.close()
+      } catch (err) {
+        console.error("[agent/chat] stream error:", err)
+        sendError(err instanceof Error ? err.message : "unknown error")
+      }
     },
   })
 
