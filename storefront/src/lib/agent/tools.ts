@@ -65,14 +65,33 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
   },
   {
     name: "prefillCheckoutField",
-    description: "Fill a checkout field with a value and highlight animation",
+    description:
+      "Fill a checkout form field with a value and highlight animation. Address fields: first_name, last_name, address, city, postal_code, email, phone. Checkout fields: shipping_method_id (option ID), booking_slot_id (slot ID), booking_note (free text).",
     input_schema: {
       type: "object" as const,
       properties: {
-        field: { type: "string", description: "Field name: first_name, last_name, address, city, postal_code, email, phone" },
+        field: { type: "string" },
         value: { type: "string" },
       },
       required: ["field", "value"],
+    },
+  },
+  {
+    name: "advanceCheckoutStep",
+    description:
+      "Advance the checkout one step forward (delivery → address → payment/booking → confirmation). Returns the step the customer moved to, or ok:false if already at the last step.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+    },
+  },
+  {
+    name: "getCheckoutState",
+    description:
+      "Return the current checkout state: active step, filled fields, available shipping methods, available booking slots. Call this before advanceCheckoutStep or before recommending a shipping method.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
     },
   },
   // ─── Data tools (server-side Layer 2) ───
@@ -164,6 +183,8 @@ export const UI_TOOL_NAMES = new Set([
   "openPaymentStep",
   "highlightProducts",
   "clearHighlights",
+  "advanceCheckoutStep",
+  "getCheckoutState",
 ])
 
 // Tools the server intercepts to produce a meaningful tool_result

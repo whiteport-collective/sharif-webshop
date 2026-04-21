@@ -18,6 +18,7 @@ import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
 import { FlowShellResults } from "./flow-shell-results"
 import type { FlowShellProps, FlowView, SearchMeta, SessionContext } from "./types"
+import type { AgentCheckoutAPI } from "@modules/checkout/components/checkout-panel-content"
 import {
   canNavigateBack,
   deriveFlowShellScene,
@@ -64,6 +65,7 @@ export default function FlowShell({
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
   const checkoutBackRef = useRef<(() => void) | null>(null)
+  const agentCheckoutRef = useRef<AgentCheckoutAPI | null>(null)
   const setDimensionRef = useRef<((w: string, p: string, r: string) => void) | null>(null)
   const setSearchFieldRef = useRef<((field: AgentSearchField, value: string) => void) | null>(null)
   const resetSearchRef = useRef<(() => void) | null>(null)
@@ -643,7 +645,13 @@ export default function FlowShell({
       setHighlightedProductIds(new Set())
     },
     prefillCheckoutField: (field, value) => {
-      agentPrefillRef.current?.(field, value)
+      agentCheckoutRef.current?.prefillField(field, value)
+    },
+    advanceCheckoutStep: () => {
+      agentCheckoutRef.current?.advanceStep()
+    },
+    getCheckoutState: () => {
+      agentCheckoutRef.current?.getState()
     },
     openPaymentStep: () => {
       agentOpenPaymentRef.current?.()
@@ -836,6 +844,7 @@ export default function FlowShell({
                       isActive={activeSection === "checkout"}
                       cartLoading={cartLoading}
                       chatOpen={chatOpen}
+                      onRegisterAgentCheckout={(api) => { agentCheckoutRef.current = api }}
                       onCheckoutStateChange={(step) => {
                         if (step === "complete") {
                           dispatch({ type: "BOOKING_CONFIRMED" })

@@ -17,6 +17,27 @@ import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useLanguage } from "@lib/i18n"
 
+export type AgentCheckoutAPI = {
+  advanceStep: () => { ok: boolean; step?: string; reason?: string }
+  getState: () => {
+    ok: boolean
+    step: string
+    availableShippingMethods: { id: string; name: string; price: number }[]
+    cartTotal: number | null
+  }
+  prefillField: (field: string, value: string) => { ok: boolean; reason?: string }
+}
+
+const AGENT_ADDRESS_FIELD_MAP: Record<string, string> = {
+  first_name: "shipping_address.first_name",
+  last_name: "shipping_address.last_name",
+  address: "shipping_address.address_1",
+  city: "shipping_address.city",
+  postal_code: "shipping_address.postal_code",
+  phone: "shipping_address.phone",
+  email: "email",
+}
+
 type Props = {
   countryCode: string
   embedded?: boolean
@@ -26,6 +47,7 @@ type Props = {
   onCheckoutStateChange?: (step: string) => void
   onStepTitle?: (title: string) => void
   onRegisterBack?: (fn: () => void) => void
+  onRegisterAgentCheckout?: (api: AgentCheckoutAPI) => void
   onSuccess?: (orderId: string) => void
   onConfirmationReached?: () => void
   chatOpen?: boolean
@@ -62,6 +84,7 @@ export default function CheckoutPanelContent({
   onCheckoutStateChange,
   onStepTitle,
   onRegisterBack,
+  onRegisterAgentCheckout,
   onSuccess,
   onConfirmationReached,
   chatOpen,
@@ -183,6 +206,61 @@ export default function CheckoutPanelContent({
   // Wheel: use ref so handler always sees current step/orderId without re-registering
   const goBackRef = useRef(goBack)
   goBackRef.current = goBack
+
+  // Agent checkout API — exposed via onRegisterAgentCheckout for flow-shell handlers
+  useEffect(() => {
+    if (!onRegisterAgentCheckout) return
+
+    const workshopSteps = ["delivery", "address", "booking", "confirmation"]
+    const standardSteps = ["delivery", "address", "payment"]
+
+    const advanceStep: AgentCheckoutAPI["advanceStep"] = () => {
+      const steps = isWorkshop ? workshopSteps : standardSteps
+      const idx = steps.indexOf(step)
+      if (idx < 0 || idx >= steps.length - 1) {
+        return { ok: false, reason: `Already at final step: ${step}` }
+      }
+      const next = steps[idx + 1]
+      handleStepChange(next)
+      return { ok: true, step: next }
+    }
+
+    const getState: AgentCheckoutAPI["getState"] = () => ({
+      ok: true,
+      step,
+      availableShippingMethods: (data?.shippingMethods ?? []).map((m) => ({
+        id: m.id,
+        name: m.name ?? "",
+        price: (m as any).amount ?? 0,
+      })),
+      cartTotal: data?.cart.total ?? null,
+    })
+
+    const prefillField: AgentCheckoutAPI["prefillField"] = (field, value) => {
+      const domName = AGENT_ADDRESS_FIELD_MAP[field]
+      if (!domName) {
+        return { ok: false, reason: `Unknown field: ${field}` }
+      }
+      const container = containerRef.current
+      if (!container) return { ok: false, reason: "Checkout container not mounted" }
+      const input = container.querySelector<HTMLInputElement>(`[name="${domName}"]`)
+      if (!input) return { ok: false, reason: `Field not visible in current step: ${field}` }
+
+      const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set
+      nativeSet?.call(input, value)
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+      input.dispatchEvent(new Event("change", { bubbles: true }))
+
+      // Amber pulse
+      input.classList.add("ring-2", "ring-amber-400", "transition-shadow")
+      setTimeout(() => input.classList.remove("ring-2", "ring-amber-400", "transition-shadow"), 1200)
+
+      return { ok: true }
+    }
+
+    onRegisterAgentCheckout({ advanceStep, getState, prefillField })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, isWorkshop, data, onRegisterAgentCheckout])
 
   // Scroll-up at top → go back. Uses React onWheel prop (more reliable than addEventListener
   // on children of CSS-transformed elements, where some browsers delay or drop events).

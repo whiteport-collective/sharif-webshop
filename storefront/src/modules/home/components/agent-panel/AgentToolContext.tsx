@@ -22,6 +22,8 @@ export type AgentToolHandlers = {
   clearHighlights: () => void
   // Checkout domain
   prefillCheckoutField: (field: string, value: string) => void
+  advanceCheckoutStep: () => void
+  getCheckoutState: () => void
   openPaymentStep: () => void
 }
 
@@ -35,6 +37,8 @@ const AgentToolContext = createContext<AgentToolHandlers>({
   highlightProducts: () => {},
   clearHighlights: () => {},
   prefillCheckoutField: () => {},
+  advanceCheckoutStep: () => {},
+  getCheckoutState: () => {},
   openPaymentStep: () => {},
 })
 

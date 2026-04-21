@@ -77,6 +77,12 @@ export function useStreamingChat(getContext: () => SessionContext) {
         case "prefillCheckoutField":
           tools.prefillCheckoutField(input.field as string, input.value as string)
           break
+        case "advanceCheckoutStep":
+          tools.advanceCheckoutStep()
+          break
+        case "getCheckoutState":
+          tools.getCheckoutState()
+          break
         case "openPaymentStep":
           tools.openPaymentStep()
           break
