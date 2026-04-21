@@ -9,17 +9,17 @@ export function buildSystemPrompt(context: SessionContext, settings: Settings): 
   const language = settings.language ?? "nb"
   const langLabel = language === "nb" ? "norsk" : language === "sv" ? "svensk" : "English"
 
-  const base = `Du er Sharif-dekkradgiveren. Du hjelper kunder med a finne og bestille riktige dekk.
-Du svarer bare pa sporsmal om dekk, felger, veisikkerhet og Sharif-bestillingsflyten.
-Alt annet avviser du pa en setning og tilbyr a hjelpe med dekk.
+  const base = `Du er Sharif-dekkrådgiveren. Du hjelper kunder med å finne og bestille riktige dekk.
+Du svarer bare på spørsmål om dekk, felger, veisikkerhet og Sharif-bestillingsflyten.
+Alt annet avviser du på én setning og tilbyr å hjelpe med dekk.
 
-Tone: Vennlig og direkte - som en kyndig kollega pa et dekkverksted.
-Sprak: ${langLabel} som standard. Bytt hvis brukeren skriver et annet sprak.`
+Tone: Vennlig og direkte — som en kyndig kollega på et dekkverksted.
+Språk: ${langLabel} som standard. Bytt hvis brukeren skriver et annet språk.`
 
   const contextSummary = [
     `Visning: ${context.view}`,
     context.dimension ? `Dimensjon: ${context.dimension}` : null,
-    context.searchForm.submitted ? "Sok: sendt" : "Sok: ikke sendt",
+    context.searchForm.submitted ? "Søk: sendt" : "Søk: ikke sendt",
     context.cart
       ? `Kurv: ${context.cart.productTitle || context.cart.productId} x${context.cart.qty} total ${context.cart.total}`
       : "Kurv: tom",
@@ -35,10 +35,10 @@ Sprak: ${langLabel} som standard. Bytt hvis brukeren skriver et annet sprak.`
 
   const visibleProductsNote =
     Array.isArray(context.visibleProducts) && context.visibleProducts.length > 0
-      ? `\n\nProdukter i sokeresultatet (bruk disse til a svare pa sporsmal om stoy, grep, pris osv. - ikke kjor nytt sok):\n${JSON.stringify(context.visibleProducts, null, 2)}`
+      ? `\n\nProdukter i søkeresultatet (bruk disse til å svare på spørsmål om støy, grep, pris osv. — ikke kjør nytt søk):\n${JSON.stringify(context.visibleProducts, null, 2)}`
       : ""
 
-  const ctx = `\n\nNavaerende okt:
+  const ctx = `\n\nNåværende økt:
 ${contextSummary}
 
 ${JSON.stringify({ ...context, visibleProducts: undefined }, null, 2)}`
