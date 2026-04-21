@@ -107,6 +107,129 @@ Detta ersätter behovet av ett separat `searchProducts`-anrop efter `triggerSear
 - Annars: addToCart + NAV_TO_CHECKOUT.
 - Returnerar `{ ok: true, cartTotal, productTitle }`.
 
+### 2b. Elicitation — inte transcription
+
+**Princip:** Agenten **eliciterar** behov — drar fram information kunden inte själv vet att den behöver ge. Den är inte ett chat-formulär som bara fyller fält från det kunden råkar skriva.
+
+Det gäller hela flödet, men är tydligast på resultatsidan: när kunden står inför 14 däck ska agenten hjälpa till att välja på *annat än pris* — säkerhet, komfort, ekonomi, tystnad — även om kunden inte bad om det.
+
+#### Arkitektur: elicitation som skill
+
+Frågorna och deras beslutsträd är **inte hårdkodade i system-prompten**. De är en versionerad skill som laddas *när kunden når resultatvyn*.
+
+```
+agent-space/skills/
+  tire-needs-elicitation.skill.md     ← Sommar/sommar-vinter-universell
+  winter-tire-elicitation.skill.md    ← Laddas om season = "vinter"
+```
+
+**Loading-logik** (i `storefront/src/app/api/agent/chat/route.ts`):
+
+```ts
+// När sessionContext.view === "results"
+const skills = []
+skills.push(await loadSkill("tire-needs-elicitation"))
+if (sessionContext.season === "vinter") {
+  skills.push(await loadSkill("winter-tire-elicitation"))
+}
+systemPrompt = [basePrompt, ...skills.map(s => s.content)].join("\n\n---\n\n")
+```
+
+**Skill-filformat** (markdown med frontmatter):
+
+```markdown
+---
+name: tire-needs-elicitation
+trigger: view === "results" && products.length > 1
+version: 1.0
+---
+
+## Intent
+Hjälp kunden välja däck baserat på behov, inte bara pris.
+
+## Dimensions
+- **safety**: wetGripClass, brand reputation → våt asfalt, bromssträcka
+- **comfort**: brandTier, strengths.smooth-ride → långkörning
+- **economy**: priceRank, fuelClass, mileageRating → årskostnad
+- **quietness**: noiseDb, noiseClass → ljudnivå i kupén
+
+## Process
+1. Ställ EN öppen fråga om prioritering.
+2. Om svar är vagt ("vet inte", "spelar ingen roll"): ställ en konkret följdfråga
+   kopplad till kundens livssituation ("kör du mycket motorväg?").
+3. När prioritet är klar: highlightProducts(1–3 matchande) med kort förklaring.
+4. Vänta på kundens val. Pusha inte.
+
+## Examples
+(exempel-dialoger per dimension — se separat skill-fil)
+
+## Anti-patterns
+- Lista alla fyra dimensioner i en enda fråga ("vad tycker du om säkerhet,
+  komfort, ekonomi och tystnad?") — det blir en enkät.
+- Default till billigast om kunden inte svarar.
+- Välja åt kunden utan highlightProducts-förankring.
+```
+
+Fördelar:
+- **Versionerad:** skill kan uppdateras utan deploy (om skill-loadern stöder hot-reload i dev).
+- **Domän-delad:** vinterdäck och sommardäck får olika elicitation utan att prompten blir villkorlig.
+- **Testbar:** skillen kan köras som eval-suite mot fejk-dialoger.
+- **Ersättningsbar:** Marten kan skriva om skillen utan att Mimir rör kod.
+- **Just-in-time:** tar inte prompt-budget när kunden inte är på resultatsidan.
+
+#### Elicitation över hela flödet
+
+Samma princip (agent drar fram, inte bara fångar upp) gäller i alla steg, men skillarna är olika:
+
+| View | Skill som laddas | Vad agenten eliciterar |
+|---|---|---|
+| `home` | `search-field-elicitation` | Saknade fält (dim, qty, säsong) — fråg tills komplett |
+| `results` | `tire-needs-elicitation` (+ vinter om relevant) | Prioritet mellan säkerhet/komfort/ekonomi/tystnad |
+| `checkout.address` | `address-elicitation` | Saknade fält, postkod-validering, fraktlogik |
+| `checkout.booking` | `booking-elicitation` | Tidsfönster-preferens, brådska, plats |
+| `checkout.payment` | *(ingen — hands-off)* | Inget. Agenten är tyst. |
+
+Skill-loadern ska vara **generisk** (Part 2b implementation) — samma funktion laddar alla skills baserat på `sessionContext.view`.
+
+#### Skill → tools-koppling
+
+Varje skill deklarerar vilka tools den behöver (tool-filter i route.ts):
+
+```yaml
+---
+name: tire-needs-elicitation
+requires_tools:
+  - highlightProducts
+  - clearHighlights
+  - getProductDetail
+---
+```
+
+Route.ts slår ihop alla aktiva skillars `requires_tools` med bas-tools för vyn och skickar till Anthropic.
+
+#### Data som `triggerSearch` måste returnera per produkt
+
+Skillen antar följande fält finns i `tool_result` från `triggerSearch`:
+
+```json
+{
+  "id": "prod_xxx",
+  "title": "…",
+  "brand": "…",
+  "brandTier": "premium | mid | budget",
+  "price": 1299,
+  "priceRank": 3,
+  "noiseDb": 68,
+  "noiseClass": "B",
+  "fuelClass": "C",
+  "wetGripClass": "A",
+  "mileageRating": "high | medium | low",
+  "strengths": ["wet-safety", "low-noise"]
+}
+```
+
+`strengths` är en kuraterad taglista (3–5 per produkt). Populeras från Medusa `metadata` eller hårdkodas per brand som start (Continental → premium + wet-safety; Kumho → budget + value).
+
 ### 3. Checkout-domän: steg-medveten prefill
 
 `prefillCheckoutField` utökas med tre nya fält-namn:
@@ -182,6 +305,11 @@ lookupOrder(email, otcToken)            // for returning customers
 escalateToAdmin(email, message)         // last resort
 ```
 
+### Navigation (alla vyer)
+```
+navigateBack()                          // "gå tillbaka"-kommando i chat
+```
+
 ### Removed from demo agent
 ```
 fillDimensionField      // superseded by setSearchField
@@ -241,6 +369,141 @@ verifyOneTimeCode       // scenario 2 only
 
 **Acceptance:**
 - Manuellt test: vid payment-step, skicka prompt "fyll i betalningen". Agentens response innehåller **inga** tool_uses för write-handlers — bara text som refererar till kundens eget ansvar.
+
+### Part 4b — State hooks, status breadcrumbs & customer-initiated events
+
+Agenten måste veta när något händer utan att agenten själv orsakade det — kund scrollar, klickar på en däck-kort manuellt, fyller ett fält själv, trycker bakåt. Annars driver agenten ett förlegat state-förutsätt.
+
+#### Event-modell
+
+Ett **state event** är en tidsstämplad strukturerad post:
+
+```ts
+type StateEvent = {
+  id: string                    // uuid
+  at: string                    // ISO
+  type: StateEventType
+  origin: "agent" | "user" | "system"
+  label: { no: string; en: string; sv: string }  // visas i chat som grå status
+  details?: Record<string, unknown>
+}
+
+type StateEventType =
+  | "view_changed"              // home → results → checkout
+  | "search_submitted"          // dimension triggerSearch fired
+  | "product_selected"          // card klickad (agent eller user)
+  | "cart_updated"              // addToCart / remove line
+  | "checkout_step_entered"     // delivery → address → booking → payment
+  | "field_filled"              // form-fält fylldes (agent eller user)
+  | "nav_back"                  // bakåt-navigering
+  | "skill_loaded"              // agent laddade en skill (per trigger-match)
+  | "skill_unloaded"            // agent släppte skill (trigger slutade matcha)
+```
+
+#### Två konsumenter av events
+
+**1. Chat-UI — grå status-rader**
+
+Events renderas som centrerade, grå, italic 12px-rader mellan message-bubblor. Icke-interaktiva.
+
+```
+[user]   "Jag behöver däck till Volvo V70"
+─── Visar sökformuläret ───
+[agent]  "Vilken dimension?"
+─── Sökte på 205/55R16 — 14 träffar ───
+─── Visar produktlistan ───
+─── Laddade däckval-rådgivning ───
+[agent]  "Innan vi går på pris — vad är viktigast..."
+```
+
+Label-texter är lokaliserade (`event.label[lang]`). Styling: `text-xs text-ui-fg-muted italic text-center my-1`.
+
+**2. Agent-kontext — includes i nästa turn**
+
+Vid nästa assistant-request inkluderas events som hänt sedan senaste assistant-svar:
+
+```json
+{
+  "messages": [...],
+  "sessionContext": {...},
+  "recentEvents": [
+    { "type": "product_selected", "origin": "user", "details": {"productId":"prod_x"}, "label":{"no":"Kunde valde Continental PremiumContact 6"} },
+    { "type": "checkout_step_entered", "origin": "user", "details": {"step":"address"} }
+  ]
+}
+```
+
+Route.ts injicerar dessa som en system-message precis före modellanropet:
+
+> "Sedan ditt senaste svar: Kunden valde själv Continental PremiumContact 6 och öppnade adresssteget."
+
+Agenten reagerar naturligt: "Bra val — jag ser du är i adresssteget. Vill du fylla i själv eller ska jag hjälpa till?"
+
+#### Hook-dispatch i FlowShell
+
+Ny helper i `flow-shell/index.tsx`:
+
+```ts
+const emitStateEvent = useCallback((type: StateEventType, origin: "agent"|"user"|"system", details?: any) => {
+  const event: StateEvent = {
+    id: crypto.randomUUID(),
+    at: new Date().toISOString(),
+    type,
+    origin,
+    label: buildLabel(type, details, lang),  // lokaliserings-tabell
+    details,
+  }
+  eventBufferRef.current.push(event)          // ring-buffer (last 20)
+  agentPanelRef.current?.pushStatusEvent(event)  // chat UI får eventet direkt
+}, [lang])
+```
+
+Hook-punkter att ringa `emitStateEvent` från:
+
+| Hook-punkt | Event | Origin |
+|---|---|---|
+| `view`-ändring (useEffect) | `view_changed` | `user` om scroll-sync, `agent` om via tool |
+| `handleSelectTire` via card-klick | `product_selected` | `user` |
+| `handleSelectTire` via agent-tool | `product_selected` | `agent` |
+| TireSearch field onChange (debounced 500ms) | `field_filled` | `user` |
+| `prefillCheckoutField` tool | `field_filled` | `agent` |
+| `handleBack` / `goBack` | `nav_back` | origin beror på caller |
+| `CheckoutPanelContent` step-change | `checkout_step_entered` | samma regel |
+| Skill-loader aktiverar | `skill_loaded` | `system` |
+
+#### `navigateBack` — kund-kommando i chat
+
+Ny tool, tillgänglig i alla vyer:
+
+```ts
+navigateBack(): ToolResult
+```
+
+Agentens system-prompt får regel: när kunden skriver "gå tillbaka", "tillbaka", "back", "ångra" — kör `navigateBack()`. Kör inte om `canNavigateBack(appState) === false` (payment/complete-steg).
+
+Internt: dispatchar samma kod som header-backknappen (`handleBack`). Ett `nav_back`-event emitteras automatiskt — agenten ser det i nästa turn.
+
+#### ToolResult för `navigateBack`
+
+```json
+{ "ok": true, "from": "checkout.address", "to": "checkout.delivery" }
+```
+
+Eller:
+
+```json
+{ "ok": false, "reason": "Cannot navigate back from payment step" }
+```
+
+#### Sammanfattning av push-kanalen
+
+- Kund klickar något → state ändras → `emitStateEvent` → grå rad i chat + event i buffer
+- Kund skriver → request innehåller buffer → agent ser kontexten → reagerar
+- Agent kör tool → state ändras → `emitStateEvent(origin: "agent")` → grå rad ("Agent fyllde förnamn") → event i buffer (agenten filtrerar bort sina egna i context så de inte blir cirkulära)
+
+Agenten är aldrig ur synk. Kund och agent kan både driva flödet; chat-loggen visar båda. Detta är inte logging — det är agentens sensoriska kanal.
+
+---
 
 ### Part 5 — Direct tool invocation from IDE (headless mode)
 
