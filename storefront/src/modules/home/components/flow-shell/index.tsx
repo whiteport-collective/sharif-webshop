@@ -86,6 +86,8 @@ export default function FlowShell({
   const pendingParams = useRef<TireSearchParams | null>(null)
   const selectedTireRef = useRef<SelectedTire | null>(null)
   const previousViewRef = useRef<FlowView>("home")
+  const sessionIdRef = useRef<string | null>(null)
+  const agentHandlersRef = useRef<AgentToolHandlers | null>(null)
   const view = mapFlowToLegacyView(appState.flow)
   const scene = deriveFlowShellScene(appState)
   const chatOpen = appState.assistant === "open"
@@ -660,6 +662,64 @@ export default function FlowShell({
       handleBack()
     },
   }
+
+  // Keep agentHandlersRef in sync so the SSE hook below always uses latest closures
+  agentHandlersRef.current = agentHandlers
+
+  // Headless SSE channel — open once, persist across re-renders
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" && process.env.NEXT_PUBLIC_ENABLE_HEADLESS_AGENT !== "true") return
+
+    const sid = crypto.randomUUID()
+    sessionIdRef.current = sid
+
+    const es = new EventSource(`/api/agent/stream?sessionId=${sid}`)
+
+    es.addEventListener("message", async (ev) => {
+      let msg: { type: string; commandId?: string; tool?: string; args?: Record<string, unknown> }
+      try {
+        msg = JSON.parse(ev.data)
+      } catch {
+        return
+      }
+      if (msg.type !== "tool-invoke" || !msg.commandId || !msg.tool) return
+
+      const h = agentHandlersRef.current
+      const a = msg.args ?? {}
+
+      let result: unknown
+      try {
+        switch (msg.tool) {
+          case "setSearchField":      result = h?.setSearchField(a.field as any, a.value as any); break
+          case "fillDimensionField":  result = h?.fillDimensionField(a.width as any, a.profile as any, a.rim as any); break
+          case "triggerSearch":       result = h?.triggerSearch(); break
+          case "selectTire":          result = h?.selectTire(a.productId as string); break
+          case "selectTireForCheckout": result = h?.selectTireForCheckout(a.productId as string); break
+          case "scrollToProduct":     result = h?.scrollToProduct(a.productId as string); break
+          case "highlightProducts":   result = h?.highlightProducts(a.productIds as string[]); break
+          case "clearHighlights":     result = h?.clearHighlights(); break
+          case "prefillCheckoutField": result = h?.prefillCheckoutField(a.field as string, a.value as string); break
+          case "advanceCheckoutStep": result = h?.advanceCheckoutStep(); break
+          case "getCheckoutState":    result = h?.getCheckoutState(); break
+          case "openPaymentStep":     result = h?.openPaymentStep(); break
+          case "navigateBack":        result = h?.navigateBack(); break
+          default: result = { ok: false, reason: `Unknown tool: ${msg.tool}` }
+        }
+        result ??= { ok: true }
+      } catch (err) {
+        result = { ok: false, reason: err instanceof Error ? err.message : "handler error" }
+      }
+
+      fetch("/api/agent/command/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commandId: msg.commandId, result }),
+      }).catch(() => {})
+    })
+
+    return () => es.close()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const getSessionContext = useCallback((): SessionContext => ({
     view: activeSection,
