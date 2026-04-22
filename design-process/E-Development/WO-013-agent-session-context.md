@@ -463,3 +463,49 @@ This WO is complete when:
 - The agent can read real search, cart, delivery, address-completeness, and booking snapshot data at request start.
 - Step naming remains aligned with the current FlowShell / WO-010 model.
 - The work order text no longer claims richer snapshot data solves same-turn write-tool acknowledgments.
+
+---
+
+## Follow-up: Agent Write Access to Checkout (2026-04-22)
+
+Added on top of the original WO-013 to close the write side — `prefillCheckoutField` now covers `shipping_method_id` and `booking_slot_id` in addition to address fields, and the system prompt authorizes the agent to use them mid-checkout.
+
+Commits on `main`:
+- `38cf786` — Shipping component exposes ref-based agent setter; `prefillCheckoutField` routes `shipping_method_id`.
+- `4ee42e9` — Booking component same pattern for `booking_slot_id` (auto-expands day, grows visibleDays if needed).
+- `51c7104` — System prompt authorizes `prefillCheckoutField` for shipping/booking when the customer is in checkout.
+
+### Test list — manuell verifisering
+
+Gå gjennom listan i ordning. Start med en tom handlekurv og gå till `http://localhost:3001/`. Öppna chatten via ikonen uppe till höger.
+
+**1. Shipping method via chat**
+- [ ] Sök 205/55R16, lägg första däcket i kassen.
+- [ ] På leveringssteget: skriv "Ta Fjellhamar" (eller "hemleverans") i chatten.
+- [ ] Radio-knappen ska få amber ring-puls ~1,2 s och bli vald.
+- [ ] Pris/cart-total uppdateras om du väljer hemleverans (699 kr).
+
+**2. Booking slot via chat**
+- [ ] Fortsätt till Kundeopplysninger, fyll i alla fält inkl. bilregistreringsnummer.
+- [ ] Gå till Booking-steget (eller tryck Edit på Booking om det redan är kompletterat).
+- [ ] Skriv "Välg första lediga tid" i chatten.
+- [ ] Första tidsrutan (t.ex. 08:00) ska få amber ring-puls och bli grön.
+- [ ] Agenten ska kort bekräfta vilket datum/tid den valde.
+
+**3. Agenten väljer specifik tid**
+- [ ] På booking-steget: skriv "Boka kl. 13 i morgon".
+- [ ] Dagen expanderas automatiskt om den var kollapsad; 13:00 blir vald med amber puls.
+
+**4. Agenten avböjer off-topic**
+- [ ] Skriv "vad är huvudstaden i Frankrike?" under kassan.
+- [ ] Agenten ska avböja i en mening och erbjuda hjälp med bestillningen — inte försöka svara.
+
+**5. Address prefill fortsätter fungera (regression)**
+- [ ] Börja om med ny kurv.
+- [ ] På Kundeopplysninger: skriv "Jag heter Anna Svensson, anna@test.no, 40123456, Storgata 1, 0123 Oslo".
+- [ ] Agenten fyller i alla fält; varje fält får amber puls vid fyllning.
+
+### Known issues att notera under testet
+
+- Booking-sektionen spammar "Maximum update depth exceeded" i konsolen (preexisterande; se `project_open_bugs`).
+- Om chatten har långt historik kan svaret ta 5–10 s — detta är Gemini-latens, inte en bugg.
