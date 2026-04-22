@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import TireCard from "@modules/products/components/tire-card"
 import type { ResultsSectionProps } from "./types"
 
@@ -65,17 +66,21 @@ function ResultsGrid({
     const cardQty = cartLine?.quantity ?? qty
 
     return (
-      <TireCard
+      <div
         key={product.id}
-        product={product}
-        region={region}
-        qty={cardQty}
-        isInCart={isInCart}
-        isHighlighted={product.id != null && highlightedProductIds.has(product.id)}
-        onSelectTire={onSelectTire}
-        onRemoveTire={() => onRemoveTire(product)}
-        onProductDetail={onProductDetail}
-      />
+        style={{ viewTransitionName: `tire-${product.id}` } as React.CSSProperties}
+      >
+        <TireCard
+          product={product}
+          region={region}
+          qty={cardQty}
+          isInCart={isInCart}
+          isHighlighted={product.id != null && highlightedProductIds.has(product.id)}
+          onSelectTire={onSelectTire}
+          onRemoveTire={() => onRemoveTire(product)}
+          onProductDetail={onProductDetail}
+        />
+      </div>
     )
   })
 }
@@ -145,7 +150,8 @@ export function FlowShellResults({
       </div>
 
       <div className="hidden px-4 pb-8 pt-20 md:block">
-        <div className="grid grid-cols-3 gap-4 lg:grid-cols-4">
+        <div className="mx-auto max-w-[1400px]">
+        <div className="grid grid-cols-3 gap-4 min-[1100px]:grid-cols-4">
           <ResultsGrid
             cart={cart}
             highlightedProductIds={highlightedProductIds}
@@ -160,6 +166,7 @@ export function FlowShellResults({
             sortedProducts={sortedProducts}
             visibleLimit={visibleLimit}
           />
+        </div>
         </div>
       </div>
 

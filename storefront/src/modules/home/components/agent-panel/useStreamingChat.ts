@@ -64,6 +64,9 @@ export function useStreamingChat(getContext: () => SessionContext) {
         case "clearHighlights":
           tools.clearHighlights()
           break
+        case "sortProducts":
+          tools.sortProducts(String(input.sortBy ?? "price"))
+          break
         case "scrollToProduct":
           tools.scrollToProduct(input.productId as string)
           break

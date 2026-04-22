@@ -64,6 +64,21 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "sortProducts",
+    description:
+      "Re-sort the visible tire list. Cards animate smoothly to their new positions. Use this when the customer asks to sort by price, noise, grip, fuel efficiency, performance, or overall best value. Valid sortBy values: price (lowest first), best (overall recommendation), grip (best wet grip first), fuel (best fuel economy first), noise (quietest first), performance (best speed rating first).",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        sortBy: {
+          type: "string",
+          enum: ["price", "best", "grip", "fuel", "noise", "performance"],
+        },
+      },
+      required: ["sortBy"],
+    },
+  },
+  {
     name: "prefillCheckoutField",
     description:
       "Fill a checkout form field with a value and highlight animation. Address fields: first_name, last_name, address, city, postal_code, email, phone. Checkout fields: shipping_method_id (option ID), booking_slot_id (slot ID), booking_note (free text).",
@@ -192,6 +207,7 @@ export const UI_TOOL_NAMES = new Set([
   "openPaymentStep",
   "highlightProducts",
   "clearHighlights",
+  "sortProducts",
   "advanceCheckoutStep",
   "navigateBack",
 ])

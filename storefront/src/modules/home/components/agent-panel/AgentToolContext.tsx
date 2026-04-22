@@ -20,6 +20,7 @@ export type AgentToolHandlers = {
   scrollToProduct: (productId: string) => void
   highlightProducts: (productIds: string[]) => void
   clearHighlights: () => void
+  sortProducts: (sortBy: string) => void
   // Checkout domain
   prefillCheckoutField: (field: string, value: string) => void
   advanceCheckoutStep: () => void
@@ -38,6 +39,7 @@ const AgentToolContext = createContext<AgentToolHandlers>({
   scrollToProduct: () => {},
   highlightProducts: () => {},
   clearHighlights: () => {},
+  sortProducts: () => {},
   prefillCheckoutField: () => {},
   advanceCheckoutStep: () => {},
   getCheckoutState: () => {},

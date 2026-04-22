@@ -659,3 +659,14 @@ type SessionContext = {
 - Håll antalet tools lågt. LLM:er är sämre på stora tool-menys — 8 är en bra gräns, 15 börjar degradera.
 - `ToolResult`-returnvärden är **inte bara debug** — de är hur agenten "ser" världen. En handler som bara returnerar `{ ok: true }` stjäl ett tillfälle att informera modellen.
 - Hands-off-gaten i route.ts är viktigare än system-prompten. En prompt kan ignoreras; en saknad tool finns inte att anropa.
+
+---
+
+## Feedback Round 5 — Grid & sort animation (2026-04-22)
+
+Upptäckt i browser-test av golden path, smalt fönster med chat-panelen öppen.
+
+- **FB-5.1 — Grid bryter till 4 kolumner för tidigt.** Med chat-panelen öppen blir produktkorten för smala. *Fix:* `lg:grid-cols-4` → `min-[1100px]:grid-cols-4` i `flow-shell-results.tsx`. 3 kolumner håller i sig upp till 1100px viewport.
+- **FB-5.2 — Ingen maxbredd på stora skärmar.** Kort och bilder växte obegränsat på breda skärmar. *Fix:* `max-w-[1400px] mx-auto` wrapper runt grid.
+- **FB-5.3 — Ingen feedback vid sortering.** När man byter sortering händer det "plötsligt" — inget visuellt spår av att listan rörde sig. *Fix:* Native View Transition API i `handleSortChange` + `viewTransitionName: tire-{id}` per kort + 420ms ease-out i `globals.css`. Zero dep, bara Chrome/Edge/Safari 18.
+- **FB-5.4 — Agent kunde inte sortera listan.** Ny tool `sortProducts({sortBy})` med enum `price | best | grip | fuel | noise | performance`. Tool dispatchar `handleSortChange` så även agent-triggad sortering animerar.

@@ -2,6 +2,7 @@
 
 import { HttpTypes } from "@medusajs/types"
 import { startTransition, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { LanguageContext, UI, type Lang } from "@lib/i18n"
 import { addToCart, deleteLineItem, retrieveCart } from "@lib/data/cart"
 import { sortProducts } from "@lib/util/sort-tires"
@@ -537,6 +538,19 @@ export default function FlowShell({
 
   const knownCount = dimensionCounts[searchMeta.dimension] ?? 0
   const sortedProducts = useMemo(() => sortProducts(products, activeSort), [activeSort, products])
+
+  const handleSortChange = useCallback((next: SortKey) => {
+    const doc = typeof document !== "undefined" ? (document as Document & { startViewTransition?: (cb: () => void) => void }) : null
+    if (doc?.startViewTransition) {
+      doc.startViewTransition(() => {
+        flushSync(() => {
+          setActiveSort(next)
+        })
+      })
+    } else {
+      setActiveSort(next)
+    }
+  }, [])
   const displayCount = isLoading ? knownCount : products.length
   const skeletonCount = getSkeletonCount(knownCount)
   const hasMoreResults = !isLoading && sortedProducts.length > visibleLimit
@@ -655,6 +669,11 @@ export default function FlowShell({
     },
     clearHighlights: () => {
       setHighlightedProductIds(new Set())
+    },
+    sortProducts: (sortBy) => {
+      const valid: SortKey[] = ["price", "best", "grip", "fuel", "noise", "performance"]
+      const next = valid.includes(sortBy as SortKey) ? (sortBy as SortKey) : "price"
+      handleSortChange(next)
     },
     prefillCheckoutField: (field, value) => {
       agentCheckoutRef.current?.prefillField(field, value)
@@ -841,7 +860,7 @@ export default function FlowShell({
                 setLang(nextLang)
                 setLangMenuOpen(false)
               }}
-              onSortChange={setActiveSort}
+              onSortChange={handleSortChange}
               setChatOpen={(next) => {
                 const resolved = typeof next === "function" ? next(chatOpen) : next
                 dispatch({ type: resolved ? "ASSISTANT_OPENED" : "ASSISTANT_CLOSED" })
