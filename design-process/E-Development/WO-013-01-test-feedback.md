@@ -7,7 +7,7 @@
 
 ---
 
-## FB-01: Agent ignorerar manuellt ifylld width
+## FB-01: Agent ignorerar manuellt ifylld width — FIXED (ef0a01f)
 
 **Skjerm:** Startsida → chat från hemma (test 1.8)
 
@@ -34,3 +34,10 @@
 **Severity:** Medium — fungerar ändå (sökningen gick), men förvirrar användaren.
 **Assigned to:** Mimir
 **Files:** `storefront/src/lib/agent/system-prompt.ts`
+
+### Resolution (2026-04-22, `ef0a01f`)
+
+1. `system-prompt.ts` — `searchForm` surfat som egen rad i context-headern (inte bara i JSON-dumpen); lagt till explicita sökregler om att läsa searchForm först, kedja `triggerSearch` efter `setSearchField`, och bekräfta med antal efter sökning.
+2. `tire-search/index.tsx` — splittat `agentPulse` i `widthPulse`/`profilePulse`/`rimPulse`; `SegmentInput` accepterar `pulse`-prop och ger amber ring på det enskilda fältet så användaren ser exakt vad agenten satte.
+
+**Verified:** user types 205 manuellt → säger "fyll i de sista uppgifterna 55 16" → agent pulsar profile @8.5s, rim @11s, kör triggerSearch, navigerar till resultat.
