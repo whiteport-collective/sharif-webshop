@@ -732,7 +732,7 @@ export default function FlowShell({
   }, [])
 
   const getSessionContext = useCallback((): SessionContext => {
-    const searchForm = tireSearchRef.current?.getFormSnapshot() ?? {
+    const rawForm = tireSearchRef.current?.getFormSnapshot() ?? {
       width: null,
       profile: null,
       rim: null,
@@ -740,6 +740,19 @@ export default function FlowShell({
       season: null,
       submitted: Boolean(searchMeta.dimension),
     }
+    // If TireSearch hasn't been interacted with (URL load), derive fields from dimension
+    const searchForm = rawForm.width || !searchMeta.dimension
+      ? rawForm
+      : (() => {
+          const m = searchMeta.dimension.match(/^(\d+)\/(\d+)R(\d+)$/i)
+          if (!m) return rawForm
+          return {
+            ...rawForm,
+            width: m[1],
+            profile: m[2],
+            rim: m[3],
+          }
+        })()
     const checkout = agentCheckoutRef.current?.getSnapshot() ?? null
 
     return {
