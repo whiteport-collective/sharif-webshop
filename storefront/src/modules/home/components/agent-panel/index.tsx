@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { useStreamingChat } from "./useStreamingChat"
+import { useLanguage } from "@lib/i18n"
 import type { SessionContext } from "@modules/home/components/flow-shell/types"
 
 type Props = {
@@ -13,6 +14,8 @@ type Props = {
 function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose">) {
   const [input, setInput] = useState("")
   const chatRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { t } = useLanguage()
 
   const getContext = useCallback(() => getSessionContext(), [getSessionContext])
   const { messages, sendMessage, isStreaming, clearHistory } = useStreamingChat(getContext)
@@ -23,11 +26,22 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
     }
   }, [messages, isStreaming])
 
+  // Auto-focus input when the panel mounts (chat opens) — cursor ready to type.
+  useEffect(() => {
+    const t = setTimeout(() => textareaRef.current?.focus(), 50)
+    return () => clearTimeout(t)
+  }, [])
+
   const handleSend = () => {
     const text = input.trim()
     if (!text) return
     setInput("")
     sendMessage(text)
+  }
+
+  const handleSuggestion = (prompt: string) => {
+    sendMessage(prompt)
+    textareaRef.current?.focus()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -36,6 +50,12 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
       handleSend()
     }
   }
+
+  const suggestions = [
+    t.chatSuggestBuySummer,
+    t.chatSuggestBestForCar,
+    t.chatSuggestRebookOrOrder,
+  ]
 
   return (
     <div className="flex h-full flex-col">
@@ -48,14 +68,37 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
       {/* Messages */}
       <div ref={chatRef} className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 py-6">
         {messages.length === 0 && (
-          <div className="mt-12 flex flex-col items-center gap-3 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#212529] text-white">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <div className="flex flex-col gap-4 pt-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#212529] text-white animate-[chat-reveal_500ms_ease-out]">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-[#212529]">Hva leter du etter?</p>
-            <p className="text-xs text-[#6c757d]">F.eks. "205/55R16" eller "vinterdekk til SUV"</p>
+
+            <p className="text-sm leading-relaxed text-[#212529] animate-[chat-reveal_600ms_ease-out_200ms_both]">
+              {t.chatWelcomeIntro}
+            </p>
+
+            <p className="text-sm leading-relaxed text-[#212529] animate-[chat-reveal_600ms_ease-out_1000ms_both]">
+              {t.chatWelcomeOrders}
+            </p>
+
+            <p className="text-sm leading-relaxed text-[#212529] animate-[chat-reveal_600ms_ease-out_1600ms_both]">
+              {t.chatWelcomeQuestion}
+            </p>
+
+            <div className="flex flex-col gap-2 pt-1 animate-[chat-reveal_600ms_ease-out_2200ms_both]">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleSuggestion(s)}
+                  className="rounded-full border border-[#dee2e6] bg-white px-4 py-2.5 text-left text-sm text-[#212529] transition-colors hover:border-[#adb5bd] hover:bg-[#f8f9fa]"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -92,6 +135,7 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
       <div className="shrink-0 p-3">
         <div className="flex flex-col rounded-2xl border border-[#dee2e6] bg-white shadow-sm focus-within:border-[#adb5bd] transition-colors">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}

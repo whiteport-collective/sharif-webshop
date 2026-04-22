@@ -76,6 +76,13 @@ export type Strings = {
   howWasExperience: string
   talkToAI: string
   chatPlaceholder: string
+  // Agent panel welcome
+  chatWelcomeIntro: string
+  chatWelcomeOrders: string
+  chatWelcomeQuestion: string
+  chatSuggestBuySummer: string
+  chatSuggestBestForCar: string
+  chatSuggestRebookOrOrder: string
   backToHome: string
   paymentSuccessful: string
   completePayment: string
@@ -155,6 +162,13 @@ export const UI: Record<Lang, Strings> = {
     howWasExperience: "Hvordan var opplevelsen?",
     talkToAI: "Snakk med vår AI",
     chatPlaceholder: "Har du tankar och frågor om din bestilling...",
+    chatWelcomeIntro:
+      "Hei, så hyggelig at du stikker innom. I denne chatten kan du lære mer om dekk, økonomi og sikkerhet. Jeg er en AI som er trent på hele Sharifs sortiment og kan hjelpe deg til et trygt kjøp.",
+    chatWelcomeOrders: "Har du spørsmål om en tidligere bestilling, er det bare å spørre!",
+    chatWelcomeQuestion: "Hva har du lyst til å gjøre i dag?",
+    chatSuggestBuySummer: "Kjøpe nye sommerdekk",
+    chatSuggestBestForCar: "Finn de beste dekkene til bilen min",
+    chatSuggestRebookOrOrder: "Book om verkstedtid eller spør om en tidligere bestilling",
     backToHome: "Tilbake til forsiden",
     paymentSuccessful: "Betaling gjennomført",
     completePayment: "Gjennomfør betaling",
@@ -232,6 +246,13 @@ export const UI: Record<Lang, Strings> = {
     howWasExperience: "How was your experience?",
     talkToAI: "Talk to our AI",
     chatPlaceholder: "Questions about your order...",
+    chatWelcomeIntro:
+      "Hi, great to see you. In this chat you can learn more about tires, economy and safety. I'm an AI trained on Sharif's full catalog and can guide you to a safe purchase.",
+    chatWelcomeOrders: "Got questions about a previous order? Just ask!",
+    chatWelcomeQuestion: "What would you like to do today?",
+    chatSuggestBuySummer: "Buy new summer tires",
+    chatSuggestBestForCar: "Find the best tires for my car",
+    chatSuggestRebookOrOrder: "Rebook a fitting time or ask about a previous order",
     backToHome: "Back to home",
     paymentSuccessful: "Payment successful",
     completePayment: "Complete payment",
