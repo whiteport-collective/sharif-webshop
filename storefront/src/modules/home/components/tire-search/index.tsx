@@ -47,6 +47,7 @@ function SegmentInput({
   onPaste,
   displayTransform,
   popularValue,
+  pulse,
 }: {
   value: string
   onChange: (v: string) => void
@@ -59,6 +60,7 @@ function SegmentInput({
   onPaste?: (e: React.ClipboardEvent<HTMLInputElement>) => void
   displayTransform?: (s: string) => string
   popularValue?: string
+  pulse?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [selectMode, setSelectMode] = useState(false) // true = show all, false = filter by typed
@@ -136,7 +138,7 @@ function SegmentInput({
   }
 
   return (
-    <div className="relative flex-1">
+    <div className={`relative flex-1 rounded-md transition-shadow ${pulse ? "ring-2 ring-amber-400 ring-offset-1" : ""}`}>
       <input
         ref={inputRef as React.RefObject<HTMLInputElement>}
         type="text"
@@ -210,7 +212,9 @@ export default function TireSearch({
   const [rimLetterSeen, setRimLetterSeen] = useState(false)
   const [quantity, setQuantity] = useState("4")
   const [season, setSeason] = useState("sommer")
-  const [agentPulse, setAgentPulse] = useState(false)
+  const [widthPulse, setWidthPulse] = useState(false)
+  const [profilePulse, setProfilePulse] = useState(false)
+  const [rimPulse, setRimPulse] = useState(false)
   const [qtyPulse, setQtyPulse] = useState(false)
   const [seasonPulse, setSeasonPulse] = useState(false)
   const router = useRouter()
@@ -223,8 +227,10 @@ export default function TireSearch({
       setProfile(p)
       setRim(r)
       setRimLetterSeen(false)
-      setAgentPulse(true)
-      setTimeout(() => setAgentPulse(false), 1200)
+      setWidthPulse(true); setProfilePulse(true); setRimPulse(true)
+      setTimeout(() => {
+        setWidthPulse(false); setProfilePulse(false); setRimPulse(false)
+      }, 1200)
     })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -236,19 +242,19 @@ export default function TireSearch({
       switch (field) {
         case "width":
           setWidth(raw)
-          setAgentPulse(true)
-          setTimeout(() => setAgentPulse(false), 1200)
+          setWidthPulse(true)
+          setTimeout(() => setWidthPulse(false), 1200)
           break
         case "profile":
           setProfile(raw)
-          setAgentPulse(true)
-          setTimeout(() => setAgentPulse(false), 1200)
+          setProfilePulse(true)
+          setTimeout(() => setProfilePulse(false), 1200)
           break
         case "rim":
           setRim(raw.replace(/^[a-zA-Z]+/, ""))
           setRimLetterSeen(false)
-          setAgentPulse(true)
-          setTimeout(() => setAgentPulse(false), 1200)
+          setRimPulse(true)
+          setTimeout(() => setRimPulse(false), 1200)
           break
         case "qty":
           setQuantity(raw)
@@ -452,7 +458,7 @@ export default function TireSearch({
         <label className="block text-xs font-bold uppercase tracking-widest text-ui-fg-muted mb-1.5">
           {t.tireSizeLabel}
         </label>
-        <div className={`flex items-center border rounded-lg px-3 transition-all bg-white focus-within:border-ui-fg-base ${agentPulse ? "border-amber-400 ring-2 ring-amber-200 animate-pulse" : "border-ui-border-base"}`}>
+        <div className="flex items-center border border-ui-border-base rounded-lg px-3 transition-all bg-white focus-within:border-ui-fg-base">
           <SegmentInput
             value={width}
             onChange={(v) => { setWidth(v); setProfile(""); setRim("") }}
@@ -462,6 +468,7 @@ export default function TireSearch({
             onPaste={handlePaste}
             popularValue={popularWidth}
             inputRef={widthRef}
+            pulse={widthPulse}
           />
           <span className={`text-lg font-medium select-none ${width ? "text-ui-fg-base" : "text-ui-fg-muted"}`}>/</span>
           <SegmentInput
@@ -474,6 +481,7 @@ export default function TireSearch({
             inputRef={profileRef}
             onPaste={handlePaste}
             popularValue={popularProfile}
+            pulse={profilePulse}
           />
           {(rimLetterSeen || rim) && <span className="text-lg font-medium select-none text-ui-fg-base">R</span>}
           <SegmentInput
@@ -489,6 +497,7 @@ export default function TireSearch({
             inputRef={rimRef}
             onPaste={handlePaste}
             popularValue={popularRim}
+            pulse={rimPulse}
             onKeyDown={(e) => {
               if (e.key === "Backspace" && rim === "") {
                 setRimLetterSeen(false)
