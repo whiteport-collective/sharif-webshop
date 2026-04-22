@@ -14,6 +14,7 @@ import Payment from "@modules/checkout/components/payment"
 import PaymentButton from "@modules/checkout/components/payment-button"
 import PaymentWrapper from "@modules/checkout/components/payment-wrapper"
 import Shipping from "@modules/checkout/components/shipping"
+import type { ShippingAgentSetter } from "@modules/checkout/components/shipping"
 import CartTotals from "@modules/common/components/cart-totals"
 import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -114,6 +115,7 @@ export default function CheckoutPanelContent({
   })
   const containerRef = useRef<HTMLDivElement>(null)
   const confirmationRef = useRef<HTMLDivElement>(null)
+  const shippingAgentSetterRef = useRef<ShippingAgentSetter | null>(null)
   const touchStartY = useRef(0)
   const backLocked = useRef(false)
   const justMounted = useRef(true)
@@ -295,6 +297,11 @@ export default function CheckoutPanelContent({
     })
 
     const prefillField: AgentCheckoutAPI["prefillField"] = (field, value) => {
+      if (field === "shipping_method_id") {
+        const setter = shippingAgentSetterRef.current
+        if (!setter) return { ok: false, reason: "Shipping step not mounted" }
+        return setter(value)
+      }
       const domName = AGENT_ADDRESS_FIELD_MAP[field]
       if (!domName) {
         return { ok: false, reason: `Unknown field: ${field}` }
@@ -398,6 +405,9 @@ export default function CheckoutPanelContent({
                       if (freshCart) {
                         setData((prev) => (prev ? { ...prev, cart: freshCart } : prev))
                       }
+                    }}
+                    onRegisterAgentSetter={(setter) => {
+                      shippingAgentSetterRef.current = setter
                     }}
                   />
                   <Addresses

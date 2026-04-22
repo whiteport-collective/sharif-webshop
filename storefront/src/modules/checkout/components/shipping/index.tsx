@@ -11,7 +11,9 @@ import ErrorMessage from "@modules/checkout/components/error-message"
 import Divider from "@modules/common/components/divider"
 import MedusaRadio from "@modules/common/components/radio"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+
+export type ShippingAgentSetter = (id: string) => { ok: boolean; reason?: string }
 
 type ShippingProps = {
   cart: HttpTypes.StoreCart
@@ -19,6 +21,7 @@ type ShippingProps = {
   step?: string
   onStepChange?: (step: string) => void
   onShippingMethodChange?: (id: string | null) => void
+  onRegisterAgentSetter?: (setter: ShippingAgentSetter) => void
 }
 
 function formatAddress(address: HttpTypes.StoreCartAddress) {
@@ -35,6 +38,7 @@ const Shipping: React.FC<ShippingProps> = ({
   step: stepProp,
   onStepChange,
   onShippingMethodChange,
+  onRegisterAgentSetter,
 }) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isLoadingPrices, setIsLoadingPrices] = useState(true)
@@ -43,6 +47,7 @@ const Shipping: React.FC<ShippingProps> = ({
   const [shippingMethodId, setShippingMethodId] = useState<string | null>(
     cart.shipping_methods?.at(-1)?.shipping_option_id || null
   )
+  const [agentPulseId, setAgentPulseId] = useState<string | null>(null)
 
   const searchParams = useSearchParams()
 
@@ -95,6 +100,29 @@ const Shipping: React.FC<ShippingProps> = ({
     setError(null)
   }, [isOpen])
 
+  // Agent setter — selects a shipping method by ID with amber pulse on the Radio.
+  // Reads availableShippingMethods via ref so the registered setter stays stable
+  // while the shipping options list updates.
+  const availableShippingMethodsRef = useRef(availableShippingMethods)
+  availableShippingMethodsRef.current = availableShippingMethods
+  const handleSetShippingMethodRef = useRef<((id: string) => Promise<void>) | null>(null)
+
+  useEffect(() => {
+    if (!onRegisterAgentSetter) return
+    onRegisterAgentSetter((id) => {
+      const options = availableShippingMethodsRef.current ?? []
+      if (!options.find((o) => o.id === id)) {
+        return { ok: false, reason: `Unknown shipping method: ${id}` }
+      }
+      handleSetShippingMethodRef.current?.(id)
+      setAgentPulseId(id)
+      setTimeout(() => {
+        setAgentPulseId((prev) => (prev === id ? null : prev))
+      }, 1200)
+      return { ok: true }
+    })
+  }, [onRegisterAgentSetter])
+
   const handleEdit = () => {
     onStepChange?.("delivery")
   }
@@ -122,6 +150,7 @@ const Shipping: React.FC<ShippingProps> = ({
       })
       .finally(() => setIsLoading(false))
   }
+  handleSetShippingMethodRef.current = handleSetShippingMethod
 
   const selectedMethod = cart.shipping_methods?.at(-1)
 
@@ -196,10 +225,11 @@ const Shipping: React.FC<ShippingProps> = ({
                     disabled={isDisabled}
                     data-testid="delivery-option-radio"
                     className={clx(
-                      "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active",
+                      "flex items-center justify-between text-small-regular cursor-pointer py-4 border rounded-rounded px-8 mb-2 hover:shadow-borders-interactive-with-active transition-shadow",
                       {
                         "border-ui-border-interactive": option.id === shippingMethodId,
                         "hover:shadow-none cursor-not-allowed": isDisabled,
+                        "ring-2 ring-amber-400": option.id === agentPulseId,
                       }
                     )}
                   >
