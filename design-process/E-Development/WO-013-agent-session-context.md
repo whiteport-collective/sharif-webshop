@@ -475,37 +475,230 @@ Commits on `main`:
 - `4ee42e9` — Booking component same pattern for `booking_slot_id` (auto-expands day, grows visibleDays if needed).
 - `51c7104` — System prompt authorizes `prefillCheckoutField` for shipping/booking when the customer is in checkout.
 
-### Test list — manuell verifisering
+### Test-plan — manuell verifisering per skjerm
 
-Gå gjennom listan i ordning. Start med en tom handlekurv og gå till `http://localhost:3001/`. Öppna chatten via ikonen uppe till höger.
+Gå gjennom skjermene i ordning. Start alltid med tom kurv og fresh state (`localStorage.clear()` + reload) når du begynner om. Noter bugger inline som `BUG:` under aktuell checkbox.
 
-**1. Shipping method via chat**
-- [ ] Sök 205/55R16, lägg första däcket i kassen.
-- [ ] På leveringssteget: skriv "Ta Fjellhamar" (eller "hemleverans") i chatten.
-- [ ] Radio-knappen ska få amber ring-puls ~1,2 s och bli vald.
-- [ ] Pris/cart-total uppdateras om du väljer hemleverans (699 kr).
+#### Skjerm 1 — Startsida (`/`)
 
-**2. Booking slot via chat**
-- [ ] Fortsätt till Kundeopplysninger, fyll i alla fält inkl. bilregistreringsnummer.
-- [ ] Gå till Booking-steget (eller tryck Edit på Booking om det redan är kompletterat).
-- [ ] Skriv "Välg första lediga tid" i chatten.
-- [ ] Första tidsrutan (t.ex. 08:00) ska få amber ring-puls och bli grön.
-- [ ] Agenten ska kort bekräfta vilket datum/tid den valde.
+**1.1 Dimensjonsfelt (width / profile / rim)**
+- [ ] Width aktiv; profile og rim disabled ved load
+- [ ] Skriv `205` i width → profile blir aktiv
+- [ ] Skriv `55` i profile → rim blir aktiv
+- [ ] Skriv `16` i rim → `R` vises mellom profile og rim
+- [ ] Backspace i tom rim → fokus hopper til profile, `R` forsvinner
+- [ ] Endre width etter alle fylt → profile + rim tømmes (kaskad)
 
-**3. Agenten väljer specifik tid**
-- [ ] På booking-steget: skriv "Boka kl. 13 i morgon".
-- [ ] Dagen expanderas automatiskt om den var kollapsad; 13:00 blir vald med amber puls.
+**1.2 Lim inn dimension**
+- [ ] Lim inn `205/55R16` i width → alle tre segment fylles automatisk
+- [ ] Lim inn `205 55 16` (mellomrom) → samme resultat
 
-**4. Agenten avböjer off-topic**
-- [ ] Skriv "vad är huvudstaden i Frankrike?" under kassan.
-- [ ] Agenten ska avböja i en mening och erbjuda hjälp med bestillningen — inte försöka svara.
+**1.3 Antall + Type dropdowns**
+- [ ] Antall default `4 stk`; velg 2 / 6 / 8
+- [ ] Type default `Sommerdekk`; velg Vinter / Helår
+- [ ] Valgene persisterer når du navigerer tilbake til `/`
 
-**5. Address prefill fortsätter fungera (regression)**
-- [ ] Börja om med ny kurv.
-- [ ] På Kundeopplysninger: skriv "Jag heter Anna Svensson, anna@test.no, 40123456, Storgata 1, 0123 Oslo".
-- [ ] Agenten fyller i alla fält; varje fält får amber puls vid fyllning.
+**1.4 Populærdekk-hint**
+- [ ] Under width vises populære bredder
+- [ ] Klikk et forslag → fyller feltet
 
-### Known issues att notera under testet
+**1.5 Finn dekk-knappen**
+- [ ] Disabled når dimensjon er ufullstendig (eller fokuserer første tomme felt ved klikk)
+- [ ] Enabled når 205/55R16 er fylt
+- [ ] Klikk → loading state → navigerer til `/dekk/205-55R16-sommer-4`
 
-- Booking-sektionen spammar "Maximum update depth exceeded" i konsolen (preexisterande; se `project_open_bugs`).
-- Om chatten har långt historik kan svaret ta 5–10 s — detta är Gemini-latens, inte en bugg.
+**1.6 Header**
+- [ ] Logo `SHARIF` klikkbar → går tilbake til `/`
+- [ ] Hamburger-meny åpner side-meny
+- [ ] Språkvelger NO ↔ EN/SE
+- [ ] Cart-ikonet viser ingen badge når tom
+- [ ] Chat-ikonet åpner assistentpanel fra høyre
+
+**1.7 Landing content**
+- [ ] Under search-formen: Kvalitetsdekk / Montering inkludert / Rask levering-kort synlige
+- [ ] "60+ merker · Montering inkludert · Fra 499 kr"-teksten synlig
+
+**1.8 Chat fra hjem**
+- [ ] Åpne chat → tom state "Hva leter du etter?"
+- [ ] Skriv `Jag har en Volvo V70 2015, vilka däck passar?` → agent svarer med dimensjoner
+- [ ] Skriv `205/55R16` direkte → agent skal bruke `setSearchField` + `triggerSearch` og navigere til resultat
+
+---
+
+#### Skjerm 2 — Søkeresultater (`/dekk/…`)
+
+**2.1 Produktkort**
+- [ ] Alle kort viser bilde, merke, modell, dimensjon, pris per dekk, EU-label (drivstoff / grep / støy)
+- [ ] Pris × antall synlig
+- [ ] "Legg i kassen"-knapp på hvert kort
+
+**2.2 Sortering**
+- [ ] Header-sort-velger: Pris (default), Best samlet, Grep, Støy, Drivstoff, Ytelse
+- [ ] Sortering bytter med View Transition-animasjon
+- [ ] Sortering vedvarer ved refresh
+
+**2.3 Dimensjons-chip i header**
+- [ ] Viser `205/55R16 · Sommer · 4 stk`
+- [ ] `X` på chippen nullstiller søket og går til `/`
+
+**2.4 Tilbake-navigasjon**
+- [ ] Browser back fra resultat → startsida
+- [ ] Scroll-opp-gest fra toppen av resultatlisten → tilbake-chip animerer ned
+
+**2.5 Legg i kassen**
+- [ ] Klikk "Legg i kassen" → cart-badge går til 4 (eller valgt antall)
+- [ ] Automatisk scrollar ned til kasse-panelet
+- [ ] Cart popup viser det valgte dekket
+
+**2.6 Chat fra resultat**
+- [ ] `Vilket har lägst brus?` → agent bruker `highlightProducts` (gul ring rundt match) og svarer med modellnavn
+- [ ] `Ta den billigaste` → agent velger første etter pris og legger i kassen
+
+---
+
+#### Skjerm 3 — Kasse: Leveringsmåte
+
+**3.1 Alternativer**
+- [ ] Drammen — montering inkl. (0 kr) — auto-valgt
+- [ ] Fjellhamar — montering inkl. (0 kr)
+- [ ] Hjemlevering (699 kr)
+- [ ] Prisene oppdaterer cart-total når man bytter
+
+**3.2 Velg + fortsett**
+- [ ] Radio kan velges med klikk
+- [ ] "Fortsett" går til Kundeopplysninger
+- [ ] Browser back fra Kundeopplysninger → tilbake til Leveringsmåte
+
+**3.3 Header-tittel**
+- [ ] Headeren viser "Leveringsmåte" mens steget er aktivt
+- [ ] Skifter til "Kundeopplysninger" ved neste steg
+
+**3.4 Chat på leveringssteget**
+- [ ] `Ta Fjellhamar` → Fjellhamar-radio får amber ring (~1,2 s) + blir valgt
+- [ ] `Hjemlevering istället` → Hjemlevering velges, total oppdateres med 699 kr
+- [ ] `Vilka alternativ finns?` → agent leser fra `sessionContext.shippingMethods` og lister reelle navn + priser
+
+---
+
+#### Skjerm 4 — Kasse: Kundeopplysninger
+
+**4.1 Felt**
+- [ ] Fornavn *, Etternavn *, E-post *, Telefon *, Bilregistreringsnummer *
+- [ ] Når "Kundeopplysninger" (workshop): adresse-blokk skjult
+- [ ] Når "Leveringsadresse" (hjemlevering): inkluderer adresse, postnummer, by
+
+**4.2 Validering**
+- [ ] Tom påkrevd felt + submit → browser-native "Please fill in this field"
+- [ ] E-post må ha gyldig format
+
+**4.3 Submit**
+- [ ] "Fortsett til betaling" går til Betaling-steget
+- [ ] Summering i høyre kolonne oppdateres
+
+**4.4 Chat-prefill**
+- [ ] `Jag heter Anna Svensson, anna@test.no, 40123456` → fyller fornavn, etternavn, e-post, telefon med amber-puls pr. felt
+- [ ] Ved hjemlevering: `Storgata 1, 0123 Oslo` → fyller address, postnummer, by
+- [ ] Bilregistreringsnummer fylles ikke av agenten i dag — manuelt krav
+
+---
+
+#### Skjerm 5 — Kasse: Betaling
+
+**5.1 Betalingsmetoder**
+- [ ] Credit card (Stripe Elements) lastes inn
+- [ ] Manual Payment (test-only) velgbar
+
+**5.2 Kjøpsvilkår**
+- [ ] "Jeg har lest og godkjenner kjøpsvilkårene" må krysses av før bestilling
+- [ ] Uten avkryssing: "Gjennomfør betaling" disabled
+
+**5.3 Hjemlevering-flyt**
+- [ ] Klikk "Gjennomfør betaling" → Stripe/Manual flow → ordrebekreftelse
+
+**5.4 Workshop-flyt**
+- [ ] Etter betaling: stegene går videre til Booking (ikke direkte ordre)
+
+---
+
+#### Skjerm 6 — Kasse: Booking (kun workshop-bestillinger)
+
+**6.1 Layout**
+- [ ] Verkstednavn + adresse synlig øverst (Drammen / Fjellhamar)
+- [ ] Første dag auto-expandert med 6 tidsruter: 08:00, 09:30, 11:00, 13:00, 14:30, 16:00
+- [ ] Øvrige dager kollapsede med chevron-pil
+
+**6.2 Tidsvalg**
+- [ ] Klikk på dag-header → expand/collapse toggle
+- [ ] Klikk på tidsrute → blir grønn, andre forblir røde
+- [ ] "Vis fler dager" legger til 5 dager (maks 30)
+- [ ] "Gjennomfør bestilling"-knapp disabled til tid er valgt
+
+**6.3 Helger utelatt**
+- [ ] Listen skipper lørdag + søndag
+
+**6.4 Chat på booking-steget**
+- [ ] `Velg første ledige tid` → 08:00 første dag får amber ring + blir grønn
+- [ ] `Boka kl. 13 i morgon` → dagen expanderes, 13:00 velges
+- [ ] `Vilka tider finns?` → agent lister fra `bookingSlots`
+
+---
+
+#### Skjerm 7 — Kasse: Bekreft bestilling (workshop-only)
+
+**7.1 Summering**
+- [ ] Leveringsmåte-rad
+- [ ] Adresse-rad
+- [ ] Monteringstid-rad (dato, klokkeslett, verksted)
+- [ ] Totalbeløp fet
+
+**7.2 Bekreft**
+- [ ] "Bekreft og betal"-knappen trigger PaymentButton → ordre
+
+---
+
+#### Skjerm 8 — Ordrebekreftelse
+
+**8.1 Collapsed step-summary**
+- [ ] Leveringsmåte ✓ med navn + pris
+- [ ] Kundeopplysninger ✓ med navn + kontakt + bilregnr (plate-styling)
+- [ ] Betaling ✓ "Betaling gjennomført"
+- [ ] Monteringstid ✓ (workshop) med dato + tid + verksted
+
+**8.2 Takk + stjerner**
+- [ ] "Takk for bestillingen!" med ordrenummer (#XXXX)
+- [ ] Stjernerating 1–5; ved klikk kollapses seksjonen etter 1 s
+- [ ] Kollapsert visning: ✓ "Takk! ★★★★★ — Ordrenummer #XXXX"
+
+**8.3 Chat etter bestilling**
+- [ ] "Skriv din melding…"-input synlig
+- [ ] Skriv `När kommer bekräftelsen?` → agent svarer
+- [ ] Svar fra `/api/dialog/{orderId}/message`-endpoint
+
+**8.4 Cart-cleanup**
+- [ ] Cart-badge går til 0 etter ordre
+- [ ] Hjem-ikonet/logoen fortsatt klikkbar
+
+---
+
+#### Tverr-skjerm: Agent-beteende
+
+**X.1 Off-topic scope guard**
+- [ ] `Vad är huvudstaden i Frankrike?` → avvises i én setning
+- [ ] `Hur lagar man pasta?` → avvises
+
+**X.2 Språkbytte**
+- [ ] Bytt til EN i header → chat svarer på engelsk
+- [ ] Skriv svensk midt i norsk session → agenten bytter språk
+
+**X.3 Eskalering**
+- [ ] `Jag vill snacka med Moohsen` → `escalateToAdmin` trigges
+
+**X.4 Ordrenummer-oppslag**
+- [ ] `Jag vill kolla min beställning, e-post är …` → `sendOneTimeCode` trigges
+
+---
+
+### Known issues å notere under testet
+
+- Booking-seksjonen spammer "Maximum update depth exceeded" i konsolen (preexisterende; se `project_open_bugs`).
+- Lang chat-historikk → 5–10 s svartid (Gemini-latens, ikke bug).
