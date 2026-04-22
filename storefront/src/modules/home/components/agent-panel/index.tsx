@@ -13,12 +13,15 @@ type Props = {
 
 function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose">) {
   const [input, setInput] = useState("")
+  const [menuOpen, setMenuOpen] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const { t } = useLanguage()
 
   const getContext = useCallback(() => getSessionContext(), [getSessionContext])
-  const { messages, sendMessage, isStreaming, clearHistory } = useStreamingChat(getContext)
+  const { messages, sendMessage, isStreaming, newChat, switchTo, sessions, currentId } =
+    useStreamingChat(getContext)
 
   useEffect(() => {
     if (chatRef.current) {
@@ -44,6 +47,43 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
     textareaRef.current?.focus()
   }
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    const onDocMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onDocMouseDown)
+    return () => document.removeEventListener("mousedown", onDocMouseDown)
+  }, [menuOpen])
+
+  const sessionTitle = (s: { messages: { role: string; content: string }[]; startedAt: string }) => {
+    const firstUser = s.messages.find((m) => m.role === "user")
+    if (firstUser) return firstUser.content.trim().slice(0, 36) + (firstUser.content.length > 36 ? "…" : "")
+    return "Ny chat"
+  }
+
+  const formatWhen = (iso: string) => {
+    const d = new Date(iso)
+    const now = new Date()
+    const sameDay =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    const time = d.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })
+    if (sameDay) return `I dag ${time}`
+    const date = d.toLocaleDateString("nb-NO", { day: "numeric", month: "short" })
+    return `${date} ${time}`
+  }
+
+  const sortedSessions = [...sessions].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+  )
+  const previousSessions = sortedSessions.filter((s) => s.id !== currentId)
+  const currentMeta = sortedSessions.find((s) => s.id === currentId)
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
@@ -60,9 +100,95 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex h-14 shrink-0 items-center border-b border-[#dee2e6] px-4">
-        <span className="text-sm font-semibold text-[#212529]">Sharif-rådgiver</span>
-        <span className="ml-2 rounded-full bg-[#f8f9fa] px-2 py-0.5 text-[11px] text-[#6c757d]">Beta</span>
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-[#dee2e6] px-4">
+        <div className="flex items-center">
+          <span className="text-sm font-semibold text-[#212529]">Sharif-rådgiver</span>
+          <span className="ml-2 rounded-full bg-[#f8f9fa] px-2 py-0.5 text-[11px] text-[#6c757d]">Beta</span>
+        </div>
+
+        <div ref={menuRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[#6c757d] transition-colors hover:bg-[#f1f3f5] hover:text-[#212529]"
+            aria-label="Chat-meny"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="5" cy="12" r="1.6" />
+              <circle cx="12" cy="12" r="1.6" />
+              <circle cx="19" cy="12" r="1.6" />
+            </svg>
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-10 z-50 w-72 overflow-hidden rounded-xl border border-[#dee2e6] bg-white shadow-lg"
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  newChat()
+                  setMenuOpen(false)
+                  setTimeout(() => textareaRef.current?.focus(), 0)
+                }}
+                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-[#212529] hover:bg-[#f8f9fa]"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Ny chat
+              </button>
+
+              {currentMeta && (
+                <>
+                  <div className="border-t border-[#f1f3f5]" />
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#adb5bd]">
+                    Nåværende
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled
+                    className="flex w-full flex-col items-start gap-0.5 bg-[#f8f9fa] px-4 py-2.5 text-left text-sm text-[#212529]"
+                  >
+                    <span className="line-clamp-1">{sessionTitle(currentMeta)}</span>
+                    <span className="text-[11px] text-[#6c757d]">{formatWhen(currentMeta.startedAt)}</span>
+                  </button>
+                </>
+              )}
+
+              {previousSessions.length > 0 && (
+                <>
+                  <div className="border-t border-[#f1f3f5]" />
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#adb5bd]">
+                    Tidligere
+                  </div>
+                  <div className="max-h-56 overflow-y-auto">
+                    {previousSessions.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          switchTo(s.id)
+                          setMenuOpen(false)
+                        }}
+                        className="flex w-full flex-col items-start gap-0.5 px-4 py-2.5 text-left text-sm text-[#212529] hover:bg-[#f8f9fa]"
+                      >
+                        <span className="line-clamp-1">{sessionTitle(s)}</span>
+                        <span className="text-[11px] text-[#6c757d]">{formatWhen(s.startedAt)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages */}

@@ -9,29 +9,93 @@ export type ChatMessage = {
   content: string
 }
 
-const STORAGE_KEY = "sharif-agent-messages"
+export type ChatSession = {
+  id: string
+  startedAt: string
+  messages: ChatMessage[]
+}
 
-function loadMessages(): ChatMessage[] {
+const SESSIONS_KEY = "sharif-agent-sessions"
+const CURRENT_KEY = "sharif-agent-current"
+const MAX_SESSIONS = 20
+const MAX_MESSAGES_PER_SESSION = 40
+
+function newSessionId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `s_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+}
+
+function loadSessions(): ChatSession[] {
   if (typeof window === "undefined") return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
+    const raw = localStorage.getItem(SESSIONS_KEY)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
   }
 }
 
-function saveMessages(messages: ChatMessage[]) {
+function saveSessions(sessions: ChatSession[]) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-40)))
+    const trimmed = sessions
+      .slice(-MAX_SESSIONS)
+      .map((s) => ({ ...s, messages: s.messages.slice(-MAX_MESSAGES_PER_SESSION) }))
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(trimmed))
+  } catch {}
+}
+
+function loadCurrentId(sessions: ChatSession[]): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const id = localStorage.getItem(CURRENT_KEY)
+    if (id && sessions.some((s) => s.id === id)) return id
+  } catch {}
+  return sessions.at(-1)?.id ?? null
+}
+
+function saveCurrentId(id: string | null) {
+  try {
+    if (id) localStorage.setItem(CURRENT_KEY, id)
+    else localStorage.removeItem(CURRENT_KEY)
   } catch {}
 }
 
 export function useStreamingChat(getContext: () => SessionContext) {
-  const [messages, setMessages] = useState<ChatMessage[]>(loadMessages)
+  const [sessions, setSessions] = useState<ChatSession[]>(loadSessions)
+  const [currentId, setCurrentId] = useState<string | null>(() => loadCurrentId(loadSessions()))
   const [isStreaming, setIsStreaming] = useState(false)
   const tools = useAgentTools()
   const abortRef = useRef<AbortController | null>(null)
+
+  const currentSession = sessions.find((s) => s.id === currentId) ?? null
+  const messages = currentSession?.messages ?? []
+
+  const setMessages = useCallback(
+    (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
+      setSessions((prev) => {
+        // Resolve the active session (creating one lazily on first message).
+        let activeId = currentId
+        let list = prev
+        if (!activeId || !list.some((s) => s.id === activeId)) {
+          activeId = newSessionId()
+          list = [...list, { id: activeId, startedAt: new Date().toISOString(), messages: [] }]
+          setCurrentId(activeId)
+          saveCurrentId(activeId)
+        }
+        const next = list.map((s) => {
+          if (s.id !== activeId) return s
+          const nextMessages =
+            typeof updater === "function" ? updater(s.messages) : updater
+          return { ...s, messages: nextMessages }
+        })
+        saveSessions(next)
+        return next
+      })
+    },
+    [currentId]
+  )
 
   const dispatchToolCall = useCallback(
     (name: string, input: Record<string, unknown>) => {
@@ -159,19 +223,34 @@ export function useStreamingChat(getContext: () => SessionContext) {
       } finally {
         setIsStreaming(false)
         abortRef.current = null
-        setMessages((prev) => {
-          saveMessages(prev)
-          return prev
-        })
       }
     },
-    [messages, isStreaming, getContext, dispatchToolCall]
+    [messages, isStreaming, getContext, dispatchToolCall, setMessages]
   )
 
-  const clearHistory = useCallback(() => {
-    setMessages([])
-    localStorage.removeItem(STORAGE_KEY)
+  const newChat = useCallback(() => {
+    const id = newSessionId()
+    setSessions((prev) => {
+      const next = [...prev, { id, startedAt: new Date().toISOString(), messages: [] }]
+      saveSessions(next)
+      return next
+    })
+    setCurrentId(id)
+    saveCurrentId(id)
   }, [])
 
-  return { messages, sendMessage, isStreaming, clearHistory }
+  const switchTo = useCallback((id: string) => {
+    setCurrentId(id)
+    saveCurrentId(id)
+  }, [])
+
+  return {
+    messages,
+    sendMessage,
+    isStreaming,
+    newChat,
+    switchTo,
+    sessions,
+    currentId,
+  }
 }
