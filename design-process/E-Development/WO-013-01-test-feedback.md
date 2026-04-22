@@ -1,0 +1,36 @@
+# WO-013-01 — Test Feedback Round 1
+
+**Status:** Open
+**Reporter:** Mårten
+**Date:** 2026-04-22
+**Context:** Walkthrough av WO-013 follow-up testplanen per skjerm (startsida først)
+
+---
+
+## FB-01: Agent ignorerar manuellt ifylld width
+
+**Skjerm:** Startsida → chat från hemma (test 1.8)
+
+**Observed:**
+1. Användaren fyllde i `205` manuellt i width-fältet.
+2. I chatten: "fyll i de sista uppgifterna 55 16"
+3. Agenten svarade: *"Jeg forstår at du ønsker å søke etter dekk, men det ser ut som om jeg mangler bredden på dekket. Kan du gi meg den komplette dimensjonen, for eksempel '205/55R16'?"*
+4. Trots svaret visades produkterna (6 st däck) under formuläret — dvs en sökning **exekverades** parallellt med texten som påstod att width saknas.
+
+**Root cause-hypoteser:**
+- **A. LLM-hallucination:** `sessionContext.searchForm.width = "205"` skickas med i prompten, men Gemini plockar inte upp det från JSON-dumpen och hamnar i "fråga om width"-mallen.
+- **B. Inkonsistens text↔tools:** Gemini körde troligen `setSearchField(profile=55)` + `setSearchField(rim=16)` + `triggerSearch` (som förklarar att produkter visas) men genererade en text-del som motsäger tool-kallen.
+- **C. Prompt explicit:** Prompten "fyll i de sista uppgifterna" var tvetydig — "sista" kan tolkas som alla fält.
+
+**Expected:**
+- Agenten ska läsa `searchForm.width` ur context innan den frågar efter värdet som redan är angivet.
+- Tool-kall och text-svar ska vara konsistenta (om tools kördes, bekräfta det i text).
+
+**Föreslagna åtgärder:**
+1. **System prompt:** Lägg till en explicit regel — *"Innan du spør om et felt i søkeformen, sjekk om det allerede finnes i `context.searchForm`. Hvis brukeren ber deg fylle ut 'resten' eller 'det som mangler', bruk bare de feltene som er null der."*
+2. **Context header:** Surface `searchForm` som första delen av konteksten (före JSON-dumpen), med tydligt formaterade värden (inte bara i JSON-blobben som lätt hoppas över).
+3. **Loggning:** Spara request/response-paren i agent-sessionerna så vi kan se vad context faktiskt innehöll när Gemini svarade inkonsistent (kan redan finnas via Vertex gateway).
+
+**Severity:** Medium — fungerar ändå (sökningen gick), men förvirrar användaren.
+**Assigned to:** Mimir
+**Files:** `storefront/src/lib/agent/system-prompt.ts`
