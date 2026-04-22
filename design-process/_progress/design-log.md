@@ -1,5 +1,17 @@
 # Design Log — Sharif Webshop
 
+## 2026-04-22 mimir
+
+- MODEL:Opus — Wrapped WO-012 round 5 session. Verified golden path end-to-end in browser (search → noise query with dB numbers → cheapest select → checkout → payment refusal). Fixed React 18 batching bug where `triggerSearch` fired before `setSearchField` state landed — added synchronous `agentSearchFields` ref mirrored from the handler. Restored `visibleProductsNote` in system-prompt + added `Viktige regler` (direct-selection, confirmation format, piggdekk dates). Grid polish: `min-[1100px]:grid-cols-4` + `max-w-[1400px]`. Native View Transition animation on sort change (zero deps). New `sortProducts({sortBy})` agent tool routes through same handler so agent-triggered sorts animate. Commits: `1ff72c6`, `30a5fdb`, `1e9a85b`, `589a864` on `freya/fix-back-to-results`. Next session: extend `prefillCheckoutField` to shipping/booking slot IDs, test booking via agent, then merge to main.
+
+## 2026-04-21 mimir
+
+- MODEL:Opus — Browser-test WO-012 golden path end-to-end: open localhost:3001, open agent panel, send "Jag behöver fyra sommardäck, 205/55R16" and verify 5 setSearchField calls + triggerSearch fires + products scroll into view. Then test highlightProducts by sending a product elicitation prompt. If golden path passes, implement Part 5: headless SSE channel (/api/agent/stream, /api/agent/command, /api/agent/command/result) + scripts/drive.mjs CLI. Commits in agent-space (skills were already scaffolded). See WO-012 Part 5 in design-process/E-Development/WO-012-agent-ordering-api.md.
+
+## 2026-04-21 freya
+
+- MODEL:Sonnet — Commita `agent-space/` (README + 5 skills) + uppdaterad `design-process/E-Development/WO-012-agent-ordering-api.md` till `freya/fix-back-to-results`. Pusha. Skicka sedan handoff till Mimir via Design Space (to: mimir, repo: sharif-webshop) med Next-task: *"Implementera WO-012 Part 1 — `setSearchField(field, value)` för alla fem fält (width/profile/rim/qty/season) + `triggerSearch()` med utökat produkt-payload inkl `priceRank, noiseDb, noiseClass, fuelClass, wetGripClass, brandTier, mileageRating, strengths[]`. Filer: `storefront/src/modules/home/components/flow-shell/index.tsx`, `storefront/src/modules/home/components/tire-search/`, `storefront/src/lib/agent/tools.ts`, `storefront/src/modules/home/components/agent-panel/AgentToolContext.tsx`. Läs hela WO-012 för kontext — inklusive tre öppna review-frågor i slutet."*
+
 ## 2026-04-19 mimir
 
 - MODEL:Opus — Bygg Avancerat-popover för orders-admin. Filter-option "Avancerat" i filter-dropdownen, popover med raw `<textarea>` för JSON + `Kör`-knapp + step-results-lista (step_index, label, input_count → output_count, samples). Ömsesidig exklusivitet: Avancerat aktivt rensar native chips, välja native chip rensar Avancerat. När agent-chatten returnerar `ui_action: { type: "apply_scripted_selection" }` ska popovern öppnas prefilled med scriptet. Ny backend-endpoint `/admin/agent/chat/v2/run-script` tar `{ script: ScriptedCriterion[] }` och returnerar `{ count, steps, samples }` — ingen LLM-plan, bara kör `runScriptedProbe`-logiken från [v2/route.ts](backend/src/api/admin/agent/chat/v2/route.ts). Validera med `ScriptedCriterionSchema` från [planner.ts](backend/src/lib/admin-agent/planner.ts). Verifiera i browsern: orders-sidan → Avancerat → klistra in `[{"kind":"minimum_total","label":"över 5000","amount":5000}]` → Kör → se 9 träffar.

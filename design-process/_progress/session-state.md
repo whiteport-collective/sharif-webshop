@@ -1,51 +1,55 @@
 # mimir — Session State
 **Repo:** sharif-webshop
-**Wrapped:** 2026-04-19
+**Wrapped:** 2026-04-22
 
 ## Context
-Branch: `freya/fix-back-to-results` — samma som förra sessionen. Inga commits denna session.
+WO-012 Parts 1–4 complete + Round 5 polish + golden path verified. All on `freya/fix-back-to-results` (unmerged).
 
-Gjort denna session:
-- Ny endpoint `backend/src/api/admin/agent/chat/v2/route.ts` — plan-test-evaluate-loop, JSON-respons
-- Ny fil `backend/src/lib/admin-agent/planner.ts` — Zod-schema (`FilterPlanSchema`, `ScriptedPlanSchema`, `ClarifyPlanSchema`) + `buildPlan()` via `generateText`
-- Uppdaterad `backend/src/lib/admin-agent/tools.ts` — `listOrders` använder `$gte`/`$lte`, default-sort `-created_at`
-- Exporterade `matchCriterion` + `StepExecutionResult` från `scripted-order-selection.ts`
-- Gateway v33 deployad med `coerceToText()` för system-prompt (AI SDK v6 skickar array, inte sträng)
-- Admin-lösenord återställt till `sharif2026`
+**Commits this session:**
+- `55e0dd4` — WO-013 fat SessionContext, read-visible agent state (Codex)
+- `1ff72c6` — restore Norwegian characters in system-prompt.ts
+- `30a5fdb` — agent search sync (React batching fix), visibleProducts in prompt, checkout render-loop fix
+- `1e9a85b` — derive searchForm fields from dimension when TireSearch fields are null
+- `589a864` — round 5: grid polish (3 cols until 1100px, max-w 1400px) + animated sort (View Transition) + sortProducts tool
 
-Verifierat via curl mot v2:
-- "visa ordrar från igår" → route `filter`, count=2
-- "sök efter kund Xerxes Zuluhotel" → route `filter`, count=0, ui_action noop
-- "visa alla ordrar" → route `filter`, clear_filters=true
-- "visa ordrar över 5000 kr" → route `scripted`, count=9
-- "visa ordrar från Oslo över 3000 kr" → route `scripted`, 2 steg, count=2
+**Previously:**
+- `920ba21` — Part 1: `setSearchField` × 5, `triggerSearch` with enriched product list
+- `78dbf93` — Part 2 + 2b: `selectTireForCheckout`, `highlightProducts`/`clearHighlights`, skill-loader
+- `5458574` — Part 3: `advanceCheckoutStep`, `getCheckoutState`, checkout prefill (address)
+- `e628005` — Part 4 + 4b: payment hands-off gate + `navigateBack` tool
 
-Inte gjort:
-- Frontend för Avancerat-popover
-- Bana B (narration) och Bana C (actions) i v2
-- SSE-streaming (v2 är JSON-only)
-- Riva ut v1 `route.ts` — lever parallellt
+**What's working (verified in browser):**
+- Full golden path: search → visible products with dB/grip/fuel/price data → "Ta den billigaste" selects immediately → checkout opens → address prefill with amber ring animation → payment-gate refuses when asked to click Pay
+- New system-prompt `Viktige regler`: direct-selection, confirmation format "Jeg fant X dekk — viser dem nå!", piggdekk dates
+- Agent sort: `sortProducts({sortBy})` routes through `handleSortChange` → native View Transition animates reorder
+- Grid: 3 cols until 1100px, 4 cols beyond, max-w 1400px cap
+
+**Open threads:**
+- `prefillCheckoutField` for `shipping_method_id` and `booking_slot_id` not yet implemented (address fields only). Shipping/Booking components need ref-based setter mirroring AgentCheckoutAPI pattern.
+- `getCheckoutState` + `advanceCheckoutStep` tool results are `{ok:true}` without awaiting browser — LLM doesn't see post-action state.
+- Skill tool filter: `highlightProducts`/`clearHighlights` leak through when no skills loaded. Cosmetic.
+- Booking step of golden path not yet agent-tested.
+- Part 5 (headless SSE + `drive.mjs`) not started.
+- Parent repo submodule pointer not updated.
 
 ## Plan
-- [DONE] Plan-test-evaluate-arkitektur i v2
-- [DONE] Bana A (native filter) verifierad
-- [DONE] Bana D (scripted, inkl multi-step) verifierad
-- [DONE] Gateway v33 + Medusa filter-syntax-fix
-- [CURRENT] Avancerat-popover i orders-vyn (frontend)
-- [ ] Bana B narration (count-frågor)
-- [ ] Bana C actions med confirmation card
-- [ ] SSE-streaming i v2
-- [ ] Peka admin-UI:t på v2, riv ut v1
+WO-012 — Agent-assisterat orderflöde för Moohsen demo scenario 1.
+
+- [DONE] WO-012 spec + agent-space scaffold + 5 elicitation skills
+- [DONE] Part 1 — setSearchField × 5 + triggerSearch with enriched products
+- [DONE] Part 2 + 2b — selectTireForCheckout + highlightProducts + skill-loader
+- [DONE] Part 3 — advanceCheckoutStep + getCheckoutState + prefillCheckoutField (address)
+- [DONE] Part 4 + 4b — payment hands-off gate + navigateBack
+- [DONE] Round 5 — grid polish, animated sort, sortProducts tool, golden path verified
+- [CURRENT] Part 5 — shipping/booking slot prefill + agent-test booking step + merge to main
+- [ ] Part 6 — headless SSE (optional, only if demo requires it)
 
 ## Next:
-MODEL:Opus — Bygg Avancerat-popover för orders-admin. Filter-option "Avancerat" i filter-dropdownen, popover med raw `<textarea>` för JSON + `Kör`-knapp + step-results-lista (step_index, label, input_count → output_count, samples). Ömsesidig exklusivitet: Avancerat aktivt rensar native chips, välja native chip rensar Avancerat. När agent-chatten returnerar `ui_action: { type: "apply_scripted_selection" }` ska popovern öppnas prefilled med scriptet. Backend-kontrakt: ny endpoint `/admin/agent/chat/v2/run-script` som tar `{ script: ScriptedCriterion[] }` och returnerar `{ count, steps, samples }` — ingen LLM-plan, bara kör `runScriptedProbe`-logiken. Validera med `ScriptedCriterionSchema` från [planner.ts](backend/src/lib/admin-agent/planner.ts). Verifiera i browsern: orders-sidan → Avancerat → klistra in `[{"kind":"minimum_total","label":"över 5000","amount":5000}]` → Kör → se 9 träffar.
+MODEL:Sonnet — Extend `prefillCheckoutField` to cover `shipping_method_id` and `booking_slot_id`. Shipping and Booking components expose a ref-based setter via `AgentCheckoutAPI` (mirror address prefill). Then run full golden path including booking — send "välg første ledige tid" mid-checkout and verify the booking card updates with amber ring. Files: `storefront/src/modules/checkout/components/{shipping,booking}/index.tsx`, `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`. One commit per component. When verified end-to-end, merge `freya/fix-back-to-results` → `main`.
 
 ## Learned
-- **Plan-test-evaluate-arkitektur:** agenten producerar strukturerad plan-JSON (inte tool-calling via AI SDK), backend kör testet mot riktig data, deterministisk eval utifrån `count > 0` avgör om UI ändras.
-- **Gateway v33 fix:** AI SDK v6 skickar `system` som array av content blocks, inte sträng. Fix: `coerceToText()` plattar till sträng innan Vertex-call.
-- **Medusa v2 filter-syntax:** `created_at[$gte]` / `created_at[$lte]` med `$`-prefix. Utan `$` ignoreras filtret tyst. `listOrders`-tool saknade detta.
-- **`generateObject` vs `generateText`:** `generateObject` använder tool-calling under huven — funkar inte stabilt mot Gemini via gatewayen. Använd `generateText` + JSON-parse + Zod istället.
-- **Zero hits = gör ingenting mot UI-state.** Kort ack ("0 träffar — ingen ändring.") räcker. Ingen chatty narration.
-- **Avancerat = raw JSON, inte struktur-editor.** Abstraktion = mindre kraftfullt på power-ytor.
-- **Avancerat vs native = ömsesidigt uteslutande.** Ett läge åt gången, färre permutationer att testa.
-- **Admin-password-reset:** scrypt-kdf base64 → jsonb_set i provider_identity.provider_metadata direkt mot postgres.
+- **React 18 batching vs synchronous tool dispatch**: `setSearchField` state updates are batched, so the `onFormChange` useEffect that writes `pendingParams.current` fires *after* the current render — `triggerSearch` fires in the same tick and sees null. Fix: parallel `agentSearchFields` synchronous ref, written directly in setSearchField handler, read directly in triggerSearch handler. Rule: if tool B depends on tool A's side effect in React state, B cannot trust A has landed — mirror the value in a ref.
+- **Native View Transition API without deps**: `document.startViewTransition(() => flushSync(() => setState(next)))` + unique `viewTransitionName` per keyed item + a single `::view-transition-group(*)` CSS rule gives framer-motion-quality FLIP on Chrome/Edge/Safari 18, zero bundle cost.
+- **Inline arrow props as useEffect deps cause render loops**: `onStepTitle={() => ...}` from FlowShell recreates each render; CheckoutPanelContent listed it as a dep → effect re-ran → setState → re-render. Fix: store inline callback props in `useRef`, call `ref.current?.(...)`, drop from deps.
+- **AgentCheckoutAPI pattern** (from prior session, still valid): CheckoutPanelContent exposes `onRegisterAgentCheckout` providing `advanceStep`, `getState`, `prefillField`. FlowShell stores API in `agentCheckoutRef`. Right pattern for exposing browser state to agent without prop-drilling.
+- **Payment gate is structural, not prompt-based**: Filtering `tools` array before sending to Anthropic is the correct hands-off mechanism — LLM cannot call tools it doesn't see.
