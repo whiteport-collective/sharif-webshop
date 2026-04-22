@@ -14,6 +14,8 @@ export type BookingSnapshot = {
   selectedBookingSlotId: string | null
 }
 
+export type BookingAgentSetter = (slotId: string) => { ok: boolean; reason?: string }
+
 const WORKSHOPS: Record<string, { name: string; address: string }> = {
   "pickup-fjellhamar": {
     name: "Fjellhamar",
@@ -82,6 +84,7 @@ const Booking = ({
   isWorkshop: isWorkshopProp,
   shippingMethodName: shippingMethodNameProp,
   onSnapshotChange,
+  onRegisterAgentSetter,
 }: {
   cart: HttpTypes.StoreCart
   step?: string
@@ -89,6 +92,7 @@ const Booking = ({
   isWorkshop?: boolean
   shippingMethodName?: string | null
   onSnapshotChange?: (snapshot: BookingSnapshot) => void
+  onRegisterAgentSetter?: (setter: BookingAgentSetter) => void
 }) => {
   const searchParams = useSearchParams()
   const { t } = useLanguage()
@@ -103,6 +107,7 @@ const Booking = ({
     return new Set(first ? [first.date] : [])
   })
   const [visibleDays, setVisibleDays] = useState(DAYS_INITIAL)
+  const [agentPulseSlotId, setAgentPulseSlotId] = useState<string | null>(null)
   const [, startTransition] = useTransition()
   const ctaRef = useRef<HTMLDivElement>(null)
 
@@ -172,6 +177,46 @@ const Booking = ({
   useEffect(() => {
     onSnapshotChange?.(bookingSnapshot)
   }, [bookingSnapshot, onSnapshotChange])
+
+  // Agent setter — selects a booking slot by "YYYY-MM-DD|HH:MM" ID.
+  // Auto-expands the day if it's collapsed and auto-grows visibleDays if the
+  // requested date falls beyond the currently loaded range.
+  const workshopRef = useRef(workshop)
+  workshopRef.current = workshop
+
+  useEffect(() => {
+    if (!onRegisterAgentSetter) return
+    onRegisterAgentSetter((slotId) => {
+      const w = workshopRef.current
+      if (!w) return { ok: false, reason: "Booking not active for home delivery" }
+
+      const [date, time] = slotId.split("|")
+      if (!date || !time) {
+        return { ok: false, reason: `Invalid slot ID: ${slotId}` }
+      }
+      const allSlots = getAvailableSlots(DAYS_MAX)
+      const targetSlot = allSlots.find((s) => s.date === date)
+      if (!targetSlot) {
+        return { ok: false, reason: `Date not available: ${date}` }
+      }
+      if (!targetSlot.times.includes(time)) {
+        return { ok: false, reason: `Time not available on ${date}: ${time}` }
+      }
+
+      const idx = allSlots.findIndex((s) => s.date === date)
+      setVisibleDays((prev) => Math.min(DAYS_MAX, Math.max(prev, idx + 1)))
+      setExpandedDays((prev) => (prev.has(date) ? prev : new Set(prev).add(date)))
+      setSelectedDate(date)
+      setSelectedTime(time)
+      startTransition(() => saveBookingToCart(date, time, w.name))
+
+      setAgentPulseSlotId(slotId)
+      setTimeout(() => {
+        setAgentPulseSlotId((prev) => (prev === slotId ? null : prev))
+      }, 1200)
+      return { ok: true }
+    })
+  }, [onRegisterAgentSetter])
 
   // For home-delivery carts — no booking needed, render nothing
   if (!workshop) return null
@@ -250,16 +295,18 @@ const Booking = ({
                     <div className="grid grid-cols-3 gap-2">
                       {slot.times.map((time) => {
                         const isTimeSelected = isSelected && selectedTime === time
+                        const slotId = `${slot.date}|${time}`
                         return (
                           <button
                             key={time}
                             type="button"
                             onClick={() => handleSelectTime(slot.date, time, workshop.name)}
                             className={clx(
-                              "py-2.5 rounded-lg border text-sm font-medium transition-colors",
+                              "py-2.5 rounded-lg border text-sm font-medium transition-colors transition-shadow",
                               {
                                 "bg-green-500 border-green-500 text-white": isTimeSelected,
                                 "bg-red-500 border-red-500 text-white hover:bg-red-600 hover:border-red-600": !isTimeSelected,
+                                "ring-2 ring-amber-400": agentPulseSlotId === slotId,
                               }
                             )}
                           >

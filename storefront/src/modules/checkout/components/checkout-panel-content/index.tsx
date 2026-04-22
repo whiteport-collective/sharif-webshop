@@ -9,7 +9,7 @@ import { HttpTypes } from "@medusajs/types"
 import Addresses from "@modules/checkout/components/addresses"
 import type { AddressDraftSnapshot } from "@modules/checkout/components/addresses"
 import Booking from "@modules/checkout/components/booking"
-import type { BookingSnapshot } from "@modules/checkout/components/booking"
+import type { BookingAgentSetter, BookingSnapshot } from "@modules/checkout/components/booking"
 import Payment from "@modules/checkout/components/payment"
 import PaymentButton from "@modules/checkout/components/payment-button"
 import PaymentWrapper from "@modules/checkout/components/payment-wrapper"
@@ -116,6 +116,7 @@ export default function CheckoutPanelContent({
   const containerRef = useRef<HTMLDivElement>(null)
   const confirmationRef = useRef<HTMLDivElement>(null)
   const shippingAgentSetterRef = useRef<ShippingAgentSetter | null>(null)
+  const bookingAgentSetterRef = useRef<BookingAgentSetter | null>(null)
   const touchStartY = useRef(0)
   const backLocked = useRef(false)
   const justMounted = useRef(true)
@@ -302,6 +303,11 @@ export default function CheckoutPanelContent({
         if (!setter) return { ok: false, reason: "Shipping step not mounted" }
         return setter(value)
       }
+      if (field === "booking_slot_id") {
+        const setter = bookingAgentSetterRef.current
+        if (!setter) return { ok: false, reason: "Booking step not mounted" }
+        return setter(value)
+      }
       const domName = AGENT_ADDRESS_FIELD_MAP[field]
       if (!domName) {
         return { ok: false, reason: `Unknown field: ${field}` }
@@ -435,6 +441,9 @@ export default function CheckoutPanelContent({
                     isWorkshop={isWorkshop}
                     shippingMethodName={selectedOption?.name ?? data.cart?.shipping_methods?.[0]?.name}
                     onSnapshotChange={setBookingSnapshot}
+                    onRegisterAgentSetter={(setter) => {
+                      bookingAgentSetterRef.current = setter
+                    }}
                   />
                   {isWorkshop && (
                     <ConfirmationStep
