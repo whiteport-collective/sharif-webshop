@@ -68,6 +68,11 @@ export function useStreamingChat(getContext: () => SessionContext) {
   const [isStreaming, setIsStreaming] = useState(false)
   const tools = useAgentTools()
   const abortRef = useRef<AbortController | null>(null)
+  // Ref keeps currentId accessible inside setSessions updaters without stale closure.
+  // We also update it immediately when creating/switching sessions so that two
+  // synchronous setMessages calls in sendMessage share the same session.
+  const currentIdRef = useRef<string | null>(currentId)
+  currentIdRef.current = currentId
 
   const currentSession = sessions.find((s) => s.id === currentId) ?? null
   const messages = currentSession?.messages ?? []
@@ -76,11 +81,15 @@ export function useStreamingChat(getContext: () => SessionContext) {
     (updater: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
       setSessions((prev) => {
         // Resolve the active session (creating one lazily on first message).
-        let activeId = currentId
+        let activeId = currentIdRef.current
         let list = prev
         if (!activeId || !list.some((s) => s.id === activeId)) {
           activeId = newSessionId()
           list = [...list, { id: activeId, startedAt: new Date().toISOString(), messages: [] }]
+          // Update the ref immediately so the next synchronous setMessages call
+          // in the same batch sees the already-created session instead of
+          // creating yet another one.
+          currentIdRef.current = activeId
           setCurrentId(activeId)
           saveCurrentId(activeId)
         }
@@ -94,7 +103,7 @@ export function useStreamingChat(getContext: () => SessionContext) {
         return next
       })
     },
-    [currentId]
+    [] // reads currentId via ref — no stale closure
   )
 
   const dispatchToolCall = useCallback(
@@ -235,11 +244,13 @@ export function useStreamingChat(getContext: () => SessionContext) {
       saveSessions(next)
       return next
     })
+    currentIdRef.current = id
     setCurrentId(id)
     saveCurrentId(id)
   }, [])
 
   const switchTo = useCallback((id: string) => {
+    currentIdRef.current = id
     setCurrentId(id)
     saveCurrentId(id)
   }, [])

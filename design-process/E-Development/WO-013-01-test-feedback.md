@@ -85,3 +85,22 @@
 **Fix:** Tog bort `viewTransitionName` från produktkorts-wrappern i `flow-shell-results.tsx`. Sort-transitionen är fortfarande aktiv via `startViewTransition` men renderas nu som en enkel helsides-crossfade utan individuell element-FLIP. Ingen scroll-förändring sker.
 
 **Files:** `storefront/src/modules/home/components/flow-shell/flow-shell-results.tsx`
+
+---
+
+## FB-05: Chat startar om efter varje meddelande — FIXED
+
+**Skjerm:** Startsida → agentpanel
+
+**Observed:** Välkomstskärmen ("Hei, så hyggelig at du stikker innom...") visades efter varje meddelande. Agenten svarade aldrig i ett sammanhängande dialog utan hälsade om från början varje gång.
+
+**Root cause:** `setMessages` i `useStreamingChat` var en `useCallback` med `[currentId]` i deps-arrayen. Det innebär att den fångade `currentId` i en stängning. Vid det första meddelandet (när `currentId = null`):
+1. `sendMessage` anropar `setMessages(updated)` synkront → `setSessions` skapar session `newId1`, anropar `setCurrentId("newId1")` (asynkront)
+2. `sendMessage` anropar direkt `setMessages([...updated, assistantMsg])` → `setMessages`-stängningen ser fortfarande `currentId = null` (React har inte re-renderat än) → skapar session `newId2`, anropar `setCurrentId("newId2")`
+3. React batchar båda `setCurrentId`-anropen → `currentId = "newId2"` (sista vinner)
+4. API fick `messages: [userMsg]` (bara nuvarande meddelande, ingen historik) → agenten genererade hälsning på nytt varje gång
+5. Alla strömmande uppdateringar under samma callback skapade ytterligare sessioner av samma anledning
+
+**Fix:** Lade till `const currentIdRef = useRef<string | null>(currentId)` med synkron uppdatering (`currentIdRef.current = activeId`) inuti `setSessions`-uppdateraren direkt när en ny session skapas. `setMessages` deps ändrades från `[currentId]` till `[]` — läser alltid aktuellt ID via ref. `newChat` och `switchTo` uppdaterar också reffet direkt. Resulterar i att båda synkrona `setMessages`-anrop i `sendMessage` skriver till samma session.
+
+**Files:** `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts`
