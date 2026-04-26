@@ -4,7 +4,7 @@ import { HttpTypes } from "@medusajs/types"
 import { startTransition, useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react"
 import { flushSync } from "react-dom"
 import { LanguageContext, UI, type Lang } from "@lib/i18n"
-import { addToCart, deleteLineItem, retrieveCart } from "@lib/data/cart"
+import { addToCart, deleteLineItem, retrieveCartFresh } from "@lib/data/cart"
 import { sortProducts } from "@lib/util/sort-tires"
 import CheckoutPanelContent from "@modules/checkout/components/checkout-panel-content"
 import {
@@ -101,7 +101,7 @@ export default function FlowShell({
   const hideBack = appState.checkoutLocked || appState.flow === "complete"
 
   useEffect(() => {
-    retrieveCart().then((fresh) => {
+    retrieveCartFresh().then((fresh) => {
       const qty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
       setCartQty(qty)
       setCart(fresh ?? null)
@@ -235,12 +235,12 @@ export default function FlowShell({
 
     startTransition(async () => {
       try {
-        let currentCart = await retrieveCart()
+        let currentCart = await retrieveCartFresh()
         const alreadyInCart = currentCart?.items?.some((item: any) => item.variant_id === variant.id)
 
         if (!alreadyInCart) {
           await addToCart({ variantId: variant.id, quantity: qty, countryCode })
-          currentCart = await retrieveCart()
+          currentCart = await retrieveCartFresh()
         }
 
         const lineItem = currentCart?.items?.find((item: any) => item.variant_id === variant.id)
@@ -284,7 +284,7 @@ export default function FlowShell({
 
     startTransition(async () => {
       await deleteLineItem(lineItemId)
-      const fresh = await retrieveCart()
+      const fresh = await retrieveCartFresh()
       const nextQty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
       setCartQty(nextQty)
       setCart(fresh ?? null)
@@ -303,7 +303,7 @@ export default function FlowShell({
     }
     startTransition(async () => {
       await deleteLineItem(lineItemId)
-      const fresh = await retrieveCart()
+      const fresh = await retrieveCartFresh()
       const qty = fresh?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
       setCartQty(qty)
       setCart(fresh ?? null)
@@ -409,6 +409,14 @@ export default function FlowShell({
 
   useEffect(() => {
     if (initialSearch) {
+      const targetPath = buildDekkPath(
+        initialSearch.width,
+        initialSearch.profile,
+        initialSearch.rim,
+        initialSearch.season,
+        initialSearch.qty
+      )
+
       runSearch(
         {
           width: initialSearch.width,
@@ -420,16 +428,14 @@ export default function FlowShell({
         false
       )
 
-      window.history.replaceState({ flowView: "home" }, "", "/")
-      pushFlowState(
-        "results",
-        buildDekkPath(initialSearch.width, initialSearch.profile, initialSearch.rim, initialSearch.season, initialSearch.qty)
-      )
+      setActiveSection("results")
+      dispatch({ type: "NAV_TO_RESULTS" })
+      window.history.replaceState({ flowView: "results" }, "", targetPath)
     } else {
       window.history.replaceState({ flowView: "home" }, "", "/")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSearchKey, pushFlowState, runSearch])
+  }, [initialSearchKey, runSearch])
 
   useEffect(() => {
     window.addEventListener("popstate", handlePopState, true)
