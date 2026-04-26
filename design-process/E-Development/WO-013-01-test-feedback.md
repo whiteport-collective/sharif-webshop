@@ -134,3 +134,20 @@ Möjliga orsaker (kräver browser-debug för att verifiera):
 **Files att undersöka:**
 - `storefront/src/modules/home/components/flow-shell/index.tsx` (handleSelectTire, syncSelectedTire)
 - `storefront/src/modules/home/components/flow-shell/flow-shell-results.tsx` (isInCart logic)
+
+---
+
+## FB-07: Agent hoppar förbi kunduppgifter och betalning till bokning — FIXED
+
+**Skjerm:** Kassen → agent i checkout-flödet
+
+**Observed:** Agenten satte leveringsmåte (Fjellhamar), frågade om kunden ville fortsätta, fick "ja" — och gick direkt till att lista bokningsslots för montering utan att stoppa vid kunduppgifter (Fornavn, Etternavn, E-post, Telefon, Bilregistreringsnummer).
+
+**Root cause:** Agenten anropade `advanceCheckoutStep()` TVÅ gånger i samma tur (delivery → address → booking). `address-elicitation.skill.md` laddas bara när requestens snapshot redan visar `checkoutStep = "address"` — mid-turn stegbyten triggar inte om skill-loadern. System-prompten saknade explicit regel om att aldrig kalla `advanceCheckoutStep` mer än en gång per tur och om att adress-steget kräver insamling av kunduppgifter innan man kan gå vidare.
+
+**Fix:** Lade till explicit kassesteg-regler i `system-prompt.ts`:
+1. Steg-för-steg-sekvens (delivery → address → booking/payment → confirmation) med instruktioner per steg
+2. Obligatorisk regel: kalla ALDRIG `advanceCheckoutStep()` mer än en gång per tur
+3. Adress-steget: samla in first_name, last_name, email, phone (+ bilregistreringsnummer för verkstad) INNAN advanceCheckoutStep
+
+**Files:** `storefront/src/lib/agent/system-prompt.ts`

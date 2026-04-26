@@ -32,11 +32,36 @@ Eksempel — kunde har allerede skrevet inn "205" i width, sier: "fyll i resten,
 → Svar: "Hittade 9 stycken. Visar dem nu."
 → IKKE spør om width — den er redan satt.
 
-Kasse-verktøy — når kunden er i kassen (checkoutStep er satt), bruk prefillCheckoutField aktivt for å hjelpe:
-- "velg leveringsmåte X" / "bruk Drammen" / "hjemlevering" → prefillCheckoutField med field="shipping_method_id" og verdi fra shippingMethods[].id som matcher navnet.
-- "velg første ledige tid" / "bestill tidligst mulig" / "book kl. 11 i morgen" → prefillCheckoutField med field="booking_slot_id" og verdi fra bookingSlots[0].id (eller matchende slot.id).
-- Adressefelt (first_name, last_name, address, city, postal_code, email, phone) → prefillCheckoutField med feltnavnet.
-Verdiene for shipping_method_id og booking_slot_id må hentes fra context (shippingMethods/bookingSlots) — ikke gjett. Si kort hva du gjør, f.eks.: "Valgte tidligst mulig: torsdag kl. 08:00."`
+Kasse-verktøy — trinn-for-trinn-regler (VIKTIG — følg alltid denne rekkefølgen):
+
+**Steg 1 — Leveringsmåte (checkoutStep = "delivery"):**
+- Sett shipping_method_id via prefillCheckoutField. Verdien hentes fra shippingMethods[].id i context — ikke gjett.
+- Bekreft valget kort, og spør om kunden vil fortsette.
+- Kall advanceCheckoutStep() ÉN gang → steg blir "address".
+- Stopp. Vent på neste melding.
+
+**Steg 2 — Kundeopplysninger (checkoutStep = "address") — OBLIGATORISK FØR NESTE STEG:**
+- Samle inn ALLE disse feltene FØRST: first_name, last_name, email, phone.
+- Workshop-bestillinger trenger i tillegg: bilregistreringsnummer (felt: "car_registration").
+- Bruk prefillCheckoutField for hvert felt etterhvert som kunden oppgir dem.
+- Kall IKKE advanceCheckoutStep() før alle obligatoriske felt er fylt ut og bekreftet.
+- Etter alle felt er satt: kall advanceCheckoutStep() og gå til neste steg.
+
+**Steg 3a — Betaling (checkoutStep = "payment", standardlevering):**
+- Be kunden fylle inn kortopplysningene i skjemaet i kassen.
+- Bruk openPaymentStep() om kunden trenger å navigere dit.
+
+**Steg 3b — Booking (checkoutStep = "booking", verkstedlevering):**
+- Spør om timing-preferanse (haster / innen en uke / ingen hastverk).
+- Vis maks 3 ledige tider fra bookingSlots i context. IKKE vis alle.
+- Bruk prefillCheckoutField med field="booking_slot_id" og verdi fra bookingSlots[].id som matcher.
+- Etter booking er satt: kall advanceCheckoutStep().
+
+**Generelle regler:**
+- Kall ALDRI advanceCheckoutStep() mer enn én gang per tur.
+- Verdiene for shipping_method_id og booking_slot_id MÅ hentes fra context — ikke gjett ID-er.
+- Si kort hva du gjør, f.eks.: "Valgte Fjellhamar." eller "Lagret: Mårten Angner."
+- Adressefelt (first_name, last_name, address, city, postal_code, email, phone) → prefillCheckoutField med feltnavnet.`
 
   const sf = context.searchForm
   const searchFormLine = `Søkeform: width=${sf.width ?? "null"} profile=${sf.profile ?? "null"} rim=${sf.rim ?? "null"} qty=${sf.qty ?? "null"} season=${sf.season ?? "null"} submitted=${sf.submitted}`
