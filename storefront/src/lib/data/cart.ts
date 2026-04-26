@@ -24,7 +24,7 @@ import { getLocale } from "@lib/data/locale-actions"
 export async function retrieveCart(cartId?: string, fields?: string) {
   const id = cartId || (await getCartId())
   fields ??=
-    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, +shipping_methods.shipping_option.type"
+    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, +shipping_methods.shipping_option_id, +shipping_methods.shipping_option.type"
 
   if (!id) {
     return null
@@ -59,7 +59,7 @@ export async function retrieveCart(cartId?: string, fields?: string) {
 export async function retrieveCartFresh(fields?: string) {
   const id = await getCartId()
   fields ??=
-    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, +shipping_methods.shipping_option.type, *payment_collection, *payment_collection.payment_sessions"
+    "*items, *region, *items.product, *items.variant, *items.thumbnail, *items.metadata, +items.total, *promotions, +shipping_methods.name, +shipping_methods.shipping_option_id, +shipping_methods.shipping_option.type, *payment_collection, *payment_collection.payment_sessions"
 
   if (!id) return null
 

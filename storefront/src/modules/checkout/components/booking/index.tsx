@@ -7,7 +7,7 @@ import { Button, Heading, Text, clx } from "@medusajs/ui"
 import Divider from "@modules/common/components/divider"
 import { useLanguage } from "@lib/i18n"
 import { useSearchParams } from "next/navigation"
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 
 export type BookingSnapshot = {
   bookingSlots: { id: string; label: string }[]
@@ -146,9 +146,9 @@ const Booking = ({
   // If isWorkshopProp is explicitly false → no booking. Otherwise use resolved workshop.
   const workshop = isWorkshopProp === false ? null : workshopFromName
 
-  const slots = getAvailableSlots(visibleDays)
+  const slots = useMemo(() => getAvailableSlots(visibleDays), [visibleDays])
   const bookingReady = !!selectedDate && !!selectedTime
-  const bookingSnapshot: BookingSnapshot = {
+  const bookingSnapshot = useMemo<BookingSnapshot>(() => ({
     bookingSlots: workshop
       ? slots
           .filter((slot) => expandedDays.has(slot.date))
@@ -160,7 +160,7 @@ const Booking = ({
           )
       : [],
     selectedBookingSlotId: selectedDate && selectedTime ? `${selectedDate}|${selectedTime}` : null,
-  }
+  }), [workshop, slots, expandedDays, selectedDate, selectedTime])
 
   useEffect(() => {
     if (!isOpen) {

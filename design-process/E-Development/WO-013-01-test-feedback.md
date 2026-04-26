@@ -41,3 +41,33 @@
 2. `tire-search/index.tsx` — splittat `agentPulse` i `widthPulse`/`profilePulse`/`rimPulse`; `SegmentInput` accepterar `pulse`-prop och ger amber ring på det enskilda fältet så användaren ser exakt vad agenten satte.
 
 **Verified:** user types 205 manuellt → säger "fyll i de sista uppgifterna 55 16" → agent pulsar profile @8.5s, rim @11s, kör triggerSearch, navigerar till resultat.
+
+---
+
+## FB-02: Skeleton saknar varukorgskolumnen — FIXED
+
+**Skjerm:** Kassen (payment step) — laddningsskelett
+
+**Observed:** CheckoutSkeleton visade bara ett enda kolumnlayout (max-w-2xl, grid-cols-1) utan den högra varukorgskolumnen. Den riktiga kassan har ett 2-kolumnslayout (3fr:2fr).
+
+**Fix:** `CheckoutSkeleton` uppdaterad till `max-w-5xl md:grid-cols-[3fr_2fr]` med en komplett varukorgs-skeleton i högerkolumnen.
+
+**Files:** `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`
+
+---
+
+## FB-03: Kreditkortsformulär laddas inte vid första inläsning — FIXED
+
+**Skjerm:** Kassen → Betaling-steg
+
+**Observed:** Stripe CardElement visades aldrig på initial laddning — skeleton med "Enter your card details" förblev. Fungerade att klicka manuell betalning och sedan tillbaka till kreditkort, men inte direkt.
+
+**Root cause:** `bookingSnapshot` i `Booking`-komponenten var ett inline-objekt (ny referens varje render). `useEffect([bookingSnapshot, onSnapshotChange])` eldade på varje render → `setBookingSnapshot(newObj)` → checkout-panel-content re-renderades → Booking re-renderades → nytt objekt → infinite loop → "Maximum update depth exceeded" (14 förekomster) → React avbröt renderingen innan Stripe Elements hann initieras.
+
+**Fix:**
+1. `booking/index.tsx` — `bookingSnapshot` och `slots` wrappade i `useMemo` med korrekta deps (`[workshop, slots, expandedDays, selectedDate, selectedTime]`). Stable reference → effect eldas bara när innehållet faktiskt ändras → ingen loop.
+2. `cart.ts` — `+shipping_methods.shipping_option_id` tillagt i fältlistan för både `retrieveCart` och `retrieveCartFresh`, så att Shipping-komponentens `shippingMethodId` initieras korrekt vid remount och auto-select-effekten inte eldas onödigt.
+
+**Files:**
+- `storefront/src/modules/checkout/components/booking/index.tsx`
+- `storefront/src/lib/data/cart.ts`
