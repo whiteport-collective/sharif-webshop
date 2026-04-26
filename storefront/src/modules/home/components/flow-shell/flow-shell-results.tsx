@@ -68,7 +68,6 @@ function ResultsGrid({
     return (
       <div
         key={product.id}
-        style={{ viewTransitionName: `tire-${product.id}` } as React.CSSProperties}
       >
         <TireCard
           product={product}

@@ -71,3 +71,17 @@
 **Files:**
 - `storefront/src/modules/checkout/components/booking/index.tsx`
 - `storefront/src/lib/data/cart.ts`
+
+---
+
+## FB-04: Sortering hoppar till sökformuläret — FIXED
+
+**Skjerm:** Sökresultat → sorterings-dropdown
+
+**Observed:** När användaren byter sorteringsordning hoppar sidan upp till sökformuläret/toppen av resultatsektionen.
+
+**Root cause:** Varje produktkort hade `viewTransitionName: tire-${id}` satt. View Transitions API:s FLIP-animation försöker flytta varje kort till sin nya position i den sorterade listan. Kort som sorteras högre upp i listan gör att webbläsaren scrollar uppåt för att visa dem på deras nya position — därav hoppet.
+
+**Fix:** Tog bort `viewTransitionName` från produktkorts-wrappern i `flow-shell-results.tsx`. Sort-transitionen är fortfarande aktiv via `startViewTransition` men renderas nu som en enkel helsides-crossfade utan individuell element-FLIP. Ingen scroll-förändring sker.
+
+**Files:** `storefront/src/modules/home/components/flow-shell/flow-shell-results.tsx`
