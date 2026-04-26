@@ -104,3 +104,33 @@
 **Fix:** Lade till `const currentIdRef = useRef<string | null>(currentId)` med synkron uppdatering (`currentIdRef.current = activeId`) inuti `setSessions`-uppdateraren direkt när en ny session skapas. `setMessages` deps ändrades från `[currentId]` till `[]` — läser alltid aktuellt ID via ref. `newChat` och `switchTo` uppdaterar också reffet direkt. Resulterar i att båda synkrona `setMessages`-anrop i `sendMessage` skriver till samma session.
 
 **Files:** `storefront/src/modules/home/components/agent-panel/useStreamingChat.ts`
+
+---
+
+## FB-06: Produktkort hoppar ur varukorgen efter tillägg — ÖPPEN
+
+**Skjerm:** Sökresultat → klicka "Legg i handlekurv"
+
+**Observed:** Produktkortet visar grönt "Gå til kassen"-CTA omedelbart efter klick, men återgår sedan till rött "Legg i handlekurv". Varierar — ibland stannar det grönt.
+
+**Root cause (hypoteser):**
+`isInCart = Boolean(cartLine) || selectedTire?.product.id === product.id`
+
+För att gå röd måste BÅDA vara falsa:
+- `cartLine` = null (cart.items saknar varianten)
+- `selectedTire?.product.id !== product.id` (selectedTire null eller annan produkt)
+
+`selectedTire` sätts synkront i `handleSelectTire` (rad 224) och rensas bara explicit via `handleRemoveTire`, `handleRemoveLine` eller `clearSearch`. Ingen `useEffect` rensar den automatiskt.
+
+Möjliga orsaker (kräver browser-debug för att verifiera):
+- **A. Race med React concurrent mode:** `startTransition` kan avbryta renders; om `setCart(currentCart)` och `setSelectedTire` landar i olika render-batchar kan `isInCart` gå false transiänt.
+- **B. Next.js force-cache race:** `retrieveCart()` (cache: "force-cache") returnerar stale data efter `addToCart`/`revalidateTag` — `setCart` sätts med en cart utan item. MEN `selectedTire` borde ändå hålla grönt.
+- **C. Dual AgentPanelContent:** Två `AgentPanelContent`-instanser renderas simultant (mobile + desktop). Om någon av dessa triggar agent-action som anropar `handleSelectTire` med annan produkt...
+
+**Needs:** Browser-debugging med React DevTools — breakpoint på `syncSelectedTire` och `setCart` för att se exakt vad som nollställer state.
+
+**Severity:** Medium — synlig visuell glitch, men cart-state är troligen korrekt (item finns fortfarande i cart).
+
+**Files att undersöka:**
+- `storefront/src/modules/home/components/flow-shell/index.tsx` (handleSelectTire, syncSelectedTire)
+- `storefront/src/modules/home/components/flow-shell/flow-shell-results.tsx` (isInCart logic)
