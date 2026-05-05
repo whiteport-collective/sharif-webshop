@@ -4,6 +4,10 @@
   "scripts": {
     "dev:storefront": "cd storefront && npm run dev",
     "dev:backend": "cd backend && npm run dev",
-    "build:storefront": "cd storefront && npm run build"
+    "dev:agent": "npm --prefix agent run dev",
+    "build:storefront": "cd storefront && npm run build",
+    "build:agent": "npm --prefix agent run build",
+    "typecheck:agent": "npm --prefix agent run typecheck",
+    "start:agent": "npm --prefix agent run start"
   }
 }

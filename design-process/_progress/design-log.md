@@ -1,5 +1,9 @@
 # Design Log — Sharif Webshop
 
+## 2026-05-05 freya
+
+- MODEL:Sonnet — Demo-testomgång (WO-013-02) inför Euromaster-möte 2026-05-07. Körde fullt manuellt orderflöde end-to-end i Chrome via chrome-devtools-mcp: 205/55R16 sommer 4 stk → Drammen workshop → Manual Payment → Booking (09:30 ons 6 maj) → bekräftelse (order #1WM9). 9 buggar loggade (FB-08–FB-16). Kritiska: FB-09 cart jump (studisat sedan länge, commit bd793a2 fixade ej) och FB-13 totalbelopp visar NOK 19,96 istället för 1 996 (÷100-bugg i Bekreft bestilling). Codex-handoff skapad i Agent Space (msg 964bb7b3) + spec-fil `design-process/E-Development/WO-013-03-codex-fixes.md`. Nästa session: testa guidat AI-flöde när Codex-fixarna är inne.
+
 ## 2026-04-22 mimir
 
 - MODEL:Opus — Wrapped WO-012 round 5 session. Verified golden path end-to-end in browser (search → noise query with dB numbers → cheapest select → checkout → payment refusal). Fixed React 18 batching bug where `triggerSearch` fired before `setSearchField` state landed — added synchronous `agentSearchFields` ref mirrored from the handler. Restored `visibleProductsNote` in system-prompt + added `Viktige regler` (direct-selection, confirmation format, piggdekk dates). Grid polish: `min-[1100px]:grid-cols-4` + `max-w-[1400px]`. Native View Transition animation on sort change (zero deps). New `sortProducts({sortBy})` agent tool routes through same handler so agent-triggered sorts animate. Commits: `1ff72c6`, `30a5fdb`, `1e9a85b`, `589a864` on `freya/fix-back-to-results`. Next session: extend `prefillCheckoutField` to shipping/booking slot IDs, test booking via agent, then merge to main.

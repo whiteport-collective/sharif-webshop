@@ -1,55 +1,37 @@
-# mimir — Session State
+# freya — Session State
 **Repo:** sharif-webshop
-**Wrapped:** 2026-04-22
+**Wrapped:** 2026-05-05
 
 ## Context
-WO-012 Parts 1–4 complete + Round 5 polish + golden path verified. All on `freya/fix-back-to-results` (unmerged).
+Demo-testomgång (WO-013-02) klar. Manuellt orderflöde fungerar end-to-end men 6 buggar behöver fixas innan Euromaster-demot torsdagen 2026-05-07. Codex-handoff postad i Agent Space.
 
-**Commits this session:**
-- `55e0dd4` — WO-013 fat SessionContext, read-visible agent state (Codex)
-- `1ff72c6` — restore Norwegian characters in system-prompt.ts
-- `30a5fdb` — agent search sync (React batching fix), visibleProducts in prompt, checkout render-loop fix
-- `1e9a85b` — derive searchForm fields from dimension when TireSearch fields are null
-- `589a864` — round 5: grid polish (3 cols until 1100px, max-w 1400px) + animated sort (View Transition) + sortProducts tool
+**Commits denna session:**
+- Tidigare commits från denna branch (se git log): scroll-back chip, checkout skeleton 2-kolumn, .gitignore-uppdatering
 
-**Previously:**
-- `920ba21` — Part 1: `setSearchField` × 5, `triggerSearch` with enriched product list
-- `78dbf93` — Part 2 + 2b: `selectTireForCheckout`, `highlightProducts`/`clearHighlights`, skill-loader
-- `5458574` — Part 3: `advanceCheckoutStep`, `getCheckoutState`, checkout prefill (address)
-- `e628005` — Part 4 + 4b: payment hands-off gate + `navigateBack` tool
+**Buggar funna (FB-08–FB-16):**
+- FB-09 CRITICAL: Cart jump — checkout hoppar tillbaka till resultat efter "Legg i kassen" (recurrence, fixades ej av bd793a2)
+- FB-13 CRITICAL: Totalbelopp visar NOK 19,96 istället för 1 996,00 i Bekreft bestilling (÷100-bugg)
+- FB-10: "Payment"/"Booking" i engelska stegrubriker
+- FB-12: Payment completed summary på engelska + "Another step will appear"
+- FB-15: Bokad tid visas inte på "Takk for bestillingen!"-sidan
+- FB-16: Svensk platshållartext i AI-chatt på bekräftelsesidan
+- FB-08: Dublett-produkt POWERTRAC ADAMAS H/P i resultat (data-problem, ej kod)
+- FB-11: Engelska etiketter i handlekurv-sammanfattning
+- FB-14: Tom "Adresse"-rad för verkstadsleverans i bekräftelse
 
-**What's working (verified in browser):**
-- Full golden path: search → visible products with dB/grip/fuel/price data → "Ta den billigaste" selects immediately → checkout opens → address prefill with amber ring animation → payment-gate refuses when asked to click Pay
-- New system-prompt `Viktige regler`: direct-selection, confirmation format "Jeg fant X dekk — viser dem nå!", piggdekk dates
-- Agent sort: `sortProducts({sortBy})` routes through `handleSortChange` → native View Transition animates reorder
-- Grid: 3 cols until 1100px, 4 cols beyond, max-w 1400px cap
-
-**Open threads:**
-- `prefillCheckoutField` for `shipping_method_id` and `booking_slot_id` not yet implemented (address fields only). Shipping/Booking components need ref-based setter mirroring AgentCheckoutAPI pattern.
-- `getCheckoutState` + `advanceCheckoutStep` tool results are `{ok:true}` without awaiting browser — LLM doesn't see post-action state.
-- Skill tool filter: `highlightProducts`/`clearHighlights` leak through when no skills loaded. Cosmetic.
-- Booking step of golden path not yet agent-tested.
-- Part 5 (headless SSE + `drive.mjs`) not started.
-- Parent repo submodule pointer not updated.
+**Codex-handoff:**
+- Agent Space msg: 964bb7b3-587f-4cac-ad92-03328066e3c8
+- Spec-fil: design-process/E-Development/WO-013-03-codex-fixes.md
+- Testlogg: design-process/E-Development/WO-013-02-demo-roundup.md
+- Branch: codex/orders-advanced-filter-optimizations
 
 ## Plan
-WO-012 — Agent-assisterat orderflöde för Moohsen demo scenario 1.
-
-- [DONE] WO-012 spec + agent-space scaffold + 5 elicitation skills
-- [DONE] Part 1 — setSearchField × 5 + triggerSearch with enriched products
-- [DONE] Part 2 + 2b — selectTireForCheckout + highlightProducts + skill-loader
-- [DONE] Part 3 — advanceCheckoutStep + getCheckoutState + prefillCheckoutField (address)
-- [DONE] Part 4 + 4b — payment hands-off gate + navigateBack
-- [DONE] Round 5 — grid polish, animated sort, sortProducts tool, golden path verified
-- [CURRENT] Part 5 — shipping/booking slot prefill + agent-test booking step + merge to main
-- [ ] Part 6 — headless SSE (optional, only if demo requires it)
+- [DONE] WO-013-02 — Demo-testomgång manuellt flöde
+- [DONE] Codex-handoff med 6 fixar (P0: FB-09, FB-13 / P1: FB-10, FB-12, FB-15, FB-16)
+- [CURRENT — Codex] Fixa FB-09, FB-13, FB-10, FB-12, FB-15, FB-16
+- [NEXT — Freya] Verifiera Codex-fixar i browser efter merge
+- [NEXT — Freya] Testa guidat AI-flöde (Act 2 av demot)
+- [NEXT — Freya] Generalrepetition onsdag 2026-05-06 — skärminspelning
 
 ## Next:
-MODEL:Sonnet — Extend `prefillCheckoutField` to cover `shipping_method_id` and `booking_slot_id`. Shipping and Booking components expose a ref-based setter via `AgentCheckoutAPI` (mirror address prefill). Then run full golden path including booking — send "välg første ledige tid" mid-checkout and verify the booking card updates with amber ring. Files: `storefront/src/modules/checkout/components/{shipping,booking}/index.tsx`, `storefront/src/modules/checkout/components/checkout-panel-content/index.tsx`. One commit per component. When verified end-to-end, merge `freya/fix-back-to-results` → `main`.
-
-## Learned
-- **React 18 batching vs synchronous tool dispatch**: `setSearchField` state updates are batched, so the `onFormChange` useEffect that writes `pendingParams.current` fires *after* the current render — `triggerSearch` fires in the same tick and sees null. Fix: parallel `agentSearchFields` synchronous ref, written directly in setSearchField handler, read directly in triggerSearch handler. Rule: if tool B depends on tool A's side effect in React state, B cannot trust A has landed — mirror the value in a ref.
-- **Native View Transition API without deps**: `document.startViewTransition(() => flushSync(() => setState(next)))` + unique `viewTransitionName` per keyed item + a single `::view-transition-group(*)` CSS rule gives framer-motion-quality FLIP on Chrome/Edge/Safari 18, zero bundle cost.
-- **Inline arrow props as useEffect deps cause render loops**: `onStepTitle={() => ...}` from FlowShell recreates each render; CheckoutPanelContent listed it as a dep → effect re-ran → setState → re-render. Fix: store inline callback props in `useRef`, call `ref.current?.(...)`, drop from deps.
-- **AgentCheckoutAPI pattern** (from prior session, still valid): CheckoutPanelContent exposes `onRegisterAgentCheckout` providing `advanceStep`, `getState`, `prefillField`. FlowShell stores API in `agentCheckoutRef`. Right pattern for exposing browser state to agent without prop-drilling.
-- **Payment gate is structural, not prompt-based**: Filtering `tools` array before sending to Anthropic is the correct hands-off mechanism — LLM cannot call tools it doesn't see.
+MODEL:Sonnet — Verifiera att Codex har fixat FB-09 (cart jump) och FB-13 (fel totalbelopp) i browser. Sedan kör fullt guidat AI-flöde: öppna chat-panelen, skriv "jeg trenger fire sommerdekk til min Volkswagen Golf", låt agenten guida hela vägen till Booking. Logga eventuella nya buggar som FB-17+ i en ny testfil. Se WO-013-agent-session-context.md för fullständigt testprotokoll för det guidade flödet.
