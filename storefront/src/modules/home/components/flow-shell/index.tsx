@@ -22,6 +22,7 @@ import ProductDetailPanel from "@modules/products/components/product-detail-pane
 import type { SortKey } from "@modules/products/lib/tire-sorting"
 import { FlowShellHeader, FlowShellMenu } from "./flow-shell-header"
 import { FlowShellResults } from "./flow-shell-results"
+import { ScrollBackChip } from "./scroll-back-chip"
 import type { FlowShellProps, FlowView, SearchMeta, SessionContext } from "./types"
 import type { AgentCheckoutAPI } from "@modules/checkout/components/checkout-panel-content"
 import {
@@ -69,6 +70,8 @@ export default function FlowShell({
   const [cartQty, setCartQty] = useState<number | null>(null)
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
+  const [scrollDirection, setScrollDirection] = useState<"up" | "down" | "idle">("idle")
+  const [surfaceAtTop, setSurfaceAtTop] = useState(true)
   const checkoutBackRef = useRef<(() => void) | null>(null)
   const agentCheckoutRef = useRef<AgentCheckoutAPI | null>(null)
   const tireSearchRef = useRef<TireSearchAPI | null>(null)
@@ -87,6 +90,7 @@ export default function FlowShell({
   const homeSectionRef = useRef<HTMLDivElement>(null)
   const resultsSectionRef = useRef<HTMLDivElement>(null)
   const checkoutSectionRef = useRef<HTMLDivElement>(null)
+  const lastScrollTopRef = useRef(0)
   const backLocked = useRef(false)
   const programmaticScroll = useRef(false)
   const pendingParams = useRef<TireSearchParams | null>(null)
@@ -189,6 +193,7 @@ export default function FlowShell({
     }
 
     backLocked.current = true
+    setScrollDirection("idle")
     setTimeout(() => {
       backLocked.current = false
     }, 600)
@@ -204,6 +209,7 @@ export default function FlowShell({
     }
 
     backLocked.current = true
+    setScrollDirection("idle")
     setTimeout(() => {
       backLocked.current = false
     }, 600)
@@ -505,12 +511,23 @@ export default function FlowShell({
       return
     }
 
-    const syncActiveSection = () => {
+    const syncScrollState = () => {
+      const nextScrollTop = surface.scrollTop
+      const delta = nextScrollTop - lastScrollTopRef.current
+
+      setSurfaceAtTop(nextScrollTop <= 20)
+
+      if (Math.abs(delta) > 2) {
+        setScrollDirection(delta < 0 ? "up" : "down")
+      }
+
+      lastScrollTopRef.current = nextScrollTop
+
       if (programmaticScroll.current) {
         return
       }
 
-      const scrollMarker = surface.scrollTop + 64
+      const scrollMarker = nextScrollTop + 64
       const resultsTop = showResultsSection ? (resultsSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
       const checkoutTop = showCheckoutSection ? (checkoutSectionRef.current?.offsetTop ?? Number.POSITIVE_INFINITY) : Number.POSITIVE_INFINITY
 
@@ -534,11 +551,11 @@ export default function FlowShell({
       })
     }
 
-    syncActiveSection()
-    surface.addEventListener("scroll", syncActiveSection, { passive: true })
+    syncScrollState()
+    surface.addEventListener("scroll", syncScrollState, { passive: true })
 
     return () => {
-      surface.removeEventListener("scroll", syncActiveSection)
+      surface.removeEventListener("scroll", syncScrollState)
     }
   }, [showCheckoutSection, showResultsSection])
 
@@ -566,6 +583,11 @@ export default function FlowShell({
   const chipSeasonLabel = chipSeason ? getSeasonChipLabel(chipSeason, lang) : ""
   const chipQty = searchMeta.dimension ? searchMeta.qty : (previewMeta?.qty ?? 0)
   const hasSearch = Boolean(chipDimension)
+  const showScrollBackChip =
+    canNavigateBack(appState) &&
+    scrollDirection === "up" &&
+    !surfaceAtTop &&
+    activeSection !== "home"
 
   const handleSearch = useCallback((params: TireSearchParams) => {
     setMenuOpen(false)
@@ -582,6 +604,7 @@ export default function FlowShell({
     }
 
     backLocked.current = true
+    setScrollDirection("idle")
     setTimeout(() => {
       backLocked.current = false
     }, 600)
@@ -879,6 +902,8 @@ export default function FlowShell({
             />
 
             <div className="flex flex-1 overflow-hidden">
+              <ScrollBackChip visible={showScrollBackChip} onBack={handleBack} />
+
               <div
                 ref={surfaceRef}
                 className="flex-1 overflow-y-auto"

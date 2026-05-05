@@ -562,54 +562,86 @@ function SkeletonBox({ className }: { className?: string }) {
 
 function CheckoutSkeleton() {
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 py-8 grid grid-cols-1 gap-y-8">
+    <div className="max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-x-8 gap-y-8">
 
-      {/* Section: Leveringsmåte */}
-      <div className="bg-white">
-        <div className="mb-6">
-          <SkeletonBox className="h-8 w-48" />
-        </div>
-        <div className="flex flex-col gap-2 pb-8">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between rounded-rounded border border-ui-border-base px-8 py-4"
-            >
-              <div className="flex items-center gap-x-4">
-                <div className="w-4 h-4 rounded-full border-2 border-ui-border-base flex-none animate-pulse" />
-                <SkeletonBox className="h-4 w-40" />
+      {/* Left column */}
+      <div className="grid grid-cols-1 gap-y-8">
+
+        {/* Section: Leveringsmåte */}
+        <div className="bg-white">
+          <div className="mb-6">
+            <SkeletonBox className="h-8 w-48" />
+          </div>
+          <div className="flex flex-col gap-2 pb-8">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded-rounded border border-ui-border-base px-8 py-4"
+              >
+                <div className="flex items-center gap-x-4">
+                  <div className="w-4 h-4 rounded-full border-2 border-ui-border-base flex-none animate-pulse" />
+                  <SkeletonBox className="h-4 w-40" />
+                </div>
+                <SkeletonBox className="h-4 w-20" />
               </div>
-              <SkeletonBox className="h-4 w-20" />
-            </div>
-          ))}
+            ))}
+          </div>
+          <SkeletonBox className="h-11 w-32 rounded-lg" />
+          <div className="mt-8 h-px bg-ui-border-base" />
         </div>
-        <SkeletonBox className="h-11 w-32 rounded-lg" />
-        <div className="mt-8 h-px bg-ui-border-base" />
+
+        {/* Section: Leveringsadresse */}
+        <div className="bg-white">
+          <div className="mb-6">
+            <SkeletonBox className="h-8 w-52" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 pb-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className={i === 5 || i === 6 ? "col-span-2" : ""}>
+                <SkeletonBox className="h-4 w-24 mb-1" />
+                <SkeletonBox className="h-11 w-full rounded-lg" />
+              </div>
+            ))}
+          </div>
+          <SkeletonBox className="h-11 w-full rounded-lg mt-2" />
+          <div className="mt-8 h-px bg-ui-border-base" />
+        </div>
+
+        {/* Section: Payment */}
+        <div className="bg-white opacity-40">
+          <div className="mb-6">
+            <SkeletonBox className="h-8 w-24" />
+          </div>
+          <div className="mt-8 h-px bg-ui-border-base" />
+        </div>
+
       </div>
 
-      {/* Section: Leveringsadresse */}
-      <div className="bg-white">
-        <div className="mb-6">
-          <SkeletonBox className="h-8 w-52" />
-        </div>
-        <div className="grid grid-cols-2 gap-4 pb-8">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className={i === 5 || i === 6 ? "col-span-2" : ""}>
-              <SkeletonBox className="h-4 w-24 mb-1" />
-              <SkeletonBox className="h-11 w-full rounded-lg" />
+      {/* Right column: cart summary skeleton */}
+      <div className="md:sticky md:top-8 h-fit">
+        <div className="bg-white rounded-lg border border-ui-border-base p-6">
+          <SkeletonBox className="h-6 w-32 mb-4" />
+          <div className="flex gap-4 mb-4">
+            <SkeletonBox className="h-16 w-16 rounded flex-none" />
+            <div className="flex-1 flex flex-col gap-2">
+              <SkeletonBox className="h-4 w-3/4" />
+              <SkeletonBox className="h-4 w-1/2" />
+              <SkeletonBox className="h-4 w-1/3" />
             </div>
-          ))}
+          </div>
+          <div className="mt-4 pt-4 border-t border-ui-border-base flex flex-col gap-2">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex justify-between">
+                <SkeletonBox className="h-4 w-24" />
+                <SkeletonBox className="h-4 w-20" />
+              </div>
+            ))}
+            <div className="flex justify-between mt-2 pt-2 border-t border-ui-border-base">
+              <SkeletonBox className="h-5 w-16" />
+              <SkeletonBox className="h-5 w-24" />
+            </div>
+          </div>
         </div>
-        <SkeletonBox className="h-11 w-full rounded-lg mt-2" />
-        <div className="mt-8 h-px bg-ui-border-base" />
-      </div>
-
-      {/* Section: Payment */}
-      <div className="bg-white opacity-40">
-        <div className="mb-6">
-          <SkeletonBox className="h-8 w-24" />
-        </div>
-        <div className="mt-8 h-px bg-ui-border-base" />
       </div>
 
     </div>
