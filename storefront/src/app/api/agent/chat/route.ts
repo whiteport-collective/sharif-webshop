@@ -168,21 +168,23 @@ export async function POST(req: NextRequest) {
           messages: conversationMessages,
         })
 
+        const toolUseBlocks = finalMessage.content.filter(
+          (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+        )
+
         const textContent = (finalMessage.content as Anthropic.ContentBlock[])
           .filter((b): b is Anthropic.TextBlock => b.type === "text")
           .map((b) => b.text)
           .join("")
-        if (textContent) send({ type: "text", text: textContent })
+        // Only send text on end_turn — intermediate tool_use responses produce
+        // the same explanation again in the follow-up turn, causing duplication.
+        if (textContent && toolUseBlocks.length === 0) send({ type: "text", text: textContent })
 
         if (finalMessage.stop_reason === "end_turn") {
           continueLoop = false
           send({ type: "done" })
           break
         }
-
-        const toolUseBlocks = finalMessage.content.filter(
-          (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-        )
 
         if (!toolUseBlocks.length) {
           continueLoop = false

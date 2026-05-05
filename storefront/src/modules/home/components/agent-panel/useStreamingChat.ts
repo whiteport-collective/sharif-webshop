@@ -67,6 +67,8 @@ export function useStreamingChat(getContext: () => SessionContext) {
   const [currentId, setCurrentId] = useState<string | null>(() => loadCurrentId(loadSessions()))
   const [isStreaming, setIsStreaming] = useState(false)
   const tools = useAgentTools()
+  const toolsRef = useRef(tools)
+  toolsRef.current = tools
   const abortRef = useRef<AbortController | null>(null)
   // Ref keeps currentId accessible inside setSessions updaters without stale closure.
   // We also update it immediately when creating/switching sessions so that two
@@ -108,62 +110,63 @@ export function useStreamingChat(getContext: () => SessionContext) {
 
   const dispatchToolCall = useCallback(
     (name: string, input: Record<string, unknown>) => {
+      const t = toolsRef.current
       switch (name) {
         case "setSearchField":
-          tools.setSearchField(
+          t.setSearchField(
             input.field as "width" | "profile" | "rim" | "qty" | "season",
             String(input.value ?? "")
           )
           break
         case "fillDimensionField":
-          tools.fillDimensionField(
+          t.fillDimensionField(
             input.width as number,
             input.profile as number,
             input.rim as number
           )
           break
         case "triggerSearch":
-          tools.triggerSearch()
+          t.triggerSearch()
           break
         case "selectTire":
-          tools.selectTire(input.productId as string)
+          t.selectTire(input.productId as string)
           break
         case "selectTireForCheckout":
-          tools.selectTireForCheckout(input.productId as string)
+          t.selectTireForCheckout(input.productId as string)
           break
         case "recommendProducts":
-          tools.recommendProducts(input as { best: string; better: string; good: string })
+          t.recommendProducts(input as { best: string; better: string; good: string })
           break
         case "highlightProducts":
-          tools.highlightProducts(input.productIds as string[])
+          t.highlightProducts(input.productIds as string[])
           break
         case "clearHighlights":
-          tools.clearHighlights()
+          t.clearHighlights()
           break
         case "sortProducts":
-          tools.sortProducts(String(input.sortBy ?? "price"))
+          t.sortProducts(String(input.sortBy ?? "price"))
           break
         case "scrollToProduct":
-          tools.scrollToProduct(input.productId as string)
+          t.scrollToProduct(input.productId as string)
           break
         case "prefillCheckoutField":
-          tools.prefillCheckoutField(input.field as string, input.value as string)
+          t.prefillCheckoutField(input.field as string, input.value as string)
           break
         case "advanceCheckoutStep":
-          tools.advanceCheckoutStep()
+          t.advanceCheckoutStep()
           break
         case "getCheckoutState":
-          tools.getCheckoutState()
+          t.getCheckoutState()
           break
         case "openPaymentStep":
-          tools.openPaymentStep()
+          t.openPaymentStep()
           break
         case "navigateBack":
-          tools.navigateBack()
+          t.navigateBack()
           break
       }
     },
-    [tools]
+    [] // toolsRef is a ref — always current, no stale closure
   )
 
   const sendMessage = useCallback(

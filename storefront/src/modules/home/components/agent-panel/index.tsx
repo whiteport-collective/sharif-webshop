@@ -5,6 +5,46 @@ import { useStreamingChat } from "./useStreamingChat"
 import { useLanguage } from "@lib/i18n"
 import type { SessionContext } from "@modules/home/components/flow-shell/types"
 
+function renderMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split("\n")
+  const nodes: React.ReactNode[] = []
+
+  function inlineMarkdown(line: string, key: string): React.ReactNode {
+    const parts: React.ReactNode[] = []
+    const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g
+    let last = 0
+    let match: RegExpExecArray | null
+    let i = 0
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > last) parts.push(line.slice(last, match.index))
+      if (match[1] != null) parts.push(<strong key={`${key}-b${i}`}>{match[1]}</strong>)
+      else if (match[2] != null) parts.push(<em key={`${key}-i${i}`}>{match[2]}</em>)
+      last = match.index + match[0].length
+      i++
+    }
+    if (last < line.length) parts.push(line.slice(last))
+    return parts
+  }
+
+  lines.forEach((line, idx) => {
+    const key = String(idx)
+    const numberedMatch = line.match(/^(\d+)\.\s+(.*)/)
+    if (numberedMatch) {
+      nodes.push(
+        <div key={key} className="flex gap-2 my-0.5">
+          <span className="shrink-0 font-semibold">{numberedMatch[1]}.</span>
+          <span>{inlineMarkdown(numberedMatch[2], key)}</span>
+        </div>
+      )
+    } else if (line.trim() === "") {
+      nodes.push(<div key={key} className="h-2" />)
+    } else {
+      nodes.push(<span key={key}>{inlineMarkdown(line, key)}</span>)
+    }
+  })
+  return nodes
+}
+
 type Props = {
   open: boolean
   onClose: () => void
@@ -238,14 +278,15 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
               </div>
             )}
             <div
-              className={`max-w-[82%] text-sm leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[82%] text-sm leading-relaxed ${
                 msg.role === "user"
-                  ? "rounded-2xl rounded-tr-sm bg-[#f1f3f5] px-3.5 py-2.5 text-[#212529]"
+                  ? "rounded-2xl rounded-tr-sm bg-[#f1f3f5] px-3.5 py-2.5 text-[#212529] whitespace-pre-wrap"
                   : "text-[#212529]"
               }`}
             >
-              {msg.content ||
-                (isStreaming && i === messages.length - 1 ? (
+              {msg.content
+                ? (msg.role === "assistant" ? renderMarkdown(msg.content) : msg.content)
+                : (isStreaming && i === messages.length - 1 ? (
                   <span className="flex gap-1 py-1">
                     <span className="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" style={{ animationDelay: "0ms" }} />
                     <span className="animate-bounce inline-block h-1.5 w-1.5 rounded-full bg-[#adb5bd]" style={{ animationDelay: "150ms" }} />
