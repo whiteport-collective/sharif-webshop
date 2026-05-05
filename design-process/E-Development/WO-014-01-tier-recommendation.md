@@ -1,6 +1,6 @@
 # WO-014-01: AI Tier Recommendation — 1·Bäst, 2·Bättre, 3·Bra
 
-**Status:** Ready for browser verification  
+**Status:** Verified ✅ — commit eaa8a3d (2026-05-05)  
 **Branch:** codex/orders-advanced-filter-optimizations  
 **Dato:** 2026-05-05
 
@@ -47,11 +47,16 @@ Freya har implementert nytt `recommendProducts`-system for AI-drevet dekkrekomme
 
 ## Done criteria (verifiser i browser)
 
-- [ ] Agent stiller preferansespørsmål FØR den kaller recommendProducts
-- [ ] De 3 kortene flyttes til topp i lista
-- [ ] Badge vises: **1·Bäst** (gull), **2·Bättre** (sølv), **3·Bra** (bronse)
-- [ ] Resterende kort er tydelig nedtonet (opacity-40)
-- [ ] Ring/skygge skiller seg visuelt mellom tier 1, 2 og 3
-- [ ] Sortering endrer rekkefølge på de nedtonede kortene men ikke de 3 pinnede
-- [ ] Bruker kan skrive "1", "2" eller "3" og agenten velger riktig produkt
-- [ ] `clearHighlights` (ny søk) fjerner alle tiers og dimming
+- [x] Agent stiller preferansespørsmål FØR den kaller recommendProducts
+- [x] De 3 kortene flyttes til topp i lista
+- [x] Badge vises: **1·Bäst** (gull), **2·Bättre** (sølv), **3·Bra** (bronse)
+- [x] Resterende kort er tydelig nedtonet (opacity-40)
+- [x] Ring/skygge skiller seg visuelt mellom tier 1, 2 og 3
+- [ ] Sortering endrer rekkefølge på de nedtonede kortene men ikke de 3 pinnede *(ikke testet)*
+- [x] Bruker kan skrive "1", "2" eller "3" og agenten velger riktig produkt
+- [ ] `clearHighlights` (ny søk) fjerner alle tiers og dimming *(ikke testet)*
+
+### Bugs funnet under verifisering (nye WO-items)
+
+- **FB-xx: Produkt-IDer lekker i chat-tekst** — Agenten inkluderer `prod_01KNAJ2G...`-IDer i sine forklaringstekster. Må filtreres i system prompt eller post-prosesseres.
+- **FB-xx: Markdown-duplication** — Gammel lagret chat-session viste duplisert tekst (pre-fix). Nå fikset i route.ts (commit eaa8a3d).
