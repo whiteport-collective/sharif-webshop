@@ -36,3 +36,16 @@ backend/.cache/
 
 # Astro (legacy)
 .astro/
+
+# TypeScript build cache
+tsconfig.tsbuildinfo
+
+# Claude / agent runtime artifacts
+.claude/scheduled_tasks.lock
+.drive-session
+storefront/.codex-logs/
+
+# Local debug / scratch files
+tmp-*.js
+tmp-*.mjs
+design-process/_progress/.wrap-index-time
