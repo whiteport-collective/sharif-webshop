@@ -19,6 +19,7 @@ import CartTotals from "@modules/common/components/cart-totals"
 import ItemsPreviewTemplate from "@modules/cart/templates/preview"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useLanguage } from "@lib/i18n"
+import { convertToLocale } from "@lib/util/money"
 
 export type CheckoutSnapshot = {
   step: "delivery" | "address" | "payment" | "booking" | "confirmation"
@@ -112,6 +113,8 @@ export default function CheckoutPanelContent({
   const [bookingSnapshot, setBookingSnapshot] = useState<BookingSnapshot>({
     bookingSlots: [],
     selectedBookingSlotId: null,
+    selectedBookingLabel: null,
+    selectedBookingWorkshop: null,
   })
   const containerRef = useRef<HTMLDivElement>(null)
   const confirmationRef = useRef<HTMLDivElement>(null)
@@ -395,6 +398,7 @@ export default function CheckoutPanelContent({
                   countryCode={countryCode}
                   cart={data.cart}
                   isWorkshop={isWorkshop}
+                  bookingSnapshot={bookingSnapshot}
                 />
               </div>
             ) : (
@@ -449,6 +453,7 @@ export default function CheckoutPanelContent({
                     <ConfirmationStep
                       cart={data.cart}
                       step={step}
+                      bookingSnapshot={bookingSnapshot}
                       onSuccess={handleOrderSuccess}
                     />
                   )}
@@ -487,10 +492,12 @@ function SummaryRow({ label, value, bold }: { label: string; value: string; bold
 function ConfirmationStep({
   cart,
   step,
+  bookingSnapshot,
   onSuccess,
 }: {
   cart: HttpTypes.StoreCart
   step: string
+  bookingSnapshot: BookingSnapshot
   onSuccess: (orderId: string) => void
 }) {
   const isOpen = step === "confirmation"
@@ -501,8 +508,20 @@ function ConfirmationStep({
   const bookingTime = cart.metadata?.booking_time ? String(cart.metadata.booking_time) : null
   const bookingWorkshop = cart.metadata?.booking_workshop ? String(cart.metadata.booking_workshop) : null
   const total = cart.total != null
-    ? `NOK ${(cart.total / 100).toFixed(2).replace(".", ",")}`
+    ? convertToLocale({
+        amount: cart.total,
+        currency_code: cart.currency_code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
     : "—"
+  const bookingValue = bookingSnapshot.selectedBookingLabel
+    ? [bookingSnapshot.selectedBookingLabel, bookingSnapshot.selectedBookingWorkshop]
+        .filter(Boolean)
+        .join(", ")
+    : [bookingDate, bookingTime ? `kl. ${bookingTime}` : null, bookingWorkshop]
+        .filter(Boolean)
+        .join(", ")
 
   return (
     <div className="bg-white">
@@ -525,16 +544,10 @@ function ConfirmationStep({
                 value={[addr.address_1, addr.postal_code, addr.city].filter(Boolean).join(", ")}
               />
             )}
-            {bookingDate && (
+            {bookingValue && (
               <SummaryRow
                 label="Monteringstid"
-                value={[
-                  bookingDate,
-                  bookingTime ? `kl. ${bookingTime}` : null,
-                  bookingWorkshop,
-                ]
-                  .filter(Boolean)
-                  .join(", ")}
+                value={bookingValue}
               />
             )}
             <SummaryRow label="Totalbeløp" value={total} bold />
@@ -712,11 +725,13 @@ function OrderConfirmedInline({
   countryCode,
   cart,
   isWorkshop,
+  bookingSnapshot,
 }: {
   orderId: string
   countryCode: string
   cart: HttpTypes.StoreCart
   isWorkshop: boolean
+  bookingSnapshot: BookingSnapshot
 }) {
   const { t } = useLanguage()
   const [rating, setRating] = useState(0)
@@ -729,6 +744,7 @@ function OrderConfirmedInline({
   const bookingDate = cart.metadata?.booking_date ? String(cart.metadata.booking_date) : undefined
   const bookingTime = cart.metadata?.booking_time ? String(cart.metadata.booking_time) : undefined
   const bookingWorkshop = cart.metadata?.booking_workshop ? String(cart.metadata.booking_workshop) : undefined
+  const bookingLabel = bookingSnapshot.selectedBookingLabel
   const regNr = (cart.metadata?.car_registration || cart.metadata?.registration_number)
     ? String(cart.metadata.car_registration || cart.metadata.registration_number)
     : undefined
@@ -737,7 +753,12 @@ function OrderConfirmedInline({
   const shippingMethod = cart.shipping_methods?.[0]
   const shippingName = shippingMethod?.name ?? ""
   const shippingPrice = shippingMethod?.total != null
-    ? `NOK ${(shippingMethod.total / 100).toFixed(2).replace(".", ",")}`
+    ? convertToLocale({
+        amount: shippingMethod.total,
+        currency_code: cart.currency_code,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
     : "NOK 0,00"
 
   // Customer info
@@ -808,10 +829,12 @@ function OrderConfirmedInline({
         </CompletedStep>
 
         {/* Step 4: Mounting time (workshop only) */}
-        {isWorkshop && bookingDate && (
+        {isWorkshop && (bookingLabel || bookingDate) && (
           <CompletedStep title={t.mountingTimeStep}>
-            <div>{bookingDate}{bookingTime ? `, kl. ${bookingTime}` : ""}</div>
-            {bookingWorkshop && <div>{bookingWorkshop}</div>}
+            <div>{bookingLabel ?? `${bookingDate}${bookingTime ? `, kl. ${bookingTime}` : ""}`}</div>
+            {(bookingSnapshot.selectedBookingWorkshop || bookingWorkshop) && (
+              <div>{bookingSnapshot.selectedBookingWorkshop ?? bookingWorkshop}</div>
+            )}
           </CompletedStep>
         )}
 

@@ -12,6 +12,8 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 export type BookingSnapshot = {
   bookingSlots: { id: string; label: string }[]
   selectedBookingSlotId: string | null
+  selectedBookingLabel: string | null
+  selectedBookingWorkshop: string | null
 }
 
 export type BookingAgentSetter = (slotId: string) => { ok: boolean; reason?: string }
@@ -108,6 +110,7 @@ const Booking = ({
   })
   const [visibleDays, setVisibleDays] = useState(DAYS_INITIAL)
   const [agentPulseSlotId, setAgentPulseSlotId] = useState<string | null>(null)
+  const [bookingSaving, setBookingSaving] = useState(false)
   const [, startTransition] = useTransition()
   const ctaRef = useRef<HTMLDivElement>(null)
 
@@ -137,6 +140,18 @@ const Booking = ({
     startTransition(() => saveBookingToCart(date, time, workshopName))
   }
 
+  const handleContinue = async () => {
+    if (!selectedDate || !selectedTime || !workshop) return
+
+    setBookingSaving(true)
+    try {
+      await saveBookingToCart(selectedDate, selectedTime, workshop.name)
+      onStepChange?.("confirmation")
+    } finally {
+      setBookingSaving(false)
+    }
+  }
+
   // Workshop name derived from in-memory selected option (parent passes it) with cart fallback.
   // Reading cart.shipping_methods alone is stale before Payment step refreshes the cart.
   const shippingMethodName = shippingMethodNameProp ?? cart.shipping_methods?.[0]?.name ?? ""
@@ -148,6 +163,9 @@ const Booking = ({
 
   const slots = useMemo(() => getAvailableSlots(visibleDays), [visibleDays])
   const bookingReady = !!selectedDate && !!selectedTime
+  const selectedSlotLabel = selectedDate
+    ? slots.find((slot) => slot.date === selectedDate)?.label ?? selectedDate
+    : null
   const bookingSnapshot = useMemo<BookingSnapshot>(() => ({
     bookingSlots: workshop
       ? slots
@@ -160,7 +178,9 @@ const Booking = ({
           )
       : [],
     selectedBookingSlotId: selectedDate && selectedTime ? `${selectedDate}|${selectedTime}` : null,
-  }), [workshop, slots, expandedDays, selectedDate, selectedTime])
+    selectedBookingLabel: selectedSlotLabel && selectedTime ? `${selectedSlotLabel}, kl. ${selectedTime}` : null,
+    selectedBookingWorkshop: workshop?.name ?? null,
+  }), [workshop, slots, expandedDays, selectedDate, selectedTime, selectedSlotLabel])
 
   useEffect(() => {
     if (!isOpen) {
@@ -233,7 +253,7 @@ const Booking = ({
             }
           )}
         >
-          Booking
+          Bestill montering
           {!isOpen && bookingReady && <CheckCircleSolid />}
         </Heading>
         {!isOpen && bookingReady && (
@@ -242,7 +262,7 @@ const Booking = ({
               onClick={handleEdit}
               className="text-ui-fg-interactive hover:text-ui-fg-interactive-hover"
             >
-              Edit
+              Endre
             </button>
           </Text>
         )}
@@ -339,8 +359,9 @@ const Booking = ({
         <div ref={ctaRef} className="mt-8 pb-8">
           <Button
             size="large"
-            disabled={!bookingReady}
-            onClick={() => onStepChange?.("confirmation")}
+            disabled={!bookingReady || bookingSaving}
+            isLoading={bookingSaving}
+            onClick={handleContinue}
             data-testid="booking-continue-button"
           >
             {t.completeOrder}

@@ -97,6 +97,7 @@ export default function FlowShell({
   const agentSearchFields = useRef<{ width?: string; profile?: string; rim?: string; qty?: string; season?: string }>({})
   const selectedTireRef = useRef<SelectedTire | null>(null)
   const previousViewRef = useRef<FlowView>("home")
+  const checkoutNavigationGuardUntilRef = useRef(0)
   const sessionIdRef = useRef<string | null>(null)
   const agentHandlersRef = useRef<AgentToolHandlers | null>(null)
   const view = mapFlowToLegacyView(appState.flow)
@@ -192,6 +193,7 @@ export default function FlowShell({
       return
     }
 
+    checkoutNavigationGuardUntilRef.current = Date.now() + 1800
     backLocked.current = true
     setScrollDirection("idle")
     setTimeout(() => {
@@ -218,6 +220,7 @@ export default function FlowShell({
     const existing = selectedTireRef.current
 
     if (existing?.lineItemId && existing.product.variants?.[0]?.id === variant.id) {
+      checkoutNavigationGuardUntilRef.current = Date.now() + 1800
       setCheckoutKey((current) => current + 1)
       pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
       dispatch({ type: "NAV_TO_CHECKOUT" })
@@ -235,6 +238,7 @@ export default function FlowShell({
 
     dispatch({ type: "CART_SYNC_STARTED" })
     setCartLoading(true)
+    checkoutNavigationGuardUntilRef.current = Date.now() + 2400
     setCheckoutKey((current) => current + 1)
     pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
     dispatch({ type: "NAV_TO_CHECKOUT" })
@@ -266,6 +270,7 @@ export default function FlowShell({
       }
 
       setCartLoading(false)
+      checkoutNavigationGuardUntilRef.current = Date.now() + 700
     })
   }, [countryCode, pushFlowState, region.currency_code, syncSelectedTire])
 
@@ -484,8 +489,6 @@ export default function FlowShell({
       return
     }
 
-    previousViewRef.current = view
-
     if (view === "results" && !showResultsSection) {
       return
     }
@@ -493,6 +496,8 @@ export default function FlowShell({
     if (view === "checkout" && !showCheckoutSection) {
       return
     }
+
+    previousViewRef.current = view
 
     const frame = window.requestAnimationFrame(() => {
       // View changes are state-driven and should land immediately.
@@ -534,6 +539,17 @@ export default function FlowShell({
       const nextSection =
         scrollMarker >= checkoutTop ? "checkout" : scrollMarker >= resultsTop ? "results" : "home"
 
+      if (
+        view === "checkout" &&
+        showCheckoutSection &&
+        nextSection !== "checkout" &&
+        Date.now() < checkoutNavigationGuardUntilRef.current
+      ) {
+        setActiveSection("checkout")
+        scrollToSection("checkout", "auto")
+        return
+      }
+
       if (view === "results" && showResultsSection && nextSection === "home") {
         return
       }
@@ -557,7 +573,7 @@ export default function FlowShell({
     return () => {
       surface.removeEventListener("scroll", syncScrollState)
     }
-  }, [showCheckoutSection, showResultsSection])
+  }, [scrollToSection, showCheckoutSection, showResultsSection, view])
 
   const knownCount = dimensionCounts[searchMeta.dimension] ?? 0
   const sortedProducts = useMemo(() => sortProducts(products, activeSort), [activeSort, products])
@@ -682,6 +698,7 @@ export default function FlowShell({
       const variant = product.variants?.[0] as any
       const existingTire = selectedTireRef.current
       if (existingTire && existingTire.product.variants?.[0]?.id === variant?.id && existingTire.lineItemId) {
+        checkoutNavigationGuardUntilRef.current = Date.now() + 1800
         setCheckoutKey((current) => current + 1)
         pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
         dispatch({ type: "NAV_TO_CHECKOUT" })

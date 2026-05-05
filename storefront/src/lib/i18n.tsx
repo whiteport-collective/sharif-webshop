@@ -161,7 +161,7 @@ export const UI: Record<Lang, Strings> = {
     mountingTimeStep: "Monteringstid",
     howWasExperience: "Hvordan var opplevelsen?",
     talkToAI: "Snakk med vår AI",
-    chatPlaceholder: "Har du tankar och frågor om din bestilling...",
+    chatPlaceholder: "Har du tanker eller spørsmål om bestillingen din?",
     chatWelcomeIntro:
       "Hei, så hyggelig at du stikker innom. I denne chatten kan du lære mer om dekk, økonomi og sikkerhet. Jeg er en AI som er trent på hele Sharifs sortiment og kan hjelpe deg til et trygt kjøp.",
     chatWelcomeOrders: "Har du spørsmål om en tidligere bestilling, er det bare å spørre!",
