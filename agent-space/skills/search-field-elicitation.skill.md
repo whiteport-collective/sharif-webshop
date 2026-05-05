@@ -6,6 +6,8 @@ trigger:
 requires_tools:
   - setSearchField
   - triggerSearch
+  - highlightProducts
+  - clearHighlights
 ---
 
 # Search Field Elicitation
@@ -45,8 +47,11 @@ Om ett eller flera fält saknas — ställ **en kompakt** fråga som täcker all
 Om kunden säger "jag vet inte" eller ger bilmodell istället ("Volvo V70 2015"):
 
 - Bekräfta bilen: "Volvo V70 från 2015 — jag kollar."
-- Fråga efter registreringsnummer om vi har en lookup-tjänst, annars fråga var det står (bildörr, gammalt däck, instruktionsbok).
-- **Gör inte** gissningar om dimension baserat på bara modell — biltillverkare har flera varianter.
+- Om kunden bara ger modell/familj ("Volkswagen Golf", "Volvo V70"): fråga efter årsmodell och motor/trim först. Fråga inte direkt efter däckdimension.
+- Erbjud registreringsnummer som snabbaste väg om lookup finns: "Har du reg.nr, eller vet du årsmodell og motor/utstyrsnivå?"
+- När kunden ger en tillräckligt specifik bil (år + modell + motor/trim), föreslå en vanlig fabrikkdimensjon med tydlig bekreftelse i stället för att säga att du inte kan gissa.
+- Exempel: "2019 Volkswagen Golf 1.5 TSI bruker ofte 205/55R16 som standard. Noen utstyrsnivåer kan ha 225/45R17, så bekreft gjerne mot vognkortet eller dekksiden. Skal jeg søke 205/55R16 først?"
+- Sätt inte dimensionen och starta sök utan bekräftelse när dimensionen kommer från bilspec och inte från kunden/dekksiden.
 
 ### 4. Default-värden
 
@@ -59,6 +64,12 @@ Om kunden säger "jag vet inte" eller ger bilmodell istället ("Volvo V70 2015")
 ### 5. Trigger search
 
 När alla fem fält är satta: `triggerSearch()`. Kommentera inte varje fält — det blir spam.
+
+Om kunden redan har gett körprofil eller prioritet innan söket ("mest i byen men lengre turer", "trygt i regn", "billigst mulig"):
+
+- Efter `triggerSearch`, använd produktlistan direkt. Välj 1-2 rimliga rekommendationer, kalla `clearHighlights()` och `highlightProducts(productIds)`.
+- Svara med en kort rekommendation på kundens språk. Nämn varför produkterna passar profilen, inte bara att du hittade X däck.
+- Om profilen saknas efter sök: ställ en öppen fråga om bil och körning.
 
 ## Anti-patterns
 
@@ -75,8 +86,17 @@ När alla fem fält är satta: `triggerSearch()`. Kommentera inte varje fält �
 ## Exempel-dialog (saknat)
 
 > **Kund:** "Jag behöver däck till min Volvo V70"
-> **Agent:** "Volvo V70 — vilket år? Jag behöver dimensionen, som står på sidan av ditt nuvarande däck (typ '205/55R16'), eller i dörrkarmen på förarsidan."
+> **Agent:** "Volvo V70 — vilket år och vilken motor/variant? Har du reg.nr kan jag bruke det, ellers kan jeg foreslå vanlig fabrikkdimensjon når bilen er presisert."
 > **Kund:** "2015, och det står 205/55R16 på däcket"
 > **Agent:** *(setSearchField för de tre dimensionsfälten)* "205/55R16 — fyra stycken sommardäck?"
 > **Kund:** "Ja"
 > **Agent:** *(setSearchField qty, season, triggerSearch)* "Söker."
+
+## Exempel-dialog (bilmodell med sannolik standarddimension)
+
+> **Kund:** "Jeg trenger fire sommerdekk til min Volkswagen Golf"
+> **Agent:** "Hvilken årsmodell og motor/utstyrsnivå er Golfen? Har du reg.nr kan jeg bruke det raskest."
+> **Kund:** "2019 Golf 1.5 TSI"
+> **Agent:** "2019 Golf 1.5 TSI bruker ofte 205/55R16 som standard. Noen utstyrsnivåer kan ha 225/45R17, så bekreft gjerne mot vognkortet eller dekksiden. Skal jeg søke 205/55R16, fire sommerdekk?"
+> **Kund:** "Ja"
+> **Agent:** *(setSearchField width=205, profile=55, rim=16, qty=4, season=sommer, triggerSearch)* "Søker etter 205/55R16 sommerdekk, fire stykk."

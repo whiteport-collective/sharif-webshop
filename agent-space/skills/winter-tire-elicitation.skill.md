@@ -58,12 +58,11 @@ Om kunden bor längre norrut eller nämner is:
 
 ### 4. Highlight
 
-Som `tire-needs-elicitation:3`, men med vinter-specifikt `reason`:
+Som `tire-needs-elicitation:3`, men skriv vinterbegrunnelsen i chattsvaret:
 
 ```
 highlightProducts(
-  productIds: ["prod_x", "prod_y"],
-  reason: "Nordiska odubbade med topp-is-grepp, XL-bärighet för elbil"
+  productIds: ["prod_x", "prod_y"]
 )
 ```
 

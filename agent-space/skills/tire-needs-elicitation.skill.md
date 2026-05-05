@@ -43,6 +43,7 @@ Direkt efter `triggerSearch`-resultatet, innan kunden hinner välja själv:
 | Vad kunden berättar | Vilken dimension det signalerar |
 |---|---|
 | "Kör mycket på motorväg", "pendlar långt" | economy / mileage |
+| "Mest i byen, men lengre turer", "stad och ibland långtur" | safety + comfort + value |
 | "Elbil / hybrid", "stör mig på buller" | quietness |
 | "Familj i bilen", "många regndagar", "säkerhet är viktigast" | safety |
 | "Vill ha komfort", "långa resor", "mjuk körning" | comfort |
@@ -63,8 +64,7 @@ När prioriteten är klar:
 
 ```
 highlightProducts(
-  productIds: ["prod_a", "prod_b"],
-  reason: "Toppvåtgrepp (A-klass) + mellanprisklass"
+  productIds: ["prod_a", "prod_b"]
 )
 ```
 
@@ -106,7 +106,7 @@ Om kunden är osäker mellan två: erbjud en konkret jämförelse-punkt (`getPro
 > **Agent:** *(setSearchField × 5 + triggerSearch)*
 > **Agent:** "Jag hittade 14 däck. Berätta gärna om din bil och hur du kör — så rekommenderar jag de bästa däcken för dig."
 > **Kund:** "Det är en Volvo V60, kör mycket motorväg, pendlar 8 mil om dagen. Säkerhet är viktigast men vill inte lägga en förmögenhet."
-> **Agent:** *(highlightProducts(["prod_a", "prod_b"], "A-klass våtgrepp i mellanprisklass, hög körsträcka-rating"))*
+> **Agent:** *(highlightProducts(["prod_a", "prod_b"]))*
 > **Agent:** "Med 8 mil om dagen är livslängd och våtgrepp båda viktiga. De här två har bästa våtgreppsklass och klarar hög körsträcka — Continental har kortare bromssträcka på vått, Nokian håller längre per krona. Vilken lutar du åt?"
 > **Kund:** "Continental."
 > **Agent:** *(selectTireForCheckout("prod_a"))*
