@@ -133,10 +133,25 @@ export type HeaderProps = {
   qty: number
 }
 
+export type TierRecommendation = {
+  best: string
+  better: string
+  good: string
+}
+
+export const TIER_CONFIG = {
+  best:   { rank: 1, label: "Bäst" },
+  better: { rank: 2, label: "Bättre" },
+  good:   { rank: 3, label: "Bra" },
+} as const
+
+export type TierKey = keyof typeof TIER_CONFIG
+
 export type ResultsSectionProps = {
   cart: HttpTypes.StoreCart | null
   hasMoreResults: boolean
   highlightedProductIds: Set<string>
+  recommendations: TierRecommendation | null
   isLoading: boolean
   onLoadMore: () => void
   onOpenCheckout: () => void

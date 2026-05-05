@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import TireCard from "@modules/products/components/tire-card"
-import type { ResultsSectionProps } from "./types"
+import type { ResultsSectionProps, TierKey } from "./types"
+import { TIER_CONFIG } from "./types"
 
 function TireCardSkeleton() {
   return (
@@ -24,9 +25,34 @@ function TireCardSkeleton() {
   )
 }
 
+function buildTierMap(recommendations: ResultsSectionProps["recommendations"]): Map<string, { rank: number; label: string }> {
+  const map = new Map<string, { rank: number; label: string }>()
+  if (!recommendations) return map
+  for (const key of Object.keys(TIER_CONFIG) as TierKey[]) {
+    const id = recommendations[key]
+    if (id) map.set(id, TIER_CONFIG[key])
+  }
+  return map
+}
+
+function applyRecommendationOrder(
+  products: ResultsSectionProps["sortedProducts"],
+  recommendations: ResultsSectionProps["recommendations"]
+): ResultsSectionProps["sortedProducts"] {
+  if (!recommendations) return products
+  const pinned = [recommendations.best, recommendations.better, recommendations.good]
+  const pinnedSet = new Set(pinned)
+  const pinnedProducts = pinned
+    .map((id) => products.find((p) => p.id === id))
+    .filter((p): p is NonNullable<typeof p> => p != null)
+  const rest = products.filter((p) => p.id != null && !pinnedSet.has(p.id!))
+  return [...pinnedProducts, ...rest]
+}
+
 function ResultsGrid({
   cart,
   highlightedProductIds,
+  recommendations,
   isLoading,
   onProductDetail,
   onRemoveTire,
@@ -40,6 +66,7 @@ function ResultsGrid({
 }: {
   cart: ResultsSectionProps["cart"]
   highlightedProductIds: Set<string>
+  recommendations: ResultsSectionProps["recommendations"]
   isLoading: boolean
   onProductDetail: (product: ResultsSectionProps["sortedProducts"][number]) => void
   onRemoveTire: (product: ResultsSectionProps["sortedProducts"][number]) => void
@@ -55,7 +82,11 @@ function ResultsGrid({
     return Array.from({ length: skeletonCount }).map((_, index) => <TireCardSkeleton key={index} />)
   }
 
-  return sortedProducts.slice(0, visibleLimit).map((product) => {
+  const tierMap = buildTierMap(recommendations)
+  const orderedProducts = applyRecommendationOrder(sortedProducts, recommendations)
+  const hasRecommendations = tierMap.size > 0
+
+  return orderedProducts.slice(0, visibleLimit).map((product) => {
     const variantId = product.variants?.[0]?.id
     const cartLine = variantId
       ? ((cart?.items ?? []) as Array<{ variant_id?: string; quantity?: number }>).find(
@@ -64,10 +95,13 @@ function ResultsGrid({
       : null
     const isInCart = Boolean(cartLine) || selectedTire?.product.id === product.id
     const cardQty = cartLine?.quantity ?? qty
+    const tier = product.id != null ? tierMap.get(product.id) ?? null : null
+    const isDimmed = hasRecommendations && tier === null && !highlightedProductIds.has(product.id ?? "")
 
     return (
       <div
         key={product.id}
+        className={isDimmed ? "opacity-40 transition-opacity duration-300" : "transition-opacity duration-300"}
       >
         <TireCard
           product={product}
@@ -75,6 +109,7 @@ function ResultsGrid({
           qty={cardQty}
           isInCart={isInCart}
           isHighlighted={product.id != null && highlightedProductIds.has(product.id)}
+          tier={tier}
           onSelectTire={onSelectTire}
           onRemoveTire={() => onRemoveTire(product)}
           onProductDetail={onProductDetail}
@@ -88,6 +123,7 @@ export function FlowShellResults({
   cart,
   hasMoreResults,
   highlightedProductIds,
+  recommendations,
   isLoading,
   onLoadMore,
   onOpenCheckout,
@@ -134,6 +170,7 @@ export function FlowShellResults({
           <ResultsGrid
             cart={cart}
             highlightedProductIds={highlightedProductIds}
+            recommendations={recommendations}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}
@@ -154,6 +191,7 @@ export function FlowShellResults({
           <ResultsGrid
             cart={cart}
             highlightedProductIds={highlightedProductIds}
+            recommendations={recommendations}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
             onRemoveTire={onRemoveTire}

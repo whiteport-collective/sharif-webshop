@@ -40,9 +40,23 @@ export const storefrontAgentTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: "recommendProducts",
+    description:
+      "Show a ranked 1–2–3 recommendation. Assigns numbered tier badges (1 · Bäst, 2 · Bättre, 3 · Bra) to three products and dims the rest. Use this after eliciting the customer's driving preferences — never before asking at least one preference question. The customer can respond with just '1', '2', or '3' to select a tier. You must include all three IDs.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        best:   { type: "string", description: "Product ID for rank 1 (Bäst — top pick)." },
+        better: { type: "string", description: "Product ID for rank 2 (Bättre — solid choice)." },
+        good:   { type: "string", description: "Product ID for rank 3 (Bra — budget/alternative)." },
+      },
+      required: ["best", "better", "good"],
+    },
+  },
+  {
     name: "highlightProducts",
     description:
-      "Highlight one or more product cards with a golden ring to draw the customer's attention — use this after eliciting their priority to visually mark your recommendations. Call clearHighlights before highlighting a new set.",
+      "Highlight one or more product cards with a golden ring. Use recommendProducts instead when you want a ranked 1–2–3 presentation. Use this only for simple single-product callouts. Call clearHighlights before highlighting a new set.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -205,6 +219,7 @@ export const UI_TOOL_NAMES = new Set([
   "scrollToProduct",
   "prefillCheckoutField",
   "openPaymentStep",
+  "recommendProducts",
   "highlightProducts",
   "clearHighlights",
   "sortProducts",

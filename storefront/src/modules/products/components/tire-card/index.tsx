@@ -93,6 +93,7 @@ export default function TireCard({
   qty = 4,
   isInCart = false,
   isHighlighted = false,
+  tier = null,
   onSelectTire,
   onRemoveTire,
   onProductDetail,
@@ -102,6 +103,7 @@ export default function TireCard({
   qty?: number
   isInCart?: boolean
   isHighlighted?: boolean
+  tier?: { rank: number; label: string } | null
   onSelectTire?: (product: HttpTypes.StoreProduct, qty: number) => void
   onRemoveTire?: () => void
   onProductDetail?: (product: HttpTypes.StoreProduct) => void
@@ -159,14 +161,29 @@ export default function TireCard({
   // doesn't reliably expose inventory_quantity without full location wiring.
   const isAvailable = stockStatus !== "out-of-stock" || inventoryQty == null
 
+  const tierColors: Record<number, string> = {
+    1: "bg-amber-400 text-amber-900",
+    2: "bg-slate-300 text-slate-800",
+    3: "bg-orange-200 text-orange-900",
+  }
+
   return (
     <div
-      className={`group flex h-full flex-col overflow-hidden rounded-xl border bg-ui-bg-base shadow-sm transition-shadow hover:shadow-md ${
-        isHighlighted
-          ? "border-amber-400 ring-2 ring-amber-400 ring-offset-1"
-          : "border-ui-border-base"
+      className={`group relative flex h-full flex-col overflow-hidden rounded-xl border bg-ui-bg-base transition-shadow ${
+        tier
+          ? "shadow-lg ring-2 ring-offset-1 " + (tier.rank === 1 ? "ring-amber-400 border-amber-400" : tier.rank === 2 ? "ring-slate-400 border-slate-400" : "ring-orange-300 border-orange-300")
+          : isHighlighted
+            ? "shadow-sm border-amber-400 ring-2 ring-amber-400 ring-offset-1"
+            : "shadow-sm hover:shadow-md border-ui-border-base"
       }`}
     >
+      {tier && (
+        <div className={`absolute left-2 top-2 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${tierColors[tier.rank] ?? "bg-gray-200 text-gray-700"}`}>
+          <span>{tier.rank}</span>
+          <span>·</span>
+          <span>{tier.label}</span>
+        </div>
+      )}
       <button
         type="button"
         onClick={() => onProductDetail ? onProductDetail(product) : undefined}

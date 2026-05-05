@@ -70,6 +70,7 @@ export default function FlowShell({
   const [cartQty, setCartQty] = useState<number | null>(null)
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
+  const [recommendations, setRecommendations] = useState<import("./types").TierRecommendation | null>(null)
   const [scrollDirection, setScrollDirection] = useState<"up" | "down" | "idle">("idle")
   const [surfaceAtTop, setSurfaceAtTop] = useState(true)
   const checkoutBackRef = useRef<(() => void) | null>(null)
@@ -710,10 +711,16 @@ export default function FlowShell({
       const element = document.querySelector(`[data-product-id="${productId}"]`)
       element?.scrollIntoView({ behavior: "smooth", block: "center" })
     },
+    recommendProducts: (tiers) => {
+      setRecommendations(tiers)
+      setHighlightedProductIds(new Set([tiers.best, tiers.better, tiers.good]))
+    },
     highlightProducts: (productIds) => {
+      setRecommendations(null)
       setHighlightedProductIds(new Set(productIds))
     },
     clearHighlights: () => {
+      setRecommendations(null)
       setHighlightedProductIds(new Set())
     },
     sortProducts: (sortBy) => {
@@ -771,6 +778,7 @@ export default function FlowShell({
           case "selectTire":          result = h?.selectTire(a.productId as string); break
           case "selectTireForCheckout": result = h?.selectTireForCheckout(a.productId as string); break
           case "scrollToProduct":     result = h?.scrollToProduct(a.productId as string); break
+          case "recommendProducts":   result = h?.recommendProducts(a as { best: string; better: string; good: string }); break
           case "highlightProducts":   result = h?.highlightProducts(a.productIds as string[]); break
           case "clearHighlights":     result = h?.clearHighlights(); break
           case "prefillCheckoutField": result = h?.prefillCheckoutField(a.field as string, a.value as string); break
@@ -1020,6 +1028,7 @@ export default function FlowShell({
                       cart={cart}
                       hasMoreResults={hasMoreResults}
                       highlightedProductIds={highlightedProductIds}
+                      recommendations={recommendations}
                       isLoading={isLoading}
                       onLoadMore={() => setVisibleLimit((current) => current + 6)}
                       onOpenCheckout={openCheckoutPanel}
