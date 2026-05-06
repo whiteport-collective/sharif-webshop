@@ -317,13 +317,18 @@ export default function CheckoutPanelContent({
       }
       const container = containerRef.current
       if (!container) return { ok: false, reason: "Checkout container not mounted" }
-      const input = container.querySelector<HTMLInputElement>(`[name="${domName}"]`)
+      // Use JS attribute lookup instead of CSS selector — dots in [name="a.b"] are unreliable
+      const input = Array.from(container.querySelectorAll<HTMLInputElement>("input")).find(
+        (el) => el.getAttribute("name") === domName
+      )
       if (!input) return { ok: false, reason: `Field not visible in current step: ${field}` }
 
       const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set
       nativeSet?.call(input, value)
+      // Reset React 18 value tracker so controlled input detects the change
+      const tracker = (input as any)._valueTracker
+      if (tracker) tracker.setValue("")
       input.dispatchEvent(new Event("input", { bubbles: true }))
-      input.dispatchEvent(new Event("change", { bubbles: true }))
 
       // Amber pulse
       input.classList.add("ring-2", "ring-amber-400", "transition-shadow")
