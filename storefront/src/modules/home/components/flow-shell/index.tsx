@@ -711,10 +711,12 @@ export default function FlowShell({
     recommendProducts: (tiers) => {
       setRecommendations(tiers)
       setHighlightedProductIds(new Set([tiers.best, tiers.better, tiers.good]))
+      scrollToSection("results")
     },
     highlightProducts: (productIds) => {
       setRecommendations(null)
       setHighlightedProductIds(new Set(productIds))
+      scrollToSection("results")
     },
     clearHighlights: () => {
       setRecommendations(null)
