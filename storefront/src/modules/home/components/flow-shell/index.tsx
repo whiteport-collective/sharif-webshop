@@ -223,7 +223,6 @@ export default function FlowShell({
     if (existing?.lineItemId && existing.product.variants?.[0]?.id === variant.id) {
       checkoutNavigationGuardUntilRef.current = Date.now() + 1800
       setCheckoutKey((current) => current + 1)
-      pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
       dispatch({ type: "NAV_TO_CHECKOUT" })
       return
     }
@@ -241,7 +240,6 @@ export default function FlowShell({
     setCartLoading(true)
     checkoutNavigationGuardUntilRef.current = Date.now() + 2400
     setCheckoutKey((current) => current + 1)
-    pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
     dispatch({ type: "NAV_TO_CHECKOUT" })
 
     startTransition(async () => {
@@ -701,7 +699,6 @@ export default function FlowShell({
       if (existingTire && existingTire.product.variants?.[0]?.id === variant?.id && existingTire.lineItemId) {
         checkoutNavigationGuardUntilRef.current = Date.now() + 1800
         setCheckoutKey((current) => current + 1)
-        pushFlowState("checkout", `${window.location.pathname}${window.location.search}`)
         dispatch({ type: "NAV_TO_CHECKOUT" })
         return
       }
