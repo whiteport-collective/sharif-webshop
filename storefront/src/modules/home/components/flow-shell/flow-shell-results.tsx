@@ -37,9 +37,10 @@ function buildTierMap(recommendations: ResultsSectionProps["recommendations"]): 
 
 function applyRecommendationOrder(
   products: ResultsSectionProps["sortedProducts"],
-  recommendations: ResultsSectionProps["recommendations"]
+  recommendations: ResultsSectionProps["recommendations"],
+  pin: boolean
 ): ResultsSectionProps["sortedProducts"] {
-  if (!recommendations) return products
+  if (!recommendations || !pin) return products
   const pinned = [recommendations.best, recommendations.better, recommendations.good]
   const pinnedSet = new Set(pinned)
   const pinnedProducts = pinned
@@ -52,6 +53,7 @@ function applyRecommendationOrder(
 function ResultsGrid({
   cart,
   highlightedProductIds,
+  pinRecommendations,
   recommendations,
   isLoading,
   onProductDetail,
@@ -66,6 +68,7 @@ function ResultsGrid({
 }: {
   cart: ResultsSectionProps["cart"]
   highlightedProductIds: Set<string>
+  pinRecommendations: boolean
   recommendations: ResultsSectionProps["recommendations"]
   isLoading: boolean
   onProductDetail: (product: ResultsSectionProps["sortedProducts"][number]) => void
@@ -83,7 +86,7 @@ function ResultsGrid({
   }
 
   const tierMap = buildTierMap(recommendations)
-  const orderedProducts = applyRecommendationOrder(sortedProducts, recommendations)
+  const orderedProducts = applyRecommendationOrder(sortedProducts, recommendations, pinRecommendations)
   const hasRecommendations = tierMap.size > 0
 
   return orderedProducts.slice(0, visibleLimit).map((product) => {
@@ -123,6 +126,7 @@ export function FlowShellResults({
   cart,
   hasMoreResults,
   highlightedProductIds,
+  pinRecommendations,
   recommendations,
   isLoading,
   onLoadMore,
@@ -170,6 +174,7 @@ export function FlowShellResults({
           <ResultsGrid
             cart={cart}
             highlightedProductIds={highlightedProductIds}
+            pinRecommendations={pinRecommendations}
             recommendations={recommendations}
             isLoading={isLoading}
             onProductDetail={onProductDetail}
@@ -191,6 +196,7 @@ export function FlowShellResults({
           <ResultsGrid
             cart={cart}
             highlightedProductIds={highlightedProductIds}
+            pinRecommendations={pinRecommendations}
             recommendations={recommendations}
             isLoading={isLoading}
             onProductDetail={onProductDetail}

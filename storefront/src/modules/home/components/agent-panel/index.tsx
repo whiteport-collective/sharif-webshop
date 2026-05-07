@@ -4,6 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { useStreamingChat } from "./useStreamingChat"
 import { useLanguage } from "@lib/i18n"
 import type { SessionContext } from "@modules/home/components/flow-shell/types"
+import type { HttpTypes } from "@medusajs/types"
+
+type RecommendedProductEntry = {
+  product: HttpTypes.StoreProduct
+  tier: "best" | "better" | "good"
+  tierLabel: string
+  priceFormatted: string | null
+}
 
 function renderMarkdown(text: string): React.ReactNode[] {
   const lines = text.split("\n")
@@ -49,9 +57,12 @@ type Props = {
   open: boolean
   onClose: () => void
   getSessionContext: () => SessionContext
+  recommendedProducts?: RecommendedProductEntry[]
+  onSelectTire?: (product: HttpTypes.StoreProduct, qty: number) => void
+  qty?: number
 }
 
-function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose">) {
+function AgentPanelContent({ getSessionContext, recommendedProducts, onSelectTire, qty }: Omit<Props, "open" | "onClose">) {
   const [input, setInput] = useState("")
   const [menuOpen, setMenuOpen] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
@@ -298,6 +309,32 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
         ))}
       </div>
 
+      {/* Recommended products — quick add to cart */}
+      {recommendedProducts && recommendedProducts.length > 0 && onSelectTire && (
+        <div className="shrink-0 border-t border-[#dee2e6] px-3 py-2 flex flex-col gap-1.5">
+          {recommendedProducts.map(({ product, tier, tierLabel, priceFormatted }) => (
+            <div key={product.id} className="flex items-center justify-between gap-2 rounded-xl border border-[#dee2e6] bg-[#f8f9fa] px-3 py-2">
+              <div className="min-w-0">
+                <span className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide mr-1.5 ${
+                  tier === "best" ? "bg-emerald-100 text-emerald-700" :
+                  tier === "better" ? "bg-amber-100 text-amber-700" :
+                  "bg-sky-100 text-sky-700"
+                }`}>{tierLabel}</span>
+                <span className="text-xs font-medium text-[#212529] truncate">{product.title}</span>
+                {priceFormatted && <span className="ml-1.5 text-xs text-[#6c757d]">{priceFormatted}/stk</span>}
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectTire(product, qty ?? 4)}
+                className="shrink-0 rounded-lg bg-[#212529] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#343a40]"
+              >
+                Velg
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Input — GPT-style box */}
       <div className="shrink-0 p-3">
         <div className="flex flex-col rounded-2xl border border-[#dee2e6] bg-white shadow-sm focus-within:border-[#adb5bd] transition-colors">
@@ -340,13 +377,14 @@ function AgentPanelContent({ getSessionContext }: Omit<Props, "open" | "onClose"
   )
 }
 
-export default function AgentPanel({ open, onClose, getSessionContext }: Props) {
+export default function AgentPanel({ open, onClose, getSessionContext, recommendedProducts, onSelectTire, qty }: Props) {
+  const contentProps = { getSessionContext, recommendedProducts, onSelectTire, qty }
   return (
     <>
       {/* Mobile/tablet: fixed overlay when open */}
       {open && (
         <div className="fixed bottom-0 right-0 top-14 z-[80] flex w-full flex-col border-l border-[#dee2e6] bg-white shadow-2xl sm:w-[360px] lg:hidden">
-          <AgentPanelContent getSessionContext={getSessionContext} />
+          <AgentPanelContent {...contentProps} />
         </div>
       )}
 
@@ -359,7 +397,7 @@ export default function AgentPanel({ open, onClose, getSessionContext }: Props) 
           transition: "width 300ms ease-in-out, border-color 300ms ease-in-out",
         }}
       >
-        {open && <AgentPanelContent getSessionContext={getSessionContext} />}
+        {open && <AgentPanelContent {...contentProps} />}
       </aside>
     </>
   )

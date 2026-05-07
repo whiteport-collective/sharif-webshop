@@ -71,6 +71,7 @@ export default function FlowShell({
   const [cart, setCart] = useState<HttpTypes.StoreCart | null>(null)
   const [highlightedProductIds, setHighlightedProductIds] = useState<Set<string>>(new Set())
   const [recommendations, setRecommendations] = useState<import("./types").TierRecommendation | null>(null)
+  const [pinRecommendations, setPinRecommendations] = useState(true)
   const [scrollDirection, setScrollDirection] = useState<"up" | "down" | "idle">("idle")
   const [surfaceAtTop, setSurfaceAtTop] = useState(true)
   const checkoutBackRef = useRef<(() => void) | null>(null)
@@ -258,10 +259,13 @@ export default function FlowShell({
           selectedTireRef.current = updated
           setSelectedTire(updated)
         }
-        const newQty = currentCart?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? qty
+        const rawQty = currentCart?.items?.reduce((acc: number, i: any) => acc + i.quantity, 0) ?? 0
+        // If the cart API races and returns empty right after addToCart, fall back to qty
+        // to prevent the flow from navigating back to results incorrectly.
+        const newQty = rawQty > 0 ? rawQty : qty
         setCartQty(newQty)
         setCart(currentCart ?? null)
-        dispatch({ type: "CART_UPDATED", hasItems: newQty > 0 })
+        dispatch({ type: "CART_UPDATED", hasItems: true })
       } catch {
         // Checkout refreshes cart state on its own.
         setCartQty(qty)
@@ -577,7 +581,24 @@ export default function FlowShell({
   const knownCount = dimensionCounts[searchMeta.dimension] ?? 0
   const sortedProducts = useMemo(() => sortProducts(products, activeSort), [activeSort, products])
 
+  const agentRecommendedProducts = useMemo(() => {
+    if (!recommendations) return []
+    return (["best", "better", "good"] as const).flatMap((tier) => {
+      const id = recommendations[tier]
+      const product = products.find((p) => p.id === id)
+      if (!product) return []
+      const variant = product.variants?.[0] as any
+      const amount = variant?.calculated_price?.calculated_amount
+      const currency = variant?.calculated_price?.currency_code ?? region.currency_code ?? "NOK"
+      const priceFormatted = amount != null
+        ? new Intl.NumberFormat("nb-NO", { style: "currency", currency }).format(amount)
+        : null
+      return [{ product, tier, tierLabel: { best: "Anbefalt", better: "Bra valg", good: "God pris" }[tier] as string, priceFormatted }]
+    })
+  }, [recommendations, products, region.currency_code])
+
   const handleSortChange = useCallback((next: SortKey) => {
+    setPinRecommendations(false)
     const doc = typeof document !== "undefined" ? (document as Document & { startViewTransition?: (cb: () => void) => void }) : null
     if (doc?.startViewTransition) {
       doc.startViewTransition(() => {
@@ -711,6 +732,7 @@ export default function FlowShell({
     recommendProducts: (tiers) => {
       setRecommendations(tiers)
       setHighlightedProductIds(new Set([tiers.best, tiers.better, tiers.good]))
+      setPinRecommendations(true)
       scrollToSection("results")
     },
     highlightProducts: (productIds) => {
@@ -1027,6 +1049,7 @@ export default function FlowShell({
                       cart={cart}
                       hasMoreResults={hasMoreResults}
                       highlightedProductIds={highlightedProductIds}
+                      pinRecommendations={pinRecommendations}
                       recommendations={recommendations}
                       isLoading={isLoading}
                       onLoadMore={() => setVisibleLimit((current) => current + 6)}
@@ -1103,6 +1126,9 @@ export default function FlowShell({
             open={chatOpen}
             onClose={() => dispatch({ type: "ASSISTANT_CLOSED" })}
             getSessionContext={getSessionContext}
+            recommendedProducts={agentRecommendedProducts}
+            onSelectTire={handleSelectTire}
+            qty={searchMeta.qty}
           />
         </div>
       </AgentToolContextProvider>

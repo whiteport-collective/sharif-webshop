@@ -151,6 +151,7 @@ export type ResultsSectionProps = {
   cart: HttpTypes.StoreCart | null
   hasMoreResults: boolean
   highlightedProductIds: Set<string>
+  pinRecommendations: boolean
   recommendations: TierRecommendation | null
   isLoading: boolean
   onLoadMore: () => void

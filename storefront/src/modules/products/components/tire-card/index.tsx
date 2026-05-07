@@ -42,7 +42,7 @@ function EuBar({
       <span className={`text-[10px] uppercase tracking-wide ${empty ? "text-ui-fg-disabled" : "text-ui-fg-muted"}`}>
         {label}
       </span>
-      <div className="relative h-1.5 w-full rounded-full bg-gray-300">
+      <div className="relative h-2.5 w-full rounded-full bg-gray-300">
         {!empty && (
           <div
             className={`absolute left-0 top-0 h-full rounded-full ${colorClass}`}
