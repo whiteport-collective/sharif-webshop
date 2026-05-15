@@ -24,7 +24,7 @@
 | 01.2 Product Cards | ✓ | Browse tires as swiping cards, sorted by price |
 | 01.3 Product Detail | ✓ | AI story + EU labels in overlay |
 | 01.4 Quantity & Shop | ✓ | Pick count + mounting location |
-| 01.5 Payment | ✓ | Klarna/Qliro checkout (external) |
+| 01.5 Payment | ✓ | Stripe embedded checkout on Sharif-owned page |
 | 01.6 Book Mounting | ✓ | Post-payment time slot booking |
 
 ---
